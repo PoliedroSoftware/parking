@@ -1,0 +1,6 @@
+@ACE.PMS.WebApi_HostAddress = http://localhost:5029
+
+GET {{ACE.PMS.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

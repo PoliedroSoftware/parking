@@ -1,0 +1,92 @@
+[
+    {
+      "date": "2027-01-01",
+      "name_tc": "元旦",
+      "name_en": "New Year's Day"
+    },
+    {
+      "date": "2027-02-06",
+      "name_tc": "農曆年初一",
+      "name_en": "Lunar New Year"
+    },
+    {
+      "date": "2027-02-07",
+      "name_tc": "農曆年初二",
+      "name_en": "The second day of Lunar New Year"
+    },
+    {
+      "date": "2027-02-08",
+      "name_tc": "農曆年初三",
+      "name_en": "The third day of Lunar New Year"
+    },
+    {
+      "date": "2027-02-09",
+      "name_tc": "農曆年初四",
+      "name_en": "The fourth day of Lunar New Year"
+    },
+    {
+      "date": "2027-03-26",
+      "name_tc": "耶穌受難節",
+      "name_en": "Good Friday"
+    },
+    {
+      "date": "2027-03-27",
+      "name_tc": "耶穌受難節翌日",
+      "name_en": "The day following Good Friday"
+    },
+    {
+      "date": "2027-03-29",
+      "name_tc": "復活節星期一",
+      "name_en": "Easter Monday"
+    },
+    {
+      "date": "2027-04-05",
+      "name_tc": "清明節",
+      "name_en": "Ching Ming Festival"
+    },
+    {
+      "date": "2027-05-01",
+      "name_tc": "勞動節",
+      "name_en": "Labour Day"
+    },
+    {
+      "date": "2027-05-13",
+      "name_tc": "佛誕",
+      "name_en": "Birthday of the Buddha"
+    },
+    {
+      "date": "2027-06-09",
+      "name_tc": "端午節",
+      "name_en": "Tuen Ng Festival"
+    },
+    {
+      "date": "2027-07-01",
+      "name_tc": "香港特別行政區成立紀念日",
+      "name_en": "HKSAR Establishment Day"
+    },
+    {
+      "date": "2027-09-16",
+      "name_tc": "中秋節翌日",
+      "name_en": "The day following Mid-Autumn Festival"
+    },
+    {
+      "date": "2027-10-01",
+      "name_tc": "國慶日",
+      "name_en": "National Day"
+    },
+    {
+      "date": "2027-10-08",
+      "name_tc": "重陽節",
+      "name_en": "Chung Yeung Festival"
+    },
+    {
+      "date": "2027-12-25",
+      "name_tc": "聖誕節",
+      "name_en": "Christmas Day"
+    },
+    {
+      "date": "2027-12-27",
+      "name_tc": "聖誕節後第一個周日",
+      "name_en": "The first weekday after Christmas Day"
+    }
+]

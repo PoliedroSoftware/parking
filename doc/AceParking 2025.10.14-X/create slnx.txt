@@ -1,0 +1,16 @@
+dotnet new sln --format slnx
+
+dotnet new classlib -o src/ACE.PMS.Domain
+dotnet sln add src/ACE.PMS.Domain
+
+dotnet new classlib -o src/ACE.PMS.Infrastructure
+dotnet sln add src/ACE.PMS.Infrastructure
+
+dotnet new webapi -o src/ACE.PMS.WebApi
+dotnet sln add src/ACE.PMS.WebApi
+
+-au None 
+
+dotnet new classlib -o tests/YourName.Domain.UnitTests
+
+dotnet sln add tests/YourName.Domain.UnitTests

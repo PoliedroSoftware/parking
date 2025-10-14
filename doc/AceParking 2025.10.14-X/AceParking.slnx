@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ACE.PMS.Domain/ACE.PMS.Domain.csproj" />
+    <Project Path="src/ACE.PMS.Infrastructure/ACE.PMS.Infrastructure.csproj" />
+    <Project Path="src/ACE.PMS.WebApi/ACE.PMS.WebApi.csproj" />
+  </Folder>
+</Solution>

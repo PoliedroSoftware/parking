@@ -12,13 +12,10 @@ public class ZoneConfiguration : IEntityTypeConfiguration<Zone>
 {
     public void Configure(EntityTypeBuilder<Zone> builder)
     {
-        builder.HasKey(x => x.Id);
-
         builder.ComplexProperty(x => x.Name);
-      
-
         builder.Property(e => e.HolidaySets).HasMaxLength(64).IsRequired().HasDefaultValue("1,0,0,0,0,0,1,1");
         builder.Ignore(x => x.Holidays);
+        builder.Ignore(x => x.Identifier);
         builder.Property(e => e.Description).HasMaxLength(512);
 
         builder.Property(e => e.HourlySets).HasMaxLength(int.MaxValue).HasJsonConversion();

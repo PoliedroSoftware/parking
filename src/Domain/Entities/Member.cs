@@ -19,8 +19,8 @@ public class Member : BaseAuditableEntity, IMayHaveTenant
     public virtual ICollection<Vehicle>?  Vehicles { get; set; }
 
     //所屬月租車位組
-   
-    public virtual ICollection<SpaceGroup>? SpaceGroups { get; set; }
+    public int? SpaceGroupId { get; set; }
+    public virtual SpaceGroup? SpaceGroup { get; set; }
 
  
 

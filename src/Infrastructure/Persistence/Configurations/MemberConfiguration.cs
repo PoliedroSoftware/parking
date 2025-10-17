@@ -31,7 +31,7 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
 
         builder.HasIndex(e => e.LicensePlate).IsUnique();
         builder.HasIndex(e => e.CardId).IsUnique();
-
+        builder.HasOne(x=>x.SpaceGroup).WithMany(x=>x.Members).HasForeignKey(x=>x.SpaceGroupId).OnDelete(Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict);
         builder.Ignore(e => e.DomainEvents);
         builder.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict);
 

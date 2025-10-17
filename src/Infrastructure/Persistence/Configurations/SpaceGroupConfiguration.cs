@@ -21,6 +21,6 @@ public class SpaceGroupConfiguration : IEntityTypeConfiguration<SpaceGroup>
         builder.HasIndex(e => new { e.Name }).IsUnique(); 
 
         builder.HasOne(e => e.Zone).WithMany(x=>x.SpaceGroups).HasForeignKey(x=>x.ZoneId);
-        builder.HasOne(x => x.Member).WithMany(x => x.SpaceGroups).HasForeignKey(x => x.MemberId);
+    
     }
 }

@@ -9,14 +9,12 @@ namespace CleanArchitecture.Blazor.Domain.Entities;
 
 public class SpaceGroup : BaseAuditableEntity
 {
-    public int? MemberId { get; set; } // Currently assigned member Id
-    public Member? Member { get; set; } // Currently assigned member
     public string Name { get; set; } // Monthly Group Name    
     public int Capacity { get; set; } = 1; // Number of currently assigned members    
     public int? ZoneId { get; set; } // 所屬停車場區域 Zone (如: Main Zone, Car Park 1/F, Loading Bay Area ...)
     public Zone? Zone { get; set; }
     public string? Description { get; set; } // Description    
-
+    public virtual ICollection<Member>? Members { get; set; } // Members assigned to this Space Group
     public SpaceGroup(string name, int capacity)
     {
         Name = name;

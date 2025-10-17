@@ -1,0 +1,83 @@
+﻿@page "/pages/holidays/view/{id:int}"
+@using CleanArchitecture.Blazor.Application.Features.Holidays.Commands.Delete
+@using CleanArchitecture.Blazor.Application.Features.Holidays.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Holidays.Queries.GetById
+@inherits MudComponentBase
+@inject IStringLocalizer<Holidays> L
+@attribute [Authorize(Policy = Permissions.Holidays.View)]
+<PageTitle>@Title</PageTitle>
+<Breadcrumbs  OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
+@if (_model != null)
+{
+    <MudCard Class="pa-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                 <MudText Typo="Typo.h6">@Title</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudGrid Spacing="3" Class="readonly-grid">
+                <MudItem xs="12" > 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Date)]" Value="@_model.Date?.ToString("d")"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" > 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Name_En)]" Value="_model.Name_En"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Name_Tc)]" Value="_model.Name_Tc"></ReadOnlyField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions></MudCardActions>
+    </MudCard>
+ }
+</MudContainer>
+ 
+
+@code {
+    public string? Title { get; private set; }
+    [Parameter]
+    public int Id { get; set; }
+    private List<BreadcrumbItem>? _breadcrumbItems; 
+    private HolidayDto? _model;
+    protected override async Task OnInitializedAsync()
+    {
+        Title = L["Holiday"];
+        _breadcrumbItems = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem(L["Home"], href: "/"),
+            new BreadcrumbItem(L["Holidays"], href: "/pages/holidays")
+        };
+        var result = await Mediator.Send(new GetHolidayByIdQuery() { Id = Id });
+        result.Map(data =>
+        {
+            _model = data;
+            return data;
+        }).Match(data =>
+        {
+            _breadcrumbItems.Add(new BreadcrumbItem(data.Id.ToString(), null, disabled: true));
+        }, errors =>
+        {
+            Snackbar.Add(errors, MudBlazor.Severity.Error);
+        });
+
+    }
+    void GoEdit()
+    {
+        Navigation.NavigateTo($"/pages/Holidays/edit/{Id}");
+    }
+    async Task Delete()
+    {
+        var contentText = string.Format(AppStrings.DeleteConfirmation, _model.Id);
+        var command = new DeleteHolidayCommand(new int[] { _model.Id });
+        await DialogServiceHelper.ShowDeleteConfirmationDialogAsync(command, AppStrings.DeleteConfirmationTitle, contentText, async () =>
+        {
+            await InvokeAsync(() =>
+            {
+                Navigation.NavigateTo($"/pages/Holidays");
+            });
+        });
+    }
+}

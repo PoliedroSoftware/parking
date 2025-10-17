@@ -246,7 +246,10 @@
         };
         return DialogServiceHelper.ShowFormDialogAsync<CreatePicklistDialog, AddEditPicklistSetCommand>(
              L["Create a picklist"],
-            command,
+			new DialogParameters<CreatePicklistDialog>()
+			{
+				{ x=>x._model, command }
+			},
             async () =>
             {
                 await _table.ReloadServerData();

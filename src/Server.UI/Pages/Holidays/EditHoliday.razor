@@ -1,0 +1,101 @@
+﻿@page "/pages/holidays/edit/{id:int}"
+@using CleanArchitecture.Blazor.Application.Features.Holidays.Commands.Update
+@using CleanArchitecture.Blazor.Application.Features.Holidays.Queries.GetById
+@using CleanArchitecture.Blazor.Server.UI.Components.Sessions
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Holidays> L
+@attribute [Authorize(Policy = Permissions.Holidays.Edit)]
+
+<PageTitle>@Title</PageTitle>
+<Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
+@if (_model != null)
+{
+    <MudCard Class="pa-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                 <MudText Typo="Typo.h6">@Title</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+        <ActiveUserSession PageComponent="@($"{nameof(EditHoliday)}/{ _model.Id }")" />
+        <MudForm Model="@_model" @ref="@_holidayForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" > 
+                        <MudDatePicker Label="@L[_model.GetMemberDescription(x=>x.Date)]" @bind-Date="_model.Date" For="@(() => _model.Date)" Required="false" RequiredError="@L["date is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" > 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name_En)]" @bind-Value="_model.Name_En" For="@(() => _model.Name_En)" Required="false" RequiredError="@L["name _ en is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name_Tc)]" @bind-Value="_model.Name_Tc" For="@(() => _model.Name_Tc)" Required="false" RequiredError="@L["name _ tc is required!"]"></MudTextField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="d-flex justify-end gap-2">
+                    <MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+        </MudCardActions>
+        </MudCard>
+    }
+</MudContainer>
+ 
+
+@code {
+    public string? Title { get; private set; }
+    [Parameter]
+    public int Id { get; set; }
+    MudForm _holidayForm = new();
+    private bool _saving = false;
+    private List<BreadcrumbItem>? _breadcrumbItems;
+    private UpdateHolidayCommand? _model;
+    protected override async Task OnInitializedAsync()
+    {
+        Title = L["Edit Holiday"];
+        _breadcrumbItems = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem(L["Home"], href: "/"),
+            new BreadcrumbItem(L["Holidays"], href: "/pages/holidays")
+        };
+        var result = await Mediator.Send(new GetHolidayByIdQuery() { Id = Id });
+        result.Map(data =>
+        {
+            _model = Mapper.Map<UpdateHolidayCommand>(data);
+            return data;
+        }).Match(data =>
+        {
+            _breadcrumbItems.Add(new BreadcrumbItem(data.Date?.ToString(), href: $"/pages/holidays/edit/{Id}"));
+        }, errors =>
+        {
+            Snackbar.Add($"{errors}", Severity.Error);
+        });
+
+    }
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _holidayForm.Validate().ConfigureAwait(false);
+            if (!_holidayForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(
+                data=>
+                {
+                    Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                },
+                errors=>
+                {
+                    Snackbar.Add(errors, MudBlazor.Severity.Error);
+                });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -24,7 +24,7 @@ public class CarparkDto
     public int Id { get; set;  }
     // Car Park Name 停車場名稱
     [Description("Name")]
-    public MultiCodeName Name { get; set; }
+    public MultiCodeName Name { get; set; } = new MultiCodeName("", "", "");
 
     // Car Park Address 停車場地址
     [Description("Address")]
@@ -64,7 +64,8 @@ public class CarparkDto
     {
         public Mapping()
         {
-            CreateMap<Carpark, CarparkDto>(MemberList.None);
+            CreateMap<Carpark, CarparkDto>(MemberList.None)
+                .ForMember(x=>x.Zones,y=>y.Ignore());
             CreateMap<CarparkDto, Carpark>(MemberList.None)
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())

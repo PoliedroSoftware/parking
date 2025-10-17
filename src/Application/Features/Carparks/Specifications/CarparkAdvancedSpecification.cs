@@ -28,7 +28,7 @@ public class CarparkAdvancedSpecification : Specification<Carpark>
         var todayrange = today.GetDateRange(CarparkListView.TODAY.ToString(), filter.CurrentUser.LocalTimeOffset);
         var last30daysrange = today.GetDateRange(CarparkListView.LAST_30_DAYS.ToString(),filter.CurrentUser.LocalTimeOffset);
 
-        Query.Where(q => q.Name != null)
+        Query.Where(q => q.Name.Code != null)
              .Where(filter.Keyword,!string.IsNullOrEmpty(filter.Keyword))
              .Where(q => q.CreatedById == filter.CurrentUser.UserId, filter.ListView == CarparkListView.My && filter.CurrentUser is not null)
              .Where(x => x.CreatedAt >= todayrange.Start && x.CreatedAt < todayrange.End.AddDays(1), filter.ListView == CarparkListView.TODAY)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Charges.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using CleanArchitecture.Blazor.Domain.Enums;
@@ -54,4 +55,20 @@ public class VehicleDto
 
     //[NotMapped] 
     public int Available => (Capacity - Occupied) < 0 ? 0 : (Capacity - Occupied); //可用泊車位數量
+
+
+    private class Mapping : Profile
+    {
+        public Mapping()
+        {
+            CreateMap<Vehicle, VehicleDto>(MemberList.None);
+            
+            CreateMap<VehicleDto, Vehicle>(MemberList.None)
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
+            .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.LastModifiedById, opt => opt.Ignore())
+            .ForMember(dest => dest.DomainEvents, opt => opt.Ignore());
+        }
+    }
 }

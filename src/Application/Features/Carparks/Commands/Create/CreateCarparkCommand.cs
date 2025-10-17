@@ -13,6 +13,7 @@
 
 using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
 using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 using CleanArchitecture.Blazor.Domain.Common;
 
 namespace CleanArchitecture.Blazor.Application.Features.Carparks.Commands.Create;
@@ -52,9 +53,10 @@ public class CreateCarparkCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Tenant id")]
     public string? TenantId {get;set;} 
     [Description("Tenant")]
-    public TenantDto? Tenant {get;set;} 
-
-      public string CacheKey => CarparkCacheKey.GetAllCacheKey;
+    public TenantDto? Tenant {get;set;}
+    [Description("Zones")]
+    public List<ZoneDto>? Zones { get; set; }
+    public string CacheKey => CarparkCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => CarparkCacheKey.Tags;
       private class Mapping : Profile
     {

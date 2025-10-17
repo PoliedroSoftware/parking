@@ -2,6 +2,7 @@
 @using CleanArchitecture.Blazor.Application.Features.Charges.Commands.Update
 @using CleanArchitecture.Blazor.Application.Features.Charges.Queries.GetById
 @using CleanArchitecture.Blazor.Server.UI.Components.Sessions
+@using CleanArchitecture.Blazor.Server.UI.Pages.Charges.Components
 
 @inherits MudComponentBase
 @inject IValidationService Validator
@@ -14,35 +15,43 @@
 @if (_model != null)
 {
     <MudCard Class="pa-2">
-        <MudCardHeader>
-            <CardHeaderContent>
-                 <MudText Typo="Typo.h6">@Title</MudText>
-            </CardHeaderContent>
-        </MudCardHeader>
-        <MudCardContent>
-        <ActiveUserSession PageComponent="@($"{nameof(EditCharge)}/{ _model.Id }")" />
-        <MudForm Model="@_model" @ref="@_chargeForm" Validation="@(Validator.ValidateValue(_model))">
-            <MudGrid Spacing="2">
-                <MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.EffectiveDate)]" @bind-Date="_model.EffectiveDate" For="@(() => _model.EffectiveDate)" Required="false" RequiredError="@L["effective date is required!"]"></MudDatePicker>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.TenantId)]" @bind-Value="_model.TenantId" For="@(() => _model.TenantId)" Required="false" RequiredError="@L["tenant id is required!"]"></MudTextField>
-                </MudItem> 
+		<MudCardHeader>
+			<CardHeaderContent>
+				<MudText Typo="Typo.h6">@Title</MudText>
+			</CardHeaderContent>
+		</MudCardHeader>
+		<MudCardContent>
+			<MudForm Model="@_model" @ref="@_chargeForm" Validation="@(Validator.ValidateValue(_model))">
+				<MudGrid Spacing="2">
+					<MudItem xs="12" md="6">
+						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x => x.EffectiveDate)]" @bind-Date="_model.EffectiveDate" For="@(() => _model.EffectiveDate)" Required="false" RequiredError="@L["effective date is required!"]"></MudDatePicker>
+					</MudItem>
+					<MudItem xs="12" md="12">
+						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Description)]" For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+					</MudItem>
+					<MudItem xs="12" md="12">
+						<MudExpansionPanels MultiExpansion="true" Elevation="0">
+						<MudExpansionPanel Text="@L[_model.GetMemberDescription(x => x.BeforeContent)]">
+							<RateContentEditor Content="_model.BeforeContent"   />
+						</MudExpansionPanel>
+							<MudExpansionPanel Text="@L[_model.GetMemberDescription(x => x.AfterContent)]">
+								<RateContentEditor Content="_model.AfterContent" />
+							</MudExpansionPanel>
+						</MudExpansionPanels>
 
-            </MudGrid>
-        </MudForm>
-        </MudCardContent>
-        <MudCardActions Class="d-flex justify-end gap-2">
-                    <MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
-        </MudCardActions>
-        </MudCard>
+
+					</MudItem>
+
+				</MudGrid>
+			</MudForm>
+		</MudCardContent>
+		<MudCardActions Class="d-flex justify-end gap-2">
+			<MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+		</MudCardActions>
+	</MudCard>
     }
 </MudContainer>
  

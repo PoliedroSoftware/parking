@@ -1,5 +1,6 @@
 ﻿@page "/pages/charges/create"
 @using CleanArchitecture.Blazor.Application.Features.Charges.Commands.Create
+@using CleanArchitecture.Blazor.Server.UI.Pages.Charges.Components
 
 @inherits MudComponentBase
 @inject IValidationService Validator
@@ -9,78 +10,151 @@
 <PageTitle>@Title</PageTitle>
 <Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
 <MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
-    <MudCard Class="pa-2">
-        <MudCardHeader>
-            <CardHeaderContent>
-                 <MudText Typo="Typo.h6">@Title</MudText>
-            </CardHeaderContent>
-        </MudCardHeader>
-        <MudCardContent>
-        <MudForm Model="@_model" @ref="@_chargeForm" Validation="@(Validator.ValidateValue(_model))">
-            <MudGrid Spacing="2">
-                <MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.EffectiveDate)]" @bind-Date="_model.EffectiveDate" For="@(() => _model.EffectiveDate)" Required="false" RequiredError="@L["effective date is required!"]"></MudDatePicker>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.TenantId)]" @bind-Value="_model.TenantId" For="@(() => _model.TenantId)" Required="false" RequiredError="@L["tenant id is required!"]"></MudTextField>
-                </MudItem> 
+	<MudCard Class="pa-2">
+		<MudCardHeader>
+			<CardHeaderContent>
+				<MudText Typo="Typo.h6">@Title</MudText>
+			</CardHeaderContent>
+		</MudCardHeader>
+		<MudCardContent>
+			<MudForm Model="@_model" @ref="@_chargeForm" Validation="@(Validator.ValidateValue(_model))">
+				<MudGrid Spacing="2">
+					<MudItem xs="12" md="6">
+						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x => x.EffectiveDate)]" @bind-Date="_model.EffectiveDate" For="@(() => _model.EffectiveDate)" Required="false" RequiredError="@L["effective date is required!"]"></MudDatePicker>
+					</MudItem>
+					<MudItem xs="12" md="12">
+						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Description)]" For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+					</MudItem>
+					<MudItem xs="12" md="12">
+						<MudExpansionPanels MultiExpansion="true" Elevation="0">
+						<MudExpansionPanel Text="@L[_model.GetMemberDescription(x => x.BeforeContent)]">
+							<RateContentEditor Content="_model.BeforeContent"   />
+						</MudExpansionPanel>
+							<MudExpansionPanel Text="@L[_model.GetMemberDescription(x => x.AfterContent)]">
+								<RateContentEditor Content="_model.AfterContent" />
+							</MudExpansionPanel>
+						</MudExpansionPanels>
 
-            </MudGrid>
-        </MudForm>
-        </MudCardContent>
-         <MudCardActions Class="d-flex justify-end gap-2">
-                    <MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
-         </MudCardActions>
-        </MudCard>
+
+					</MudItem>
+
+				</MudGrid>
+			</MudForm>
+		</MudCardContent>
+		<MudCardActions Class="d-flex justify-end gap-2">
+			<MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+		</MudCardActions>
+	</MudCard>
 </MudContainer>
- 
+
 
 @code {
-    public string? Title { get; private set; }
-    MudForm _chargeForm = new();
-    private bool _saving = false;
-    private List<BreadcrumbItem>? _breadcrumbItems;
-    private CreateChargeCommand _model = new();
-    protected override Task OnInitializedAsync()
-    {
-        Title = L["New Charge"];
-        _breadcrumbItems = new List<BreadcrumbItem>
-        {
-            new BreadcrumbItem(L["Home"], href: "/"),
-            new BreadcrumbItem(L["Charges"], href: "/pages/charges"),
-            new BreadcrumbItem(L["Create Charge"], href:null, disabled:true)
-        };
-        return Task.CompletedTask;
-    }
-    async Task OnSubmit()
-    {
-        try
-        {
-            _saving = true;
-            await _chargeForm.Validate().ConfigureAwait(false);
-            if (!_chargeForm.IsValid)
-                return;
-            var result = await Mediator.Send(_model);
-            result.Match(
-                data=>
-                {
-                    Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-                    Navigation.NavigateTo($"/pages/Charges");
-                },
-                errors=>
-                {
-                    Snackbar.Add(errors, MudBlazor.Severity.Error);
-                });
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
+	public string? Title { get; private set; }
+	MudForm _chargeForm = new();
+	private bool _saving = false;
+	private List<BreadcrumbItem>? _breadcrumbItems;
+	private CreateChargeCommand _model = new()
+	{
+		AfterContent = new RateContent()
+		{
+			NormalCharges = new List<ChargeItem>() { new ChargeItem() },
+			SpecialPeriod = new List<ChargePeriod>() { new ChargePeriod() },
+			SpecialCharges = new List<ChargeItem>() { new ChargeItem() }
+		},
+		BeforeContent = new RateContent()
+		{
+			NormalCharges = new List<ChargeItem>() { new ChargeItem() },
+			SpecialPeriod = new List<ChargePeriod>() { new ChargePeriod() },
+			SpecialCharges = new List<ChargeItem>() { new ChargeItem() }
+		}
+	};
+	protected override Task OnInitializedAsync()
+	{
+		Title = L["New Charge"];
+		_breadcrumbItems = new List<BreadcrumbItem>
+		{
+			new BreadcrumbItem(L["Home"], href: "/"),
+			new BreadcrumbItem(L["Charges"], href: "/pages/charges"),
+			new BreadcrumbItem(L["Create Charge"], href:null, disabled:true)
+		};
+		return Task.CompletedTask;
+	}
+	void AddNormalChargeItem()
+	{
+		if (_model.BeforeContent.NormalCharges == null)
+			_model.BeforeContent.NormalCharges = new List<ChargeItem>();
+		_model.BeforeContent.NormalCharges.Add(new ChargeItem());
+	}
+	void DeleteNormalChargeItem(ChargeItem item)
+	{
+		_model.BeforeContent.NormalCharges.Remove(item);
+	}
+	void AddSpecialChargeItem()
+	{
+		if (_model.BeforeContent.SpecialCharges == null)
+			_model.BeforeContent.SpecialCharges = new List<ChargeItem>();
+		_model.BeforeContent.SpecialCharges.Add(new ChargeItem());
+	}
+	void DeleteSpecialChargeItem(ChargeItem item)
+	{
+		_model.BeforeContent.SpecialCharges.Remove(item);
+	}
+	void AddSpecialPeriodItem()
+	{
+		if (_model.BeforeContent.SpecialPeriod == null)
+			_model.BeforeContent.SpecialPeriod = new List<ChargePeriod>();
+		_model.BeforeContent.SpecialPeriod.Add(new ChargePeriod());
+	}
+	void DeleteSpecialPeriodItem(ChargePeriod item)
+	{
+		_model.BeforeContent.SpecialPeriod.Remove(item);
+	}
+	void AddDayParkPeriodItem()
+	{
+		if (_model.BeforeContent.DayPark.Period == null)
+			_model.BeforeContent.DayPark.Period = new List<ChargePeriod>();
+		_model.BeforeContent.DayPark.Period.Add(new ChargePeriod());
+	}
+	void DeleteDayParkPeriodItem(ChargePeriod item)
+	{
+		_model.BeforeContent.DayPark.Period.Remove(item);
+	}
+	void AddNightParkPeriodItem()
+	{
+		if (_model.BeforeContent.NightPark.Period == null)
+			_model.BeforeContent.NightPark.Period = new List<ChargePeriod>();
+		_model.BeforeContent.NightPark.Period.Add(new ChargePeriod());
+	}
+	void DeleteNightParkPeriodItem(ChargePeriod item)
+	{
+		_model.BeforeContent.NightPark.Period.Remove(item);
+	}
+	async Task OnSubmit()
+	{
+		try
+		{
+			_saving = true;
+			await _chargeForm.Validate().ConfigureAwait(false);
+			if (!_chargeForm.IsValid)
+				return;
+			var result = await Mediator.Send(_model);
+			result.Match(
+				data =>
+				{
+					Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+					Navigation.NavigateTo($"/pages/Charges");
+				},
+				errors =>
+				{
+					Snackbar.Add(errors, MudBlazor.Severity.Error);
+				});
+		}
+		finally
+		{
+			_saving = false;
+		}
+	}
 }

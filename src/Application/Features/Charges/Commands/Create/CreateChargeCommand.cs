@@ -31,9 +31,9 @@ public class CreateChargeCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Tenant")]
     public TenantDto? Tenant {get;set;}
     [Description("Before Content")]
-    public RateContent? BeforeContent { get; set; }
+    public RateContent BeforeContent { get; set; } = new();
     [Description("After Content")]
-    public RateContent? AfterContent { get; set; }
+    public RateContent AfterContent { get; set; } = new();
     public string CacheKey => ChargeCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => ChargeCacheKey.Tags;
       private class Mapping : Profile

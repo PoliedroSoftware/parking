@@ -99,6 +99,12 @@ public class MenuService : IMenuService
                     {
                         new()
                         {
+                            Title = "Charges",
+                            Href = "/pages/Charges",
+                            PageStatus = PageStatus.Completed
+                        },
+                        new()
+                        {
                             Title = "Holiday",
                             Href = "/pages/Holidays",
                             PageStatus = PageStatus.Completed

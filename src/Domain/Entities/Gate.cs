@@ -45,7 +45,7 @@ public class Gate : BaseAuditableEntity
     // 閘機描述 Gate Description
     public string? Description { get; set; }
 
-    public string Identifier => $"{(GateType == GateType.Entry ? "EN" : "EX")}.{LaneNo:00}{(IsUpper ? 2 : 1)}"; //EN01.1, EX01.1, EN02.1, ...
+
 
 
     

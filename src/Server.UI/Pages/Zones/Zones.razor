@@ -1,0 +1,348 @@
+﻿@page "/pages/zones"
+
+@using CleanArchitecture.Blazor.Application.Features.Zones.Caching
+@using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Zones.Specifications
+@using CleanArchitecture.Blazor.Application.Features.Zones.Commands.Delete
+@using CleanArchitecture.Blazor.Application.Features.Zones.Commands.Import
+@using CleanArchitecture.Blazor.Application.Features.Zones.Queries.Export
+@using CleanArchitecture.Blazor.Application.Features.Zones.Queries.Pagination
+@using CleanArchitecture.Blazor.Application.Features.Zones.Commands.AddEdit
+@using CleanArchitecture.Blazor.Server.UI.Pages.Zones.Components
+
+@inject IStringLocalizer<Zones> L
+@inject BlazorDownloadFileService BlazorDownloadFileService
+
+@attribute [Authorize(Policy = Permissions.Zones.View)]
+<PageTitle>@Title</PageTitle>
+
+<MudDataGrid ServerData="@(ServerReload)"
+			 FixedHeader="true"
+			 FixedFooter="false"
+			 Virtualize="false"
+			 @bind-RowsPerPage="_defaultPageSize"
+			 Loading="@_loading"
+			 MultiSelection="true"
+			 T="ZoneDto"
+			 SelectOnRowClick="false"
+			 RowClick="@(s=>OnDataGridRowClick(s.Item))"
+			 @bind-SelectedItems="_selectedZones"
+			 Hover="true" @ref="_zonesGrid">
+	<ToolBarContent>
+		<MudStack Row Spacing="0" Class="flex-grow-1" Justify="Justify.SpaceBetween">
+			<MudStack Row AlignItems="AlignItems.Start">
+				<MudIcon Icon="@Icons.Material.Filled.Window" Size="Size.Large" />
+				<MudStack Spacing="0">
+					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
+					<MudEnumSelect Style="min-width:120px" TEnum="ZoneListView" ValueChanged="OnListViewChanged" Value="_zonesQuery.ListView" Dense="true" Label="@L["List View"]">
+					</MudEnumSelect>
+				</MudStack>
+			</MudStack>
+			<MudStack Spacing="0" AlignItems="AlignItems.End">
+				<MudToolBar Dense WrapContent="true" Class="py-1 px-0">
+					<MudButton Disabled="@_loading"
+							   OnClick="@(() => OnRefresh())"
+							   StartIcon="@Icons.Material.Outlined.Refresh">
+						@AppStrings.Refresh
+					</MudButton>
+					@if (_accessRights.Create)
+					{
+						<MudButton StartIcon="@Icons.Material.Outlined.Add"
+								   OnClick="OnCreate">
+							@AppStrings.New
+						</MudButton>
+					}
+					@if (_accessRights.Delete)
+					{
+						<MudButton Disabled="@(!(_selectedZones.Count > 0))"
+								   StartIcon="@Icons.Material.Outlined.DeleteOutline"
+								   OnClick="OnDeleteSelectedZones">
+							@AppStrings.Delete
+						</MudButton>
+					}
+					<MudMenu TransformOrigin="Origin.BottomRight" AnchorOrigin="Origin.BottomRight" EndIcon="@Icons.Material.Filled.MoreVert" Label="@AppStrings.More">
+						@if (_accessRights.Clone)
+						{
+							<MudMenuItem Disabled="@(_selectedZones.Count != 1)" OnClick="OnCloneZone">@AppStrings.Clone</MudMenuItem>
+						}
+
+						@if (_accessRights.Export)
+						{
+							<MudMenuItem Disabled="@_exporting"
+										 OnClick="OnExport">
+								@AppStrings.Export
+							</MudMenuItem>
+						}
+						@if (_accessRights.Import)
+						{
+							<MudMenuItem>
+								<MudFileUpload T="IBrowserFile" FilesChanged="OnImportData" Accept=".xlsx">
+									<ActivatorContent>
+										<MudButton Class="pa-0 ma-0" Style="font-weight:400;text-transform:none;"
+												   Variant="Variant.Text"
+												   Disabled="@_uploading">
+											@AppStrings.Import
+										</MudButton>
+									</ActivatorContent>
+								</MudFileUpload>
+							</MudMenuItem>
+						}
+					</MudMenu>
+				</MudToolBar>
+				<MudStack Row Spacing="1">
+					@if (_accessRights.Search)
+					{
+						<MudTextField T="string" ValueChanged="@(s => OnSearch(s))" Value="@_zonesQuery.Keyword" Placeholder="@AppStrings.Search" Adornment="Adornment.End"
+									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+						</MudTextField>
+					}
+				</MudStack>
+			</MudStack>
+		</MudStack>
+	</ToolBarContent>
+	<Columns>
+		<SelectColumn ShowInFooter="false"></SelectColumn>
+		<TemplateColumn HeaderStyle="width:60px" Title="@AppStrings.Actions" Sortable="false">
+			<CellTemplate>
+				@if (_accessRights.Edit || _accessRights.Delete)
+				{
+					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Size="Size.Small"
+							 Dense="true"
+							 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+						@if (_accessRights.Edit)
+						{
+							<MudMenuItem OnClick="@(() => OnEditZone(context.Item))">@AppStrings.Edit</MudMenuItem>
+						}
+						@if (_accessRights.Delete)
+						{
+							<MudMenuItem OnClick="@(() => OnDeleteZone(context.Item))">@AppStrings.Delete</MudMenuItem>
+						}
+					</MudMenu>
+				}
+				else
+				{
+					<MudTooltip Text="@AppStrings.NoAllowed" Delay="300">
+						<MudIconButton Variant="Variant.Outlined"
+									   Disabled="true"
+									   Icon="@Icons.Material.Filled.DoNotTouch"
+									   Size="Size.Small"
+									   Color="Color.Surface">
+							@AppStrings.NoAllowed
+						</MudIconButton>
+					</MudTooltip>
+				}
+			</CellTemplate>
+		</TemplateColumn>
+		<PropertyColumn Property="x => x.Name" Title="@L[_zoneDto.GetMemberDescription(x => x.Name)]">
+			<CellTemplate>
+				<div class="d-flex flex-column">
+					<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+				</div>
+			</CellTemplate>
+		</PropertyColumn>
+		<PropertyColumn Property="x => x.IsMain" Title="@L[_zoneDto.GetMemberDescription(x => x.IsMain)]" />
+		<PropertyColumn Property="x => x.CarparkId" Title="@L[_zoneDto.GetMemberDescription(x => x.CarparkId)]" />
+		<PropertyColumn Property="x => x.HolidaySets" Title="@L[_zoneDto.GetMemberDescription(x => x.HolidaySets)]" />
+		<PropertyColumn Property="x => x.IsOpenCashbox" Title="@L[_zoneDto.GetMemberDescription(x => x.IsOpenCashbox)]" />
+		<PropertyColumn Property="x => x.Identifier" Title="@L[_zoneDto.GetMemberDescription(x => x.Identifier)]" />
+
+	</Columns>
+	<NoRecordsContent>
+		<MudText>@AppStrings.NoRecords</MudText>
+	</NoRecordsContent>
+	<LoadingContent>
+		<MudText>@AppStrings.Loading</MudText>
+	</LoadingContent>
+	<PagerContent>
+		<MudDataGridPager PageSizeOptions="@(new int[] { 10, 15, 30, 50, 100, 500, 1000 })" />
+	</PagerContent>
+</MudDataGrid>
+
+
+
+@code {
+	public string? Title { get; private set; }
+	private int _defaultPageSize = 15;
+	private HashSet<ZoneDto> _selectedZones = new HashSet<ZoneDto>();
+	private MudDataGrid<ZoneDto> _zonesGrid = default!;
+	private ZoneDto _zoneDto = new() { Name = new MultiCodeName("", "", "") };
+	private bool _loading;
+	private bool _uploading;
+	private bool _exporting;
+	[CascadingParameter]
+	private Task<AuthenticationState> AuthState { get; set; } = default!;
+	[CascadingParameter]
+	private UserProfile? UserProfile { get; set; }
+
+
+	private ZonesWithPaginationQuery _zonesQuery { get; set; } = new();
+	private ZonesAccessRights _accessRights = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		Title = L[_zoneDto.GetClassDescription()];
+		_accessRights = await PermissionService.GetAccessRightsAsync<ZonesAccessRights>();
+	}
+
+	private async Task<GridData<ZoneDto>> ServerReload(GridState<ZoneDto> state)
+	{
+		try
+		{
+			_loading = true;
+			_zonesQuery.CurrentUser = UserProfile;
+			var sortDefinition = state.SortDefinitions.FirstOrDefault();
+			_zonesQuery.OrderBy = sortDefinition?.SortBy ?? "Id";
+			_zonesQuery.SortDirection = (sortDefinition != null && sortDefinition.Descending)
+											? SortDirection.Descending.ToString()
+											: SortDirection.Ascending.ToString();
+			_zonesQuery.PageNumber = state.Page + 1;
+			_zonesQuery.PageSize = state.PageSize;
+			var result = await Mediator.Send(_zonesQuery).ConfigureAwait(false);
+			return new GridData<ZoneDto>() { TotalItems = result.TotalItems, Items = result.Items };
+		}
+		finally
+		{
+			_loading = false;
+		}
+
+	}
+	private async Task OnSearch(string text)
+	{
+		_selectedZones.Clear();
+		_zonesQuery.Keyword = text;
+		await _zonesGrid.ReloadServerData();
+	}
+	private async Task OnListViewChanged(ZoneListView listview)
+	{
+		_zonesQuery.ListView = listview;
+		await _zonesGrid.ReloadServerData();
+	}
+	private async Task OnRefresh()
+	{
+		ZoneCacheKey.Refresh();
+		_selectedZones.Clear();
+		_zonesQuery.Keyword = string.Empty;
+		await _zonesGrid.ReloadServerData();
+	}
+	private Task ShowEditFormDialog(string title, AddEditZoneCommand command)
+	{
+		return DialogServiceHelper.ShowFormDialogAsync<ZoneFormDialog, AddEditZoneCommand>(
+			title,
+			new DialogParameters<ZoneFormDialog>()
+			{
+				{x => x._model, command }
+			},
+			async () =>
+			{
+				await _zonesGrid.ReloadServerData();
+				_selectedZones.Clear();
+			});
+	}
+	private void OnDataGridRowClick(ZoneDto dto)
+	{
+		Navigation.NavigateTo($"/pages/zones/view/{dto.Id}");
+	}
+	private Task OnCreate()
+	{
+		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", "") };
+		return ShowEditFormDialog(L["New Zone"], command);
+	}
+	private Task OnCloneZone()
+	{
+		var dto = _selectedZones.First();
+		var command = new AddEditZoneCommand()
+		{
+			IsMain = dto.IsMain,
+			Name = new MultiCodeName(dto.Name.Code, dto.Name.En, dto.Name.Tc),
+			CarparkId = dto.CarparkId,
+			HolidaySets = dto.HolidaySets,
+			IsOpenCashbox = dto.IsOpenCashbox,
+			Description = dto.Description,
+			Identifier = dto.Identifier,
+			Holidays = dto.Holidays,
+
+		};
+		return ShowEditFormDialog(L["Clone Zone"], command);
+	}
+	private Task OnEditZone(ZoneDto dto)
+	{
+		//var command = Mapper.Map<AddEditZoneCommand>(dto);
+		//return ShowEditFormDialog(L["Edit Zone"], command);
+		Navigation.NavigateTo($"/pages/zones/edit/{dto.Id}");
+		return Task.CompletedTask;
+	}
+
+	private Task OnDeleteZone(ZoneDto dto)
+	{
+		var contentText = string.Format(AppStrings.DeleteConfirmation, dto.Name);
+		var command = new DeleteZoneCommand(new int[] { dto.Id });
+		return DeleteZonesInternal(command, contentText);
+	}
+
+	private Task OnDeleteSelectedZones()
+	{
+		var contentText = string.Format(AppStrings.DeleteConfirmWithSelected, _selectedZones.Count);
+		var command = new DeleteZoneCommand(_selectedZones.Select(x => x.Id).ToArray());
+		return DeleteZonesInternal(command, contentText);
+	}
+
+	private Task DeleteZonesInternal(DeleteZoneCommand command, string contentText)
+	{
+		return DialogServiceHelper.ShowDeleteConfirmationDialogAsync(
+			command,
+			AppStrings.DeleteConfirmationTitle,
+			contentText,
+			async () =>
+			{
+				await _zonesGrid.ReloadServerData();
+				_selectedZones.Clear();
+			});
+	}
+
+
+	private async Task OnExport()
+	{
+		_exporting = true;
+		var request = new ExportZonesQuery()
+		{
+			Keyword = _zonesQuery.Keyword,
+			CurrentUser = UserProfile,
+			ListView = _zonesQuery.ListView,
+			OrderBy = _zonesGrid.SortDefinitions.Values.FirstOrDefault()?.SortBy ?? "Id",
+			SortDirection = (_zonesGrid.SortDefinitions.Values.FirstOrDefault()?.Descending ?? true) ? SortDirection.Descending.ToString() : SortDirection.Ascending.ToString()
+		};
+		var result = await Mediator.Send(request);
+		await result.MatchAsync(
+			async data =>
+			{
+				await BlazorDownloadFileService.DownloadFileAsync($"{L["Zones"]}.xlsx", result.Data, contentType: "application/octet-stream");
+				Snackbar.Add($"{AppStrings.ExportSuccess}", MudBlazor.Severity.Info);
+			},
+			errors =>
+			{
+				Snackbar.Add($"{errors}", MudBlazor.Severity.Error);
+				return Task.CompletedTask;
+			});
+		_exporting = false;
+	}
+	private async Task OnImportData(IBrowserFile file)
+	{
+		_uploading = true;
+		var stream = new MemoryStream();
+		await file.OpenReadStream().CopyToAsync(stream);
+		var command = new ImportZonesCommand(file.Name, stream.ToArray());
+		var result = await Mediator.Send(command);
+		await result.MatchAsync(
+			async data =>
+			{
+				await _zonesGrid.ReloadServerData();
+				Snackbar.Add($"{AppStrings.ImportSuccess}", MudBlazor.Severity.Info);
+			}, errors =>
+			{
+				Snackbar.Add($"{errors}", MudBlazor.Severity.Error);
+				return Task.CompletedTask;
+			});
+		_uploading = false;
+	}
+
+}

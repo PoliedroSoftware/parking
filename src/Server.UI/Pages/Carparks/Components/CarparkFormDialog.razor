@@ -1,0 +1,108 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Carparks.Commands.AddEdit
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Carparks> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@_model" @ref="@_carparkForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid>
+                <MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.AppKey)]" @bind-Value="_model.AppKey" For="@(() => _model.AppKey)" Required="false" RequiredError="@L["app key is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.MachineCode)]" @bind-Value="_model.MachineCode" For="@(() => _model.MachineCode)" Required="false" RequiredError="@L["machine code is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.RegistrationCode)]" @bind-Value="_model.RegistrationCode" For="@(() => _model.RegistrationCode)" Required="false" RequiredError="@L["registration code is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.ContactPerson)]" @bind-Value="_model.ContactPerson" For="@(() => _model.ContactPerson)" Required="false" RequiredError="@L["contact person is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.PhoneNumber)]" @bind-Value="_model.PhoneNumber" For="@(() => _model.PhoneNumber)" Required="false" RequiredError="@L["phone number is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Fax)]" @bind-Value="_model.Fax" For="@(() => _model.Fax)" Required="false" RequiredError="@L["fax is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Email)]" @bind-Value="_model.Email" For="@(() => _model.Email)" Required="false" RequiredError="@L["email is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Identified)]" @bind-Value="_model.Identified" For="@(() => _model.Identified)" Required="false" RequiredError="@L["identified is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.TenantId)]" @bind-Value="_model.TenantId" For="@(() => _model.TenantId)" Required="false" RequiredError="@L["tenant id is required!"]"></MudTextField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    MudForm _carparkForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public AddEditCarparkCommand _model { get; set; } = null!;
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _carparkForm.Validate().ConfigureAwait(false);
+            if (!_carparkForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(data =>
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+            });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingnew = true;
+            await _carparkForm.Validate().ConfigureAwait(false);
+            if (!_carparkForm.IsValid)
+               return;
+            var result = await Mediator.Send(_model);
+            await result.MatchAsync(async data =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditCarparkCommand() { };
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            _savingnew = false;
+        }
+    }
+    void Cancel() => MudDialog.Cancel();
+}

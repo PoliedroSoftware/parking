@@ -14,8 +14,8 @@ public class Charge : BaseAuditableEntity, IMayHaveTenant
 {
     public string Name { get; set; } =string.Empty; //收費方案名稱 Name of Rate Plan
     public DateTime EffectiveDate { get; set; } = new DateTime(2025, 8, 1); //生效日期 Effective Date
-    public string? BeforeContent { get; set; } 
-    public string? AfterContent { get; set; } 
+    public RateContent? BeforeContent { get; set; } 
+    public RateContent? AfterContent { get; set; } 
     public string? Description { get; set; }
     public string? TenantId { get; set; }
     public Tenant? Tenant { get; set; }

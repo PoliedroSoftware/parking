@@ -24,3 +24,4 @@ global using MediatR.Pipeline;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Localization;
 global using Microsoft.Extensions.Logging;
+global using CleanArchitecture.Blazor.Domain.Enums;

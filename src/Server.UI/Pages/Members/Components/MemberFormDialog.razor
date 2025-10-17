@@ -1,0 +1,124 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Members.Commands.AddEdit
+
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Members> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@_model" @ref="@_memberForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid>
+                <MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.LicensePlate)]" @bind-Value="_model.LicensePlate" For="@(() => _model.LicensePlate)" Required="false" RequiredError="@L["license plate is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.CardId)]" @bind-Value="_model.CardId" For="@(() => _model.CardId)" Required="false" RequiredError="@L["card id is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.StartDate)]" @bind-Date="_model.StartDate" For="@(() => _model.StartDate)" Required="false" RequiredError="@L["start date is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="false" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.SpaceGroupId)]" @bind-Value="_model.SpaceGroupId" For="@(() => _model.SpaceGroupId)" Min="0" Required="false" RequiredError="@L["space group id is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudEnumSelect TEnum="Nullable<SpaceTypes>" Label="@L[_model.GetMemberDescription(x=>x.SpaceType)]" @bind-Value="_model.SpaceType" For="@(() => _model.SpaceType)" Required="false" RequiredError="@L["space type is required!"]"></MudEnumSelect>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.SpaceNo)]" @bind-Value="_model.SpaceNo" For="@(() => _model.SpaceNo)" Required="false" RequiredError="@L["space no is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsActive)]" @bind-Value="_model.IsActive" For="@(() => _model.IsActive)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.PhoneNumber)]" @bind-Value="_model.PhoneNumber" For="@(() => _model.PhoneNumber)" Required="false" RequiredError="@L["phone number is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.MobileNumber)]" @bind-Value="_model.MobileNumber" For="@(() => _model.MobileNumber)" Required="false" RequiredError="@L["mobile number is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Email)]" @bind-Value="_model.Email" For="@(() => _model.Email)" Required="false" RequiredError="@L["email is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Address)]" @bind-Value="_model.Address" For="@(() => _model.Address)" Required="false" RequiredError="@L["address is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Notes)]" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Required="false" RequiredError="@L["notes is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.TenantId)]" @bind-Value="_model.TenantId" For="@(() => _model.TenantId)" Required="false" RequiredError="@L["tenant id is required!"]"></MudTextField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    MudForm _memberForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public AddEditMemberCommand _model { get; set; } = null!;
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _memberForm.Validate().ConfigureAwait(false);
+            if (!_memberForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(data =>
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+            });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingnew = true;
+            await _memberForm.Validate().ConfigureAwait(false);
+            if (!_memberForm.IsValid)
+               return;
+            var result = await Mediator.Send(_model);
+            await result.MatchAsync(async data =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditMemberCommand() { };
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            _savingnew = false;
+        }
+    }
+    void Cancel() => MudDialog.Cancel();
+}

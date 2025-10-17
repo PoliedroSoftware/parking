@@ -1,0 +1,96 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Zones.Commands.AddEdit
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Zones> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@_model" @ref="@_zoneForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid>
+                <MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsMain)]" @bind-Value="_model.IsMain" For="@(() => _model.IsMain)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.CarparkId)]" @bind-Value="_model.CarparkId" For="@(() => _model.CarparkId)" Min="0" Required="false" RequiredError="@L["carpark id is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.HolidaySets)]" @bind-Value="_model.HolidaySets" For="@(() => _model.HolidaySets)" Required="false" RequiredError="@L["holiday sets is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsOpenCashbox)]" @bind-Value="_model.IsOpenCashbox" For="@(() => _model.IsOpenCashbox)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Identifier)]" @bind-Value="_model.Identifier" For="@(() => _model.Identifier)" Required="false" RequiredError="@L["identifier is required!"]"></MudTextField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    MudForm _zoneForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public AddEditZoneCommand _model { get; set; } = null!;
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _zoneForm.Validate().ConfigureAwait(false);
+            if (!_zoneForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(data =>
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+            });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingnew = true;
+            await _zoneForm.Validate().ConfigureAwait(false);
+            if (!_zoneForm.IsValid)
+               return;
+            var result = await Mediator.Send(_model);
+            await result.MatchAsync(async data =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditZoneCommand() { Name=new Domain.Common.MultiCodeName("","","") };
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            _savingnew = false;
+        }
+    }
+    void Cancel() => MudDialog.Cancel();
+}

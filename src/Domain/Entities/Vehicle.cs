@@ -50,8 +50,7 @@ public class Vehicle : BaseAuditableEntity
     //[NotMapped] 
     public int Occupied { get; set; } //已使用泊車位數量
 
-    //[NotMapped] 
-    public int Available => (Capacity - Occupied) < 0 ? 0 : (Capacity - Occupied); //可用泊車位數量
+  
 
   
 }

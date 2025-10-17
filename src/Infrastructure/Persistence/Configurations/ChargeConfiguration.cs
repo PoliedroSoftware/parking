@@ -16,8 +16,8 @@ public class ChargeConfiguration : IEntityTypeConfiguration<Charge>
 
         builder.Property(t => t.Name).HasMaxLength(64).IsRequired();
         builder.Property(t => t.EffectiveDate).IsRequired();
-        builder.Property(t => t.BeforeContent).HasMaxLength(int.MaxValue).IsRequired().HasJsonConversion();
-        builder.Property(t => t.AfterContent).HasMaxLength(int.MaxValue).IsRequired().HasJsonConversion();
+        builder.Property(t => t.BeforeContent).HasMaxLength(int.MaxValue).HasJsonConversion();
+        builder.Property(t => t.AfterContent).HasMaxLength(int.MaxValue).HasJsonConversion();
         builder.Property(t => t.Description).HasMaxLength(512);
 
         builder.Ignore(e => e.DomainEvents);

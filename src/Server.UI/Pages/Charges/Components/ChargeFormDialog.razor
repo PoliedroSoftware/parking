@@ -1,0 +1,90 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Charges.Commands.AddEdit
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Charges> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@_model" @ref="@_chargeForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid>
+                <MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.EffectiveDate)]" @bind-Date="_model.EffectiveDate" For="@(() => _model.EffectiveDate)" Required="false" RequiredError="@L["effective date is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.TenantId)]" @bind-Value="_model.TenantId" For="@(() => _model.TenantId)" Required="false" RequiredError="@L["tenant id is required!"]"></MudTextField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    MudForm _chargeForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public AddEditChargeCommand _model { get; set; } = null!;
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _chargeForm.Validate().ConfigureAwait(false);
+            if (!_chargeForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(data =>
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+            });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingnew = true;
+            await _chargeForm.Validate().ConfigureAwait(false);
+            if (!_chargeForm.IsValid)
+               return;
+            var result = await Mediator.Send(_model);
+            await result.MatchAsync(async data =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditChargeCommand() { };
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            _savingnew = false;
+        }
+    }
+    void Cancel() => MudDialog.Cancel();
+}

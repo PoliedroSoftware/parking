@@ -50,8 +50,7 @@ public class Zone : BaseAuditableEntity
     public MonthlySets MonthlySets { get; set; } = new();
 
 
-    public string Identifier => $"Z{Id}";
-    public bool[] Holidays => [.. HolidaySets.Split(',').Select(x => x == "1")];
+    
 }
 
 

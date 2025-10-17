@@ -32,10 +32,12 @@ public class Zone : BaseAuditableEntity
     public bool IsOpenCashbox { get; set; } = true;
 
     // 區域内可用車輛 Vehicles Allowed in the Zone
-    public virtual List<Vehicle> Vehicles { get; set; } = [];
+    public virtual ICollection<Vehicle> Vehicles { get; set; } = [];
+
+    public virtual ICollection<SpaceGroup> SpaceGroups { get; set; } = [];
 
     // 車場出入口閘機集合，控制車輛進出。
-    public virtual List<Gate> Gates { get; set; } = [];
+    public virtual ICollection<Gate> Gates { get; set; } = [];
 
     // 区域描述 Description
     public string? Description { get; set; }
@@ -50,8 +52,6 @@ public class Zone : BaseAuditableEntity
 
     public string Identifier => $"Z{Id}";
     public bool[] Holidays => [.. HolidaySets.Split(',').Select(x => x == "1")];
-
-    public virtual ICollection<ZoneMember>? AllowedMember { get; set; }
 }
 
 

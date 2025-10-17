@@ -2,6 +2,8 @@
 namespace ACE.PMS.Domain.Entities;
 public class SpaceGroup : BaseAuditableEntity
 {
+    public int? MemberId { get; set; } // Currently assigned member Id
+    public Member? Member { get; set; } // Currently assigned member
     public string Name { get; set; } // Monthly Group Name    
     public int Capacity { get; set; } = 1; // Number of currently assigned members    
     public required Zone Zone { get; set; }

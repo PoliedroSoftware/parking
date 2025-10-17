@@ -16,15 +16,13 @@ public class Member : BaseAuditableEntity, IMayHaveTenant
     public DateTime ExpiryDate { get; set; }
 
     //所屬車類,ServiceCategory=Monthly 
-    public int? VehicleId { get; set; }
-    public Vehicle? Vehicle { get; set; }
+    public virtual ICollection<Vehicle>?  Vehicles { get; set; }
 
     //所屬月租車位組
-    public int? SpaceGroupId { get; set; }
-    public SpaceGroup? SpaceGroup { get; set; }
+   
+    public virtual ICollection<SpaceGroup>? SpaceGroups { get; set; }
 
-    //允許進入的泊車區域(ZoneId) 列表
-    public virtual ICollection<ZoneMember>? AllowedZone { get; set; }
+ 
 
     //車位類別 (如：固定 Reserved、浮動 Floating、有蓋 Covered 露天 Open)
     public SpaceTypes SpaceType { get; set; } = SpaceTypes.Regular;

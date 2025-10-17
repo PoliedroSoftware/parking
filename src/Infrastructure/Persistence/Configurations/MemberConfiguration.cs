@@ -32,10 +32,6 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         builder.HasIndex(e => e.LicensePlate).IsUnique();
         builder.HasIndex(e => e.CardId).IsUnique();
 
-        builder.HasOne(e => e.Vehicle).WithMany().HasForeignKey(e => e.VehicleId);
-
-        builder.HasOne(e => e.SpaceGroup).WithMany().HasForeignKey(e => e.SpaceGroupId);
-
         builder.Ignore(e => e.DomainEvents);
         builder.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict);
 

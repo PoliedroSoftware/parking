@@ -1,4 +1,4 @@
-using CleanArchitecture.Blazor.Application.Common.Constants;
+﻿using CleanArchitecture.Blazor.Application.Common.Constants;
 using CleanArchitecture.Blazor.Server.UI.Models.NavigationMenu;
 
 namespace CleanArchitecture.Blazor.Server.UI.Services.Navigation;
@@ -15,7 +15,7 @@ public class MenuService : IMenuService
                 new() { Title = "Home", Icon = Icons.Material.Filled.Home, Href = "/" },
                 new()
                 {
-                    Title = "E-Commerce",
+                    Title = "Park",
                     Icon = Icons.Material.Filled.ShoppingCart,
                     PageStatus = PageStatus.Completed,
                     IsParent = true,
@@ -23,48 +23,26 @@ public class MenuService : IMenuService
                     {
                         new()
                         {
-                            Title = "Products",
-                            Href = "/pages/products",
+                            Title = "Carpark",
+                            Href = "/pages/Carparks",
                             PageStatus = PageStatus.Completed
                         },
                         new()
                         {
-                            Title = "Documents",
-                            Href = "/pages/documents",
+                            Title = "Member",
+                            Href = "/pages/Members",
                             PageStatus = PageStatus.Completed
                         },
                         new()
                         {
-                            Title = "Contacts",
-                            Href = "/pages/contacts",
+                            Title = "Charge",
+                            Href = "/pages/Charges",
                             PageStatus = PageStatus.Completed
                         }
+                        
                     }
                 },
-                new()
-                {
-                    Title = "Analytics",
-                    Roles = new[] { Roles.Admin, Roles.Users },
-                    Icon = Icons.Material.Filled.Analytics,
-                    Href = "/analytics",
-                    PageStatus = PageStatus.ComingSoon
-                },
-                new()
-                {
-                    Title = "Banking",
-                    Roles = new[] { Roles.Admin, Roles.Users },
-                    Icon = Icons.Material.Filled.Money,
-                    Href = "/banking",
-                    PageStatus = PageStatus.ComingSoon
-                },
-                new()
-                {
-                    Title = "Booking",
-                    Roles = new[] { Roles.Admin, Roles.Users },
-                    Icon = Icons.Material.Filled.CalendarToday,
-                    Href = "/booking",
-                    PageStatus = PageStatus.ComingSoon
-                }
+                 
             }
         },
         new MenuSectionModel
@@ -119,6 +97,12 @@ public class MenuService : IMenuService
                     Icon = Icons.Material.Filled.Devices,
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
+                        new()
+                        {
+                            Title = "Holiday",
+                            Href = "/pages/Holidays",
+                            PageStatus = PageStatus.Completed
+                        },
                         new()
                         {
                             Title = "Picklist",

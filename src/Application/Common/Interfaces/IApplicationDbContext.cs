@@ -12,12 +12,12 @@ public interface IApplicationDbContext: IAsyncDisposable
 {
     DbSet<SystemLog> SystemLogs { get; set; }
     DbSet<AuditTrail> AuditTrails { get; set; }
-    DbSet<Document> Documents { get; set; }
+    
     DbSet<PicklistSet> PicklistSets { get; set; }
-    DbSet<Product> Products { get; set; }
+     
     DbSet<Tenant> Tenants { get; set; }
     DbSet<TenantUser> TenantUsers { get; set; }
-    DbSet<Contact> Contacts { get; set; }
+     
     DbSet<LoginAudit> LoginAudits { get; set; }
     DbSet<UserLoginRiskSummary> UserLoginRiskSummaries { get; set; }
     ChangeTracker ChangeTracker { get; }

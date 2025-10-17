@@ -9,7 +9,6 @@ using CleanArchitecture.Blazor.Infrastructure.Configurations;
 using CleanArchitecture.Blazor.Application.Common.Security;
 using CleanArchitecture.Blazor.Infrastructure.Persistence.Interceptors;
 using CleanArchitecture.Blazor.Infrastructure.Services.Circuits;
-using CleanArchitecture.Blazor.Infrastructure.Services.Gemini;
 using CleanArchitecture.Blazor.Infrastructure.Services.MultiTenant;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.DataProtection;
@@ -182,7 +181,7 @@ public static class DependencyInjection
             .AddScoped<IExcelService, ExcelService>()
             .AddScoped<IUploadService, MinioUploadService>()
             .AddScoped<IPDFService, PDFService>()
-            .AddTransient<IDocumentOcrJob, DocumentOcrJob>();
+            ;
     }
     #endregion
 

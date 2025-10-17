@@ -1,0 +1,197 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Charges.Commands.Create
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<Charges> Localizer
+@inherits MudComponentBase
+
+@* ReadOnly view for RateContent (Before/After) using ReadOnlyField *@
+
+@code {
+    [Parameter] public RateContent Content { get; set; } = default!;
+}
+@if (Content is null)
+{
+    <MudText Color="Color.Error">Content is null</MudText>
+}
+else
+{
+<MudStack Spacing="3">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                <MudText Typo="Typo.subtitle2">@Localizer["Normal Charges"]</MudText>
+            </MudStack>
+            @if (Content.NormalCharges?.Any() == true)
+            {
+                @foreach (var item in Content.NormalCharges)
+                {
+                    <MudPaper Class="pa-2 mb-2" Elevation="0">
+                        <MudStack Row Spacing="2">
+                            <ReadOnlyField Dense="true" Label="Duration" Value="@item.Duration" />
+                            <ReadOnlyField Dense="true" Label="Price Weekday" Value="@item.PriceWeekday" />
+                            <ReadOnlyField Dense="true" Label="Price Holiday" Value="@item.PriceHoliday" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            }
+            else
+            {
+                <MudText Class="mud-text-secondary" Typo="Typo.caption">&mdash;</MudText>
+            }
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Justify="Justify.FlexStart">
+        <MudItem xs="12">
+            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                <MudText Typo="Typo.subtitle2">@Localizer["Special Period"]</MudText>
+            </MudStack>
+            @if (Content.SpecialPeriod?.Any() == true)
+            {
+                @foreach (var item in Content.SpecialPeriod)
+                {
+                    <MudPaper Class="pa-2 mb-2" Elevation="0">
+                        <MudStack Row Spacing="2">
+                            <ReadOnlyField Dense="true" Label="@Localizer["Start Time"]" Value="@item.StartTime" />
+                            <ReadOnlyField Dense="true" Label="@Localizer["End Time"]" Value="@item.EndTime" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            }
+            else
+            {
+                <MudText Class="mud-text-secondary" Typo="Typo.caption">&mdash;</MudText>
+            }
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <MudItem xs="12">
+            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+                <MudText Typo="Typo.subtitle2">@Localizer["Special Charges"]</MudText>
+            </MudStack>
+            @if (Content.SpecialCharges?.Any() == true)
+            {
+                @foreach (var item in Content.SpecialCharges)
+                {
+                    <MudPaper Class="pa-2 mb-2" Elevation="0">
+                        <MudStack Row Spacing="2">
+                            <ReadOnlyField Dense="true" Label="Duration" Value="@item.Duration" />
+                            <ReadOnlyField Dense="true" Label="Price Weekday" Value="@item.PriceWeekday" />
+                            <ReadOnlyField Dense="true" Label="Price Holiday" Value="@item.PriceHoliday" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            }
+            else
+            {
+                <MudText Class="mud-text-secondary" Typo="Typo.caption">&mdash;</MudText>
+            }
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="1">
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle2">@Localizer["Day Park"]</MudText>
+        </MudItem>
+        <MudItem xs="12">
+            @if (Content.DayPark?.Period?.Any() == true)
+            {
+                @foreach (var item in Content.DayPark.Period)
+                {
+                    <MudPaper Class="pa-2 mb-1" Elevation="0">
+                        <MudStack Row Spacing="2">
+                            <ReadOnlyField Dense="true" Label="@Localizer["Start Time"]" Value="@item.StartTime" />
+                            <ReadOnlyField Dense="true" Label="@Localizer["End Time"]" Value="@item.EndTime" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            }
+            else
+            {
+                <MudText Class="mud-text-secondary" Typo="Typo.caption">&mdash;</MudText>
+            }
+        </MudItem>
+        <MudItem xs="6">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Weekday"]" Value="@Content.DayPark?.CeilingAmountWeekday" />
+        </MudItem>
+        <MudItem xs="6">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Holiday"]" Value="@Content.DayPark?.CeilingAmountHoliday" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="1">
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle2">@Localizer["Night Park"]</MudText>
+        </MudItem>
+        <MudItem xs="12">
+            @if (Content.NightPark?.Period?.Any() == true)
+            {
+                @foreach (var item in Content.NightPark.Period)
+                {
+                    <MudPaper Class="pa-2 mb-1" Elevation="0">
+                        <MudStack Row Spacing="2">
+                            <ReadOnlyField Dense="true" Label="@Localizer["Start Time"]" Value="@item.StartTime" />
+                            <ReadOnlyField Dense="true" Label="@Localizer["End Time"]" Value="@item.EndTime" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            }
+            else
+            {
+                <MudText Class="mud-text-secondary" Typo="Typo.caption">&mdash;</MudText>
+            }
+        </MudItem>
+        <MudItem xs="6">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Weekday"]" Value="@Content.NightPark?.CeilingAmountWeekday" />
+        </MudItem>
+        <MudItem xs="6">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Holiday"]" Value="@Content.NightPark?.CeilingAmountHoliday" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="1">
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle2">@Localizer["Max 12 hours"]</MudText>
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField CheckBox="true" Label="@Localizer["Is Active"]" Value="@Content.Max12Park?.IsActive" />
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Weekday"]" Value="@Content.Max12Park?.CeilingAmountWeekday" />
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Holiday"]" Value="@Content.Max12Park?.CeilingAmountHoliday" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="1">
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle2">@Localizer["Max 24 hours"]</MudText>
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField CheckBox="true" Label="@Localizer["Is Active"]" Value="@Content.Max24Park?.IsActive" />
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Weekday"]" Value="@Content.Max24Park?.CeilingAmountWeekday" />
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Holiday"]" Value="@Content.Max24Park?.CeilingAmountHoliday" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Spacing="1">
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle2">@Localizer["Full day"]</MudText>
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField CheckBox="true" Label="@Localizer["Is Active"]" Value="@Content.FullDayPark?.IsActive" />
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Weekday"]" Value="@Content.FullDayPark?.CeilingAmountWeekday" />
+        </MudItem>
+        <MudItem xs="4">
+            <ReadOnlyField Label="@Localizer["Ceiling Amount Holiday"]" Value="@Content.FullDayPark?.CeilingAmountHoliday" />
+        </MudItem>
+    </MudGrid>
+</MudStack>
+}

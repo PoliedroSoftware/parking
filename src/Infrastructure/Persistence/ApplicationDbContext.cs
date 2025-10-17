@@ -18,7 +18,16 @@ public class ApplicationDbContext : IdentityDbContext<
         : base(options)
     {
     }
+    public DbSet<Carpark> Carparks { get; set; }
+    public DbSet<Zone> Zones { get; set; }
+    public DbSet<Gate> Gates { get; set; }
+    public DbSet<Charge> Charges { get; set; }
+    public DbSet<Vehicle> Vehicles { get; set; }
+    public DbSet<Member> Members { get; set; }
+    public DbSet<SpaceGroup> SpaceGroups { get; set; }
+    public DbSet<MemberRental> MemberRentals { get; set; }
 
+    public DbSet<Holiday> Holidays { get; set; }
     public DbSet<Tenant> Tenants { get; set; }
     public DbSet<TenantUser> TenantUsers { get; set; }
     public DbSet<SystemLog> SystemLogs { get; set; }

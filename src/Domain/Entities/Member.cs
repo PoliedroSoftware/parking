@@ -38,7 +38,7 @@ public class Member : BaseAuditableEntity, IMayHaveTenant
     public string Email { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
-
+    public virtual ICollection<MemberRental>? MemberRentals { get; set; }
     public string? TenantId { get; set; }
     public Tenant? Tenant { get; set; }
 

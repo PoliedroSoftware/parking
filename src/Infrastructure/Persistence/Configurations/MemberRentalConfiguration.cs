@@ -27,7 +27,10 @@ public class MemberRentalConfiguration : IEntityTypeConfiguration<MemberRental>
         builder.Property(e => e.PaymentMethodId).HasConversion<string>();
 
         builder.Property(e => e.Notes).HasMaxLength(512);
-
+        builder.HasOne(e => e.Member)
+            .WithMany(m => m.MemberRentals)
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(Microsoft.EntityFrameworkCore.DeleteBehavior.SetNull);
         builder.HasIndex(e => e.LicensePlate);
         builder.HasIndex(e => e.CardId);
     }

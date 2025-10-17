@@ -13,7 +13,7 @@ public class Vehicle : BaseAuditableEntity
     public int? MemberId { get; set; }
     public Member? Member { get; set; }
     // 車類名稱 Vehicle Type Name
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     // 服務類別 Service Category
     public ServiceCategories ServiceCategoryId { get; set; } = ServiceCategories.Hourly;
@@ -53,10 +53,5 @@ public class Vehicle : BaseAuditableEntity
     //[NotMapped] 
     public int Available => (Capacity - Occupied) < 0 ? 0 : (Capacity - Occupied); //可用泊車位數量
 
-    public Vehicle(string name, ServiceCategories serviceCategoryId, VehicleTypes vehicleTypeId)
-    {
-        Name = name;
-        ServiceCategoryId = serviceCategoryId;
-        VehicleTypeId = vehicleTypeId;
-    }
+  
 }

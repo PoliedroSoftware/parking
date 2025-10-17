@@ -48,10 +48,5 @@ public class Gate : BaseAuditableEntity
     public string Identifier => $"{(GateType == GateType.Entry ? "EN" : "EX")}.{LaneNo:00}{(IsUpper ? 2 : 1)}"; //EN01.1, EX01.1, EN02.1, ...
 
 
-    public Gate(string name, int zoneId, GateType gateType)
-    {
-        Name = name;
-        ZoneId = zoneId;
-        GateType = gateType;
-    }
+    
 }

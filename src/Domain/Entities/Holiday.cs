@@ -13,8 +13,5 @@ public class Holiday : BaseAuditableEntity
     public string Name_En { get; set; } = string.Empty;
     public string Name_Tc { get; set; } = string.Empty;
 
-    public Holiday(DateTime date)
-    {
-        Date = date;
-    }
+    
 }

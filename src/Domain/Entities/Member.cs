@@ -42,11 +42,5 @@ public class Member : BaseAuditableEntity, IMayHaveTenant
     public string? TenantId { get; set; }
     public Tenant? Tenant { get; set; }
 
-    public Member(string licensePlate, string cardId, DateTime startDate, DateTime expiryDate)
-    {
-        LicensePlate = licensePlate;
-        CardId = cardId;
-        StartDate = startDate;
-        ExpiryDate = expiryDate;
-    }
+  
 }

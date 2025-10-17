@@ -12,23 +12,16 @@ namespace CleanArchitecture.Blazor.Domain.Entities;
 /// </summary>
 public class Charge : BaseAuditableEntity, IMayHaveTenant
 {
-    public string Name { get; set; } // 收費項目名稱 Charge Name
+    public string Name { get; set; } =string.Empty; //收費方案名稱 Name of Rate Plan
     public DateTime EffectiveDate { get; set; } = new DateTime(2025, 8, 1); //生效日期 Effective Date
-    public string BeforeContent { get; set; } // 生效日期前收費内容 (Json格式,簡單加密)
-    public string AfterContent { get; set; } // 生效日期後收費内容 (Json格式,簡單加密)
+    public string? BeforeContent { get; set; } 
+    public string? AfterContent { get; set; } 
     public string? Description { get; set; }
     public string? TenantId { get; set; }
     public Tenant? Tenant { get; set; }
     //public ICollection<Vehicle> Vehicles { get; set; } = []; // 導航屬性 = new List<Vehicle>();
 
-    public Charge(int id, string name, DateTime effectiveDate, string beforeContent, string afterContent)
-    {
-        Id = id;
-        Name = name;
-        EffectiveDate = effectiveDate;
-        BeforeContent = beforeContent;
-        AfterContent = afterContent;
-    }
+ 
 }
 
 

@@ -15,9 +15,5 @@ public class SpaceGroup : BaseAuditableEntity
     public Zone? Zone { get; set; }
     public string? Description { get; set; } // Description    
     public virtual ICollection<Member>? Members { get; set; } // Members assigned to this Space Group
-    public SpaceGroup(string name, int capacity)
-    {
-        Name = name;
-        Capacity = capacity;
-    }
+  
 }

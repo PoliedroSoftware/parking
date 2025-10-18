@@ -41,8 +41,10 @@ public class UpdateChargeCommand: ICacheInvalidatorRequest<Result<int>>
     {
         public Mapping()
         {
-            CreateMap<UpdateChargeCommand, Charge>(MemberList.None);
-            CreateMap<ChargeDto,UpdateChargeCommand>(MemberList.None);
+            CreateMap<UpdateChargeCommand, Charge>(MemberList.None)
+                .ForMember(x=>x.Tenant,y=>y.Ignore());
+            CreateMap<ChargeDto, UpdateChargeCommand>(MemberList.None);
+                 
         }
     }
 

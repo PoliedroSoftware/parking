@@ -1,8 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using CleanArchitecture.Blazor.Application.Common.ExceptionHandlers;
 using CleanArchitecture.Blazor.Application.Common.PublishStrategies;
+using CleanArchitecture.Blazor.Application.Features.Charges.Services;
 using CleanArchitecture.Blazor.Application.Pipeline;
 using CleanArchitecture.Blazor.Application.Pipeline.PreProcessors;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,7 @@ public static class DependencyInjection
 
         });
       
+        services.AddScoped<IChargesService, ChargesService>();
 
         return services;
     }

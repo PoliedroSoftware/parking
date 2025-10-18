@@ -18,7 +18,7 @@ public class GateDto
     public ZoneDto? Zone { get; set; }
 
     // 閘機類別 Gate Type (Entry/Exit)
-    public GateType GateType { get; set; }
+    public GateType? GateType { get; set; }
 
     // 車道編號 (1,2,3...9) 如高+低機配置，應為同一車道編號。
     public int LaneNo { get; set; } = 1;
@@ -30,10 +30,10 @@ public class GateDto
     public bool IsLefthand { get; set; }
 
     //允許的時租通行證類型（如車牌、智能卡、八達通等）， Hourly Permit Types Allowed
-    public List<PermitTypes>? HourlyPermitTypes { get; set; } = [PermitTypes.OctopusCard];
+    public IEnumerable<PermitTypes>? HourlyPermitTypes { get; set; } = [PermitTypes.OctopusCard];
 
     //允許的月租通行證類型（如車牌、智能卡、八達通等）， Monthly Permit Types Allowed
-    public List<PermitTypes>? MonthlyPermitTypes { get; set; } = [PermitTypes.Smartcard, PermitTypes.LicensePlate];
+    public IEnumerable<PermitTypes>? MonthlyPermitTypes { get; set; } = [PermitTypes.Smartcard, PermitTypes.LicensePlate];
 
 
     // 是否啟用 (True/False)
@@ -42,7 +42,7 @@ public class GateDto
     // 閘機描述 Gate Description
     public string? Description { get; set; }
 
-    public string Identifier => $"{(GateType == GateType.Entry ? "EN" : "EX")}.{LaneNo:00}{(IsUpper ? 2 : 1)}"; //EN01.1, EX01.1, EN02.1, ...
+    public string Identifier => $"{((GateType!=null && GateType == Domain.Enums.GateType.Entry) ? "EN" : "EX")}.{LaneNo:00}{(IsUpper ? 2 : 1)}"; //EN01.1, EX01.1, EN02.1, ...
 
     private class Mapping : Profile
     {

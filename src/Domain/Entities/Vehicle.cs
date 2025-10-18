@@ -35,7 +35,7 @@ public class Vehicle : BaseAuditableEntity
     // 本車類別的車位數已滿時，是否允許該類別的車輛繼續進入泊車場 (如: 電單車位滿，但總車位未滿，則仍可進入) 
     // If the parking spaces for this vehicle type are full, are vehicles of this type allowed to continue to enter the car park
     // (e.g. if motorcycle spaces are full but total spaces are not full, entry is still allowed)
-    public bool AllowEntryWhenFull;
+    public bool AllowEntryWhenFull { get; set; }
 
     // 是否人工暫停進入 Whether to manually suspend entry
     public bool ManualFull { get; set; }

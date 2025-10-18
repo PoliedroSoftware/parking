@@ -1,5 +1,6 @@
 ﻿@page "/pages/carparks/create"
 @using CleanArchitecture.Blazor.Application.Features.Carparks.Commands.Create
+@using CleanArchitecture.Blazor.Application.Features.Charges.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
 
 @inherits MudComponentBase
@@ -112,12 +113,148 @@
 											<MudItem xs="12" Class="mt-4">
 												<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
 													<MudText>@L["Vehicles Allowed in the Zone"]</MudText>
-													<MudButton StartIcon="@Icons.Material.Filled.Add">@L["Add"]</MudButton>
+													<MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => AddVehicleToZone(zone))">@L["Add"]</MudButton>
 												</MudStack>
-												
+
 											</MudItem>
 											@if (zone.Vehicles != null && zone.Vehicles.Any())
 											{
+												<MudItem xs="12">
+													<MudExpansionPanels MultiExpansion="true" Elevation="1">
+														@foreach (var vehicle in zone.Vehicles)
+														{
+															<MudExpansionPanel Text="@vehicle.Name" Expanded="true">
+																<MudGrid Spacing="2">
+																	<MudItem xs="12" md="4">
+																		<MudTextField Label="@L["Vehicle Name"]" @bind-Value="vehicle.Name" T="string" Required="true" RequiredError="@L["vehicle name is required!"]"></MudTextField>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudEnumSelect TEnum="Nullable<ServiceCategories>" Label="@L["Service Categorie"]" @bind-Value="vehicle.ServiceCategoryId" Required="true" RequiredError="@L["service is required!"]"></MudEnumSelect>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudEnumSelect TEnum="Nullable<VehicleTypes>" Label="@L["Vehicle Types"]" @bind-Value="vehicle.VehicleTypeId" Required="true" RequiredError="@L["vehicle type is required!"]"></MudEnumSelect>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<ChargeAutocomplete T="ChargeDto" Label="@L["Charge"]" @bind-Value="vehicle.Charge" Required="true" RequiredError="@L["charge is required!"]"></ChargeAutocomplete>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudNumericField Label="@L["Capacity"]" @bind-Value="vehicle.Capacity" T="int"></MudNumericField>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudNumericField Label="@L["Occupied"]" @bind-Value="vehicle.Occupied" T="int"></MudNumericField>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Available"]" Value="@(vehicle.Available == 1)" T="bool" ReadOnly></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Allow Entry When Full"]" @bind-Value="vehicle.AllowEntryWhenFull" T="bool"></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Manual Full"]" @bind-Value="vehicle.ManualFull" T="bool"></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Can Recognize Plate"]" @bind-Value="vehicle.CanRecognizePlate" T="bool"></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Is Active"]" @bind-Value="vehicle.IsActive" T="bool"></MudCheckBox>
+																	</MudItem>
+																</MudGrid>
+															
+																<MudStack Row Justify="Justify.FlexEnd">
+																	<MudButton Class="" StartIcon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => zone.Vehicles.Remove(vehicle))">@L["Remove"]</MudButton>
+																</MudStack>
+															</MudExpansionPanel>
+														}
+													</MudExpansionPanels>
+												</MudItem>
+											}
+										</MudGrid>
+										<MudGrid Spacing="2">
+											<MudItem xs="12" Class="mt-4">
+												<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+													<MudText>@L["Space Group in the Zone"]</MudText>
+													<MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => AddSpaceGroupToZone(zone))">@L["Add"]</MudButton>
+												</MudStack>
+												@if (zone.SpaceGroups != null && zone.SpaceGroups.Any())
+												{
+													@foreach (var item in zone.SpaceGroups)
+													{
+														<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+															<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
+															<MudStack  Row Spacing="2">
+																<MudTextField Label="@L["Name"]" @bind-Value="item.Name" T="string"></MudTextField>
+																<MudNumericField Label="@L["Capacity"]" @bind-Value="item.Capacity" T="int"></MudNumericField>
+																<MudTextField Label="@L["Description"]" @bind-Value="item.Description" T="string"></MudTextField>
+																<MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => zone.SpaceGroups.Remove(item))">Delete</MudIconButton>
+															</MudStack>
+														</MudStack>
+													}
+												}
+											</MudItem>
+											
+										</MudGrid>
+										<MudGrid Spacing="2">
+											<MudItem xs="12" Class="mt-4">
+												<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+													<MudText>@L["Gate in the Zone"]</MudText>
+													<MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="@(()=>AddGateToZone(zone))">@L["Add"]</MudButton>
+												</MudStack>
+											</MudItem>
+											@if (zone.Gates != null && zone.Gates.Any())
+											{
+												<MudItem xs="12">
+													<MudExpansionPanels MultiExpansion="true" Elevation="1">
+														@foreach(var item in zone.Gates)
+														{
+															<MudExpansionPanel Text="@item.Name" Expanded="true">
+																<MudGrid Spacing="2">
+																	<MudItem xs="12" md="4">
+																		<MudTextField Label="@L["Gate Name"]" @bind-Value="item.Name" T="string" Required="true" RequiredError="@L["gate name is required!"]"></MudTextField>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudEnumSelect TEnum="Nullable<GateType>" Label="@L["Gate Types"]" @bind-Value="item.GateType" Required="true" RequiredError="@L["gate type is required!"]"></MudEnumSelect>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudNumericField T="int" Label="@L["Lane No"]" @bind-Value="item.LaneNo" Required="true" RequiredError="@L["LaneNo is required!"]"></MudNumericField>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudSelect T="PermitTypes" MultiSelection="true" Label="@L["Hourly Permit Types"]" @bind-SelectedValues="item.HourlyPermitTypes">
+																			@foreach (var permitType in Enum.GetValues<PermitTypes>())
+																			{
+																				<MudSelectItem T="PermitTypes" Value="permitType">@permitType.GetDisplayTc()</MudSelectItem>
+																			}
+																		</MudSelect>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudSelect T="PermitTypes" MultiSelection="true" Label="@L["Monthly Permit Types"]" @bind-SelectedValues="item.MonthlyPermitTypes">
+																			@foreach (var permitType in Enum.GetValues<PermitTypes>())
+																			{
+																				<MudSelectItem T="PermitTypes" Value="permitType">@permitType.GetDisplayTc()</MudSelectItem>
+																			}
+																		</MudSelect>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Is Upper"]" @bind-Value="item.IsUpper" T="bool"></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Is Left hand"]" @bind-Value="item.IsLefthand" T="bool"></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudCheckBox Label="@L["Is Active"]" @bind-Value="item.IsActive" T="bool"></MudCheckBox>
+																	</MudItem>
+																	<MudItem xs="12" md="4">
+																		<MudTextField Label="@L["Description"]" @bind-Value="item.Description" T="string" ></MudTextField>
+																	</MudItem>
+																</MudGrid>
+
+																<MudStack Row Justify="Justify.FlexEnd">
+																	<MudButton Class="" StartIcon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => zone.Gates.Remove(item))">@L["Remove"]</MudButton>
+																</MudStack>
+															</MudExpansionPanel>
+														}
+			
+													</MudExpansionPanels>
+												</MudItem>
 
 											}
 										</MudGrid>
@@ -143,7 +280,7 @@
 	MudForm _carparkForm = new();
 	private bool _saving = false;
 	private List<BreadcrumbItem>? _breadcrumbItems;
-	private CreateCarparkCommand _model = new();
+	private CreateCarparkCommand _model = new() { Zones = new List<ZoneDto>() { new ZoneDto() { Name = new MultiCodeName("Z-1", "", ""), IsMain = true, Vehicles = new List<VehicleDto>() { new VehicleDto() { Name = "New-1" } }, Gates = new List<GateDto>() { new GateDto() {Name="Gate-1", IsActive = true } } }, } };
 	protected override Task OnInitializedAsync()
 	{
 		Title = L["New Carpark"];
@@ -175,7 +312,7 @@
 		var count = _model.Zones.Count;
 		_model.Zones.Add(new ZoneDto
 		{
-			Name = new MultiCodeName("Z" + (count + 1).ToString("###0"), "", ""),
+			Name = new MultiCodeName("Z-" + (count + 1).ToString(), "", ""),
 			IsMain = _model.Zones.Count == 0,
 			IsOpenCashbox = false,
 			Gates = new List<GateDto>() { new GateDto() { } },
@@ -184,6 +321,32 @@
 
 		});
 		_activeIndex = _model.Zones.Count - 1;
+	}
+	private async Task AddVehicleToZone(ZoneDto zone)
+	{
+		await _carparkForm.Validate();
+		if (!_carparkForm.IsValid) return;
+
+		zone.Vehicles ??= new List<VehicleDto>();
+		var count = zone.Vehicles.Count;
+		zone.Vehicles.Add(new VehicleDto() { Name = "New-" + (count + 1).ToString() });
+
+	}
+	private async Task AddSpaceGroupToZone(ZoneDto zone)
+	{
+		await _carparkForm.Validate();
+		if (!_carparkForm.IsValid) return;
+		zone.SpaceGroups ??= new List<SpaceGroupDto>();
+		var count = zone.SpaceGroups.Count;
+		zone.SpaceGroups.Add(new SpaceGroupDto() { Name = "SG-" + (count + 1).ToString(), Capacity = 1 });
+	}
+	private async Task AddGateToZone(ZoneDto zone)
+	{
+		await _carparkForm.Validate();
+		if (!_carparkForm.IsValid) return;
+		zone.Gates ??= new List<GateDto>();
+		var count = zone.Gates.Count;
+		zone.Gates.Add(new GateDto() { Name = "Gate-" + (count + 1).ToString(), IsActive = true });
 	}
 	async Task OnSubmit()
 	{

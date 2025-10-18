@@ -19,10 +19,10 @@ public class VehicleDto
     public string Name { get; set; } = string.Empty;
 
     // 服務類別 Service Category
-    public ServiceCategories ServiceCategoryId { get; set; } = ServiceCategories.Hourly;
+    public ServiceCategories? ServiceCategoryId { get; set; } = ServiceCategories.Hourly;
 
     // 車輛類型 Vehicle Type
-    public VehicleTypes VehicleTypeId { get; set; } = VehicleTypes.PrivateCar;
+    public VehicleTypes? VehicleTypeId { get; set; } = VehicleTypes.PrivateCar;
 
     // 所屬停車場區域 Zone (如: Main Zone, Car Park 1/F, Loading Bay Area ...)    
     public int? ZoneId { get; set; } // Foreign Key
@@ -39,7 +39,7 @@ public class VehicleDto
     // 本車類別的車位數已滿時，是否允許該類別的車輛繼續進入泊車場 (如: 電單車位滿，但總車位未滿，則仍可進入) 
     // If the parking spaces for this vehicle type are full, are vehicles of this type allowed to continue to enter the car park
     // (e.g. if motorcycle spaces are full but total spaces are not full, entry is still allowed)
-    public bool AllowEntryWhenFull;
+    public bool AllowEntryWhenFull { get; set; }
 
     // 是否人工暫停進入 Whether to manually suspend entry
     public bool ManualFull { get; set; }

@@ -21,7 +21,7 @@ public class Gate : BaseAuditableEntity
     public Zone? Zone { get; set; } 
 
     // 閘機類別 Gate Type (Entry/Exit)
-    public GateType? GateType { get; set; }
+    public GateType GateType { get; set; }
 
     // 車道編號 (1,2,3...9) 如高+低機配置，應為同一車道編號。
     public int LaneNo { get; set; } = 1;

@@ -26,7 +26,7 @@ public class VehicleDto
 
     // 所屬停車場區域 Zone (如: Main Zone, Car Park 1/F, Loading Bay Area ...)    
     public int? ZoneId { get; set; } // Foreign Key
-    public required ZoneDto? Zone { get; set; } // Required Reference Navigation Property
+    public ZoneDto? Zone { get; set; } // Required Reference Navigation Property
 
     // 收費類型 Charge Type
     public int? ChargeId { get; set; } // Optional foreign key to Charge(principal)

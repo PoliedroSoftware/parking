@@ -10,8 +10,7 @@ namespace CleanArchitecture.Blazor.Domain.Entities;
 
 public class Vehicle : BaseAuditableEntity
 {
-    public int? MemberId { get; set; }
-    public Member? Member { get; set; }
+  
     // 車類名稱 Vehicle Type Name
     public string Name { get; set; } = string.Empty;
 

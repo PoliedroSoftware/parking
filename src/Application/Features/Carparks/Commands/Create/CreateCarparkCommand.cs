@@ -23,7 +23,7 @@ public class CreateCarparkCommand: ICacheInvalidatorRequest<Result<int>>
       [Description("Id")]
       public int Id { get; set; }
     [Description("Name")]
-    public MultiCodeName Name { get; set; }
+    public MultiCodeName Name { get; set; }=new MultiCodeName("", "", "");
 
     // Car Park Address 停車場地址
     [Description("Address")]
@@ -55,7 +55,7 @@ public class CreateCarparkCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Tenant")]
     public TenantDto? Tenant {get;set;}
     [Description("Zones")]
-    public List<ZoneDto>? Zones { get; set; }
+    public List<ZoneDto>? Zones { get; set; }=new List<ZoneDto>();
     public string CacheKey => CarparkCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => CarparkCacheKey.Tags;
       private class Mapping : Profile

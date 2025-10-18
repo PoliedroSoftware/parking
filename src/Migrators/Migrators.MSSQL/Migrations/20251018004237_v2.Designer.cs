@@ -5,6 +5,7 @@ using CleanArchitecture.Blazor.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251018004237_v2")]
+    partial class v2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -525,24 +528,6 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.ToTable("MemberRentals");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.MemberVehicle", b =>
-                {
-                    b.Property<int>("MemberId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VehicleId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.HasKey("MemberId", "VehicleId");
-
-                    b.HasIndex("VehicleId");
-
-                    b.ToTable("MemberVehicles");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.PicklistSet", b =>
                 {
                     b.Property<int>("Id")
@@ -778,6 +763,9 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.Property<bool>("ManualFull")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("MemberId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -799,6 +787,8 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChargeId");
+
+                    b.HasIndex("MemberId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -1389,25 +1379,6 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.Navigation("Member");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.MemberVehicle", b =>
-                {
-                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Member", "Member")
-                        .WithMany("MemberVehicles")
-                        .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Vehicle", "Vehicle")
-                        .WithMany()
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Member");
-
-                    b.Navigation("Vehicle");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.SpaceGroup", b =>
                 {
                     b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Zone", "Zone")
@@ -1440,11 +1411,17 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                         .WithMany()
                         .HasForeignKey("ChargeId");
 
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Member", "Member")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("MemberId");
+
                     b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Zone", "Zone")
                         .WithMany("Vehicles")
                         .HasForeignKey("ZoneId");
 
                     b.Navigation("Charge");
+
+                    b.Navigation("Member");
 
                     b.Navigation("Zone");
                 });
@@ -1565,7 +1542,7 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                 {
                     b.Navigation("MemberRentals");
 
-                    b.Navigation("MemberVehicles");
+                    b.Navigation("Vehicles");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.SpaceGroup", b =>

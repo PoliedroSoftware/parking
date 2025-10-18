@@ -21,7 +21,7 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.HasIndex(e => new { e.Name }).IsUnique();
 
         builder.HasOne(x => x.Zone).WithMany(x => x.Vehicles).HasForeignKey(x => x.ZoneId);
-        builder.HasOne(x=>x.Member).WithMany(x=> x.Vehicles).HasForeignKey(x=> x.MemberId);
+
         builder.HasOne(x => x.Charge).WithMany().HasForeignKey(x=> x.ChargeId);
 
         builder.Ignore(x => x.Occupied);

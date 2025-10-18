@@ -20,6 +20,7 @@ public interface IApplicationDbContext : IAsyncDisposable
     DbSet<Member> Members { get; set; }
     DbSet<SpaceGroup> SpaceGroups { get; set; }
     DbSet<MemberRental> MemberRentals { get; set; }
+    DbSet<MemberVehicle> MemberVehicles { get; set; }
 
     DbSet<Holiday> Holidays { get; set; }
 

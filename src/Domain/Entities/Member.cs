@@ -16,7 +16,7 @@ public class Member : BaseAuditableEntity, IMayHaveTenant
     public DateTime ExpiryDate { get; set; }
 
     //所屬車類,ServiceCategory=Monthly 
-    public virtual ICollection<Vehicle>?  Vehicles { get; set; }
+    public virtual ICollection<MemberVehicle>? MemberVehicles { get; set; }
 
     //所屬月租車位組
     public int? SpaceGroupId { get; set; }

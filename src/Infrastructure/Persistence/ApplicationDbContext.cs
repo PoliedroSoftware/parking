@@ -26,6 +26,7 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<Member> Members { get; set; }
     public DbSet<SpaceGroup> SpaceGroups { get; set; }
     public DbSet<MemberRental> MemberRentals { get; set; }
+    public DbSet<MemberVehicle> MemberVehicles { get; set; }
 
     public DbSet<Holiday> Holidays { get; set; }
     public DbSet<Tenant> Tenants { get; set; }

@@ -28,9 +28,9 @@ public class ZoneDto
     [Description("Carpark id")]
     public int CarparkId {get;set;} 
     [Description("Carpark")]
-    public CarparkDto? Carpark {get;set;} 
-    [Description("Holiday sets")]
-    public string? HolidaySets {get;set;} 
+    public CarparkDto? Carpark {get;set;}
+    [Description("Holiday Options")]
+    public string? HolidaySets { get; set; } = "1,0,0,0,0,0,1,1"; //PH,Mon,Tue,Wed,Thu,Fri,Sat,Sun (1=Holiday,0=Not Holiday)
     [Description("Is open cashbox")]
     public bool IsOpenCashbox {get;set;} 
     [Description("Vehicles")]

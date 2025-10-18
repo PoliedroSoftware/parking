@@ -64,6 +64,8 @@ public class VehicleDto
             CreateMap<Vehicle, VehicleDto>(MemberList.None);
             
             CreateMap<VehicleDto, Vehicle>(MemberList.None)
+                .ForMember(x=>x.Zone, y=>y.Ignore())
+                .ForMember(x=>x.Charge, y=>y.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
             .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())

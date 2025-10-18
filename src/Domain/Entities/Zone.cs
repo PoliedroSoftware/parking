@@ -19,11 +19,11 @@ public class Zone : BaseAuditableEntity
     /// </summary>
 
     // 區域名稱（出入口名稱） Zone Name (如: Main Zone, Car Park 1/F, Loading Bay Area ...)
-    public required MultiCodeName Name { get; set; }
+    public  MultiCodeName Name { get; set; }
     public bool IsMain { get; set; }
     // 所屬停車場 Carpark
-    public required int CarparkId { get; set; }
-    public virtual required Carpark Carpark { get; set; }
+    public  int CarparkId { get; set; }
+    public virtual  Carpark Carpark { get; set; }
 
     // 假期規則 Holiday Options  平日：星期一至星期五(公众假期除外) "Mon-Fri,Public Holiday excluded"  假日：星期六，日及公众假期 "Sat,Sun,PH"    
     public string HolidaySets { get; set; } = "1,0,0,0,0,0,1,1"; //PH,Mon,Tue,Wed,Thu,Fri,Sat,Sun (1=Holiday,0=Not Holiday)            

@@ -52,10 +52,12 @@ public class ZoneDto
         public Mapping()
         {
             CreateMap<Zone, ZoneDto>(MemberList.None)
-                .ForMember(x=>x.Vehicles,y=>y.Ignore())
-                .ForMember(x=>x.SpaceGroups,y=>y.Ignore())
-                .ForMember(x=>x.Gates,y=>y.Ignore());
+                ;
             CreateMap<ZoneDto, Zone>(MemberList.None)
+                .ForMember(x => x.Carpark, y => y.Ignore())
+                .ForMember(x => x.Vehicles, y => y.Ignore())
+                .ForMember(x => x.SpaceGroups, y => y.Ignore())
+                .ForMember(x => x.Gates, y => y.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
             .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())

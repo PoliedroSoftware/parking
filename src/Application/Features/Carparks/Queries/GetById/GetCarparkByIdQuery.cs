@@ -18,6 +18,7 @@
 using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
 using CleanArchitecture.Blazor.Application.Features.Carparks.Specifications;
+using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 
 namespace CleanArchitecture.Blazor.Application.Features.Carparks.Queries.GetById;
 
@@ -44,9 +45,15 @@ public class GetCarparkByIdQueryHandler :
     public async Task<Result<CarparkDto>> Handle(GetCarparkByIdQuery request, CancellationToken cancellationToken)
     {
         await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
-        var data = await db.Carparks.ApplySpecification(new CarparkByIdSpecification(request.Id))
+        var carpark = await db.Carparks.ApplySpecification(new CarparkByIdSpecification(request.Id))
                                                 .ProjectTo<CarparkDto>(_mapper.ConfigurationProvider)
                                                 .FirstAsync(cancellationToken) ?? throw new NotFoundException($"Carpark with id: [{request.Id}] not found.");
-        return await Result<CarparkDto>.SuccessAsync(data);
+        var zones = await db.Zones
+                        .Where(z => z.CarparkId == carpark.Id)
+                        .OrderBy(z => z.Name.Code)
+                        .ProjectTo<ZoneDto>(_mapper.ConfigurationProvider)
+                        .ToListAsync(cancellationToken);
+        carpark.Zones=zones;
+        return await Result<CarparkDto>.SuccessAsync(carpark);
     }
 }

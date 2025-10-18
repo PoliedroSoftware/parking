@@ -18,12 +18,12 @@ using CleanArchitecture.Blazor.Domain.Common;
 
 namespace CleanArchitecture.Blazor.Application.Features.Carparks.Commands.Create;
 
-public class CreateCarparkCommand: ICacheInvalidatorRequest<Result<int>>
+public class CreateCarparkCommand : ICacheInvalidatorRequest<Result<int>>
 {
-      [Description("Id")]
-      public int Id { get; set; }
+    [Description("Id")]
+    public int Id { get; set; }
     [Description("Name")]
-    public MultiCodeName Name { get; set; }=new MultiCodeName("", "", "");
+    public MultiCodeName Name { get; set; } = new MultiCodeName("", "", "");
 
     // Car Park Address 停車場地址
     [Description("Address")]
@@ -33,60 +33,83 @@ public class CreateCarparkCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Company Name")]
     public MultiName CompanyName { get; set; } = new("", "");
     [Description("App key")]
-    public string? AppKey {get;set;} 
+    public string? AppKey { get; set; }
     [Description("Machine code")]
-    public string? MachineCode {get;set;} 
+    public string? MachineCode { get; set; }
     [Description("Registration code")]
-    public string? RegistrationCode {get;set;} 
+    public string? RegistrationCode { get; set; }
     [Description("Contact person")]
-    public string? ContactPerson {get;set;} 
+    public string? ContactPerson { get; set; }
     [Description("Phone number")]
-    public string? PhoneNumber {get;set;} 
+    public string? PhoneNumber { get; set; }
     [Description("Fax")]
-    public string? Fax {get;set;} 
+    public string? Fax { get; set; }
     [Description("Email")]
-    public string? Email {get;set;} 
+    public string? Email { get; set; }
     [Description("Description")]
-    public string? Description {get;set;} 
+    public string? Description { get; set; }
     [Description("Identified")]
-    public string? Identified {get;set;} 
+    public string? Identified { get; set; }
     [Description("Tenant id")]
-    public string? TenantId {get;set;} 
+    public string? TenantId { get; set; }
     [Description("Tenant")]
-    public TenantDto? Tenant {get;set;}
+    public TenantDto? Tenant { get; set; }
     [Description("Zones")]
-    public List<ZoneDto>? Zones { get; set; }=new List<ZoneDto>();
+    public List<ZoneDto>? Zones { get; set; } = new List<ZoneDto>();
     public string CacheKey => CarparkCacheKey.GetAllCacheKey;
-      public IEnumerable<string>? Tags => CarparkCacheKey.Tags;
-      private class Mapping : Profile
+    public IEnumerable<string>? Tags => CarparkCacheKey.Tags;
+    private class Mapping : Profile
     {
         public Mapping()
         {
-            CreateMap<CreateCarparkCommand, Carpark>(MemberList.None);
+            CreateMap<CreateCarparkCommand, Carpark>(MemberList.None)
+            .ForMember(x=>x.Zones,y=>y.Ignore())
+            .ForMember(x=>x.Tenant,y=>y.Ignore());
         }
     }
 }
-    
-    public class CreateCarparkCommandHandler : IRequestHandler<CreateCarparkCommand, Result<int>>
+
+public class CreateCarparkCommandHandler : IRequestHandler<CreateCarparkCommand, Result<int>>
+{
+    private readonly IMapper _mapper;
+    private readonly IApplicationDbContextFactory _dbContextFactory;
+    public CreateCarparkCommandHandler(
+        IMapper mapper,
+        IApplicationDbContextFactory dbContextFactory)
     {
-        private readonly IMapper _mapper;
-        private readonly IApplicationDbContextFactory _dbContextFactory;
-        public CreateCarparkCommandHandler(
-            IMapper mapper,
-            IApplicationDbContextFactory dbContextFactory)
-        {
-            _mapper = mapper;
-            _dbContextFactory = dbContextFactory;
-        }
-        public async Task<Result<int>> Handle(CreateCarparkCommand request, CancellationToken cancellationToken)
-        {
-           await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
-           var item = _mapper.Map<Carpark>(request);
-           // raise a create domain event
-	       item.AddDomainEvent(new CarparkCreatedEvent(item));
-           db.Carparks.Add(item);
-           await db.SaveChangesAsync(cancellationToken);
-           return  await Result<int>.SuccessAsync(item.Id);
-        }
+        _mapper = mapper;
+        _dbContextFactory = dbContextFactory;
     }
+    public async Task<Result<int>> Handle(CreateCarparkCommand request, CancellationToken cancellationToken)
+    {
+        await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
+        var item = _mapper.Map<Carpark>(request);
+        foreach (var zone in request.Zones ?? Enumerable.Empty<ZoneDto>())
+        {
+            var zoneEntity = _mapper.Map<Zone>(zone);
+            foreach (var vehicle in zone.Vehicles ?? Enumerable.Empty<VehicleDto>())
+            {
+                var vehicleEntity = _mapper.Map<Vehicle>(vehicle);
+                vehicleEntity.ChargeId = vehicle.Charge?.Id;
+                zoneEntity.Vehicles.Add(vehicleEntity);
+            }
+            foreach (var space in zone.SpaceGroups ?? Enumerable.Empty<SpaceGroupDto>())
+            {
+                var spaceEntity = _mapper.Map<SpaceGroup>(space);
+                zoneEntity.SpaceGroups.Add(spaceEntity);
+            }
+            foreach (var gate in zone.Gates ?? Enumerable.Empty<GateDto>())
+            {
+                var gateEntity = _mapper.Map<Gate>(gate);
+                zoneEntity.Gates.Add(gateEntity);
+            }
+            item.Zones.Add(zoneEntity);
+        }
+        // raise a create domain event
+        item.AddDomainEvent(new CarparkCreatedEvent(item));
+        db.Carparks.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        return await Result<int>.SuccessAsync(item.Id);
+    }
+}
 

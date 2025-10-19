@@ -14,8 +14,8 @@ public class MemberRentalDto
     public MemberDto? Member { get; set; }
     public string LicensePlate { get; set; } = string.Empty;
     public string CardId { get; set; } = string.Empty;
-    public required DateTime StartDate { get; set; }
-    public required DateTime ExpiryDate { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? ExpiryDate { get; set; }
 
     //本期月租租金
     public decimal RentalFee { get; set; }
@@ -41,7 +41,7 @@ public class MemberRentalDto
             CreateMap<MemberRental, MemberRentalDto>(MemberList.None);
 
             CreateMap<MemberRentalDto, MemberRental>(MemberList.None)
-
+                .ForMember(dest => dest.Member, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
             .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())

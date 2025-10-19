@@ -14,8 +14,8 @@ public class MemberRental: BaseAuditableEntity
     public Member? Member { get; set; }
     public string LicensePlate { get; set; } = string.Empty;
     public string CardId { get; set; } = string.Empty;
-    public required DateTime StartDate { get; set; }
-    public required DateTime ExpiryDate { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? ExpiryDate { get; set; }
 
     //本期月租租金
     public decimal RentalFee { get; set; }

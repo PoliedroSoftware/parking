@@ -2,7 +2,7 @@
 @using CleanArchitecture.Blazor.Application.Features.Members.Commands.Create
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
-
+@using CleanArchitecture.Blazor.Server.UI.Pages.Members.Components
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<Members> L
@@ -68,7 +68,7 @@
 						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Email)]" @bind-Value="_model.Email" For="@(() => _model.Email)" Required="false" RequiredError="@L["email is required!"]"></MudTextField>
 					</MudItem>
 					<MudItem xs="12" md="4">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Address)]" @bind-Value="_model.Address" For="@(() => _model.Address)" Required="false" RequiredError="@L["address is required!"]"></MudTextField>
+						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Address)]" @bind-Value="_model.Address" For="@(() => _model.Address)" Required="true" RequiredError="@L["address is required!"]"></MudTextField>
 					</MudItem>
 					<MudItem xs="12" md="4">
 						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Notes)]" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Required="false" RequiredError="@L["notes is required!"]"></MudTextField>
@@ -95,16 +95,18 @@
 									<MudTh></MudTh>
 								</HeaderContent>
 								<RowTemplate>
-									<MudTd>@context.StartDate.ToString("d")</MudTd>
-									<MudTd>@context.ExpiryDate.ToString("d")</MudTd>
+									<MudTd>@context.StartDate?.ToString("d")</MudTd>
+									<MudTd>@context.ExpiryDate?.ToString("d")</MudTd>
 									<MudTd>@context.RentalFee</MudTd>
+									<MudTd>@context.Deposit</MudTd>
 									<MudTd>@context.AmountDue</MudTd>
 									<MudTd>@context.AmountPaid</MudTd>
 									<MudTd>@context.PaymentTime</MudTd>
 									<MudTd>@context.PaymentMethodId</MudTd>
-									<MudTd>@context.AmountDue</MudTd>
 									<MudTd>@context.Notes</MudTd>
-									<MudTd DataLabel="Molar"><MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => _model.MemberRentals.Remove(context))"> @L["Delete"]</MudIconButton></MudTd>
+									<MudTd DataLabel="Molar">
+										<MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditMemberRental(context))"> @L["Edit"]</MudIconButton>
+										<MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => _model.MemberRentals.Remove(context))"> @L["Delete"]</MudIconButton></MudTd>
 								</RowTemplate>
 							</MudTable>
 						}
@@ -125,7 +127,7 @@
 	MudForm _memberForm = new();
 	private bool _saving = false;
 	private List<BreadcrumbItem>? _breadcrumbItems;
-	private CreateMemberCommand _model = new();
+	private CreateMemberCommand _model = new() { MemberRentals=new List<MemberRentalDto>() { } };
 	protected override Task OnInitializedAsync()
 	{
 		Title = L["New Member"];
@@ -145,19 +147,44 @@
 		{
 			_model.MemberRentals = new List<MemberRentalDto>();
 		}
-		_model.MemberRentals.Add(new MemberRentalDto
+		var item = new MemberRentalDto
+			{
+				StartDate = DateTime.Today,
+				ExpiryDate = DateTime.Today.AddYears(1),
+				RentalFee = 0,
+				Deposit = 0,
+				AmountDue = 0,
+				AmountPaid = 0,
+				PaymentTime = DateTime.Now,
+				PaymentMethodId = PaymentMethods.None,
+				Notes = string.Empty
+			};
+		var parameters = new DialogParameters<MemberRentalDialog>(){
+			{  x=>x.MemberRental, item }
+			};
+		var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<MemberRentalDialog>(L["Edit Member Rental"], parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled)
 		{
-			StartDate = DateTime.Today,
-			ExpiryDate = DateTime.Today.AddYears(1),
-			RentalFee = 0,
-			Deposit = 0,
-			AmountDue = 0,
-			AmountPaid = 0,
-			PaymentTime = DateTime.Now,
-			PaymentMethodId = PaymentMethods.None,
-			Notes = string.Empty
-		});
-		await InvokeAsync(StateHasChanged);
+			_model.MemberRentals.Add((MemberRentalDto)result.Data!);
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+	async Task EditMemberRental(MemberRentalDto rental)
+	{
+		await _memberForm.Validate();
+		if (!_memberForm.IsValid) return;
+		var parameters = new DialogParameters<MemberRentalDialog>(){
+			{  x=>x.MemberRental, rental }
+			};
+		var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true};
+		var dialog = await DialogService.ShowAsync<MemberRentalDialog>(L["Edit Member Rental"], parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 	async Task OnSubmit()
 	{

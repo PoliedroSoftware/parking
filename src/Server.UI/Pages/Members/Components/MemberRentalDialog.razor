@@ -6,9 +6,41 @@
     <DialogContent>
 		<MudForm Model="@MemberRental" @ref="@_memberForm" Validation="@(Validator.ValidateValue(MemberRental))">
             <MudGrid>
+				<MudItem xs="12" sm="6">
+					<MudDatePicker ShowToolbar="false" Label="@L["Start Date"]" @bind-Date="MemberRental.StartDate" Required="true" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudDatePicker ShowToolbar="false" Label="@L["Expiry Date"]" @bind-Date="MemberRental.ExpiryDate" Required="true" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudNumericField T="decimal" Label="@L["Rental Fee"]" @bind-Value="MemberRental.RentalFee" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.AttachMoney" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudNumericField T="decimal" Label="@L["Deposit"]" @bind-Value="MemberRental.Deposit" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Savings" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudNumericField T="decimal" Label="@L["Amount Due"]" @bind-Value="MemberRental.AmountDue" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.RequestQuote" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudNumericField T="decimal" Label="@L["Amount Paid"]" @bind-Value="MemberRental.AmountPaid" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Payments" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudDatePicker ShowToolbar="false" Label="@L["Payment Time"]" @bind-Date="MemberRental.PaymentTime" />
+				</MudItem>
+				<MudItem xs="12" sm="6">
+					<MudEnumSelect TEnum="Nullable<PaymentMethods>" Label="@L["Payment Method"]" @bind-Value="MemberRental.PaymentMethodId" />
+				</MudItem>
+				<MudItem xs="12">
+					<MudTextField Label="@L["Notes"]" @bind-Value="MemberRental.Notes"/>
+				</MudItem>
 			</MudGrid>
 		</MudForm>
 	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+		 
+		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+	</DialogActions>
 </MudDialog>
 
 @code {

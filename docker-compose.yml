@@ -1,7 +1,7 @@
 ﻿version: '3.8'
 
 services:
-  dashboard:
+  aceparking:
     image: ${DOCKER_REGISTRY-}blazorserver
     build:
       context: .
@@ -29,8 +29,8 @@ services:
 
  
     ports:
-      - "5005:80"
-      - "5006:443"
+      - "5095:80"
+      - "5096:443"
     restart: on-failure
 
   

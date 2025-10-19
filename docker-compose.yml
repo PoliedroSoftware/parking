@@ -26,28 +26,14 @@ services:
       - Authentication__Microsoft__ClientSecret=${MS_CLIENT_SECRET}
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
       - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
-      - Minio__Endpoint=${MINIO_ENDPOINT}
-      - Minio__AccessKey=${MINIO_ACCESS_KEY}
-      - Minio__SecretKey=${MINIO_SECRET_KEY}
-      - Minio__BucketName=${MINIO_BUCKET}
+
  
     ports:
       - "5005:80"
       - "5006:443"
-    depends_on:
-      - sqldb
     restart: on-failure
 
-  sqldb:
-    image: "mcr.microsoft.com/mssql/server:2022-latest"
-    environment:
-      - SA_PASSWORD=${SQL_SERVER_PASSWORD}
-      - ACCEPT_EULA=Y
-    volumes:
-      - mssql_data:/var/opt/mssql
-    ports:
-      - "3433:1433"
-    restart: on-failure
+  
 
 volumes:
   mssql_data:

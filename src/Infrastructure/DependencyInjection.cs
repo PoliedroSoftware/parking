@@ -179,7 +179,7 @@ public static class DependencyInjection
             .AddScoped<IValidationService, ValidationService>()
             .AddScoped<IDateTime, DateTimeService>()
             .AddScoped<IExcelService, ExcelService>()
-            .AddScoped<IUploadService, MinioUploadService>()
+            .AddScoped<IUploadService, FileUploadService>()
             .AddScoped<IPDFService, PDFService>()
             ;
     }

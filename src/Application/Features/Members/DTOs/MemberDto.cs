@@ -13,6 +13,7 @@
 
 using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
+using CleanArchitecture.Blazor.Domain.Entities;
 
 namespace CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 
@@ -30,7 +31,7 @@ public class MemberDto
     [Description("Expiry date")]
     public DateTime? ExpiryDate {get;set;} 
     [Description("Vehicles")]
-    public List<VehicleDto>? Vehicles {get;set;} 
+    public List<MemberVehicleDto>? MemberVehicles { get;set;} 
     [Description("Space group id")]
     public int? SpaceGroupId {get;set;} 
     [Description("Space group")]
@@ -65,8 +66,12 @@ public class MemberDto
     {
         public Mapping()
         {
-            CreateMap<Member, MemberDto>(MemberList.None);
+            CreateMap<Member, MemberDto>(MemberList.None)
+                .ForMember(y=>y.MemberRentals,y=>y.Ignore())
+                .ForMember(x=>x.MemberVehicles,y=>y.Ignore());
             CreateMap<MemberDto, Member>(MemberList.None)
+                .ForMember(y => y.MemberRentals, y => y.Ignore())
+                .ForMember(x => x.MemberVehicles, y => y.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
             .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())

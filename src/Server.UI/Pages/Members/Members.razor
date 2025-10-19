@@ -60,34 +60,7 @@
                                 @AppStrings.Delete
                             </MudButton>
                     }
-                    <MudMenu TransformOrigin="Origin.BottomRight" AnchorOrigin="Origin.BottomRight" EndIcon="@Icons.Material.Filled.MoreVert" Label="@AppStrings.More">
-                        @if (_accessRights.Clone)
-                        {
-                            <MudMenuItem Disabled="@(_selectedMembers.Count != 1)" OnClick="OnCloneMember">@AppStrings.Clone</MudMenuItem>
-                        }
-                        
-                        @if (_accessRights.Export)
-                        {
-                            <MudMenuItem Disabled="@_exporting"
-                                         OnClick="OnExport">
-                                @AppStrings.Export
-                            </MudMenuItem>
-                        }
-                        @if (_accessRights.Import)
-                        {
-                            <MudMenuItem>
-                                <MudFileUpload T="IBrowserFile" FilesChanged="OnImportData" Accept=".xlsx">
-                                    <ActivatorContent>
-                                        <MudButton Class="pa-0 ma-0" Style="font-weight:400;text-transform:none;"
-                                                   Variant="Variant.Text"
-                                                   Disabled="@_uploading">
-                                            @AppStrings.Import
-                                        </MudButton>
-                                    </ActivatorContent>
-                                </MudFileUpload>
-                            </MudMenuItem>
-                        }
-                    </MudMenu>
+                     
                 </MudToolBar>
                 <MudStack Row Spacing="1">
                     @if (_accessRights.Search)
@@ -257,33 +230,10 @@
     }
     private Task OnCreate()
     {
-        var command = new AddEditMemberCommand();
-        return ShowEditFormDialog(L["New Member"], command);
+		Navigation.NavigateTo($"/pages/members/create/");
+		return Task.CompletedTask;
     }
-    private Task OnCloneMember()
-    {
-        var dto = _selectedMembers.First();
-        var command = new AddEditMemberCommand()
-        {
-                    LicensePlate = dto.LicensePlate, 
-        CardId = dto.CardId, 
-        StartDate = dto.StartDate, 
-        ExpiryDate = dto.ExpiryDate, 
-        SpaceGroupId = dto.SpaceGroupId, 
-        SpaceNo = dto.SpaceNo, 
-        IsActive = dto.IsActive, 
-        Name = dto.Name, 
-        PhoneNumber = dto.PhoneNumber, 
-        MobileNumber = dto.MobileNumber, 
-        Email = dto.Email, 
-        Address = dto.Address, 
-        Notes = dto.Notes, 
-        TenantId = dto.TenantId, 
-        SpaceType = dto.SpaceType, 
-
-        };
-        return ShowEditFormDialog(L["Clone Member"], command);
-    }
+     
     private Task OnEditMember(MemberDto dto)
     {
        //var command = Mapper.Map<AddEditMemberCommand>(dto);

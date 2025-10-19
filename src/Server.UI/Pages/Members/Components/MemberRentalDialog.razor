@@ -1,0 +1,40 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@inject IValidationService Validator
+@inject IStringLocalizer<Members> L
+
+<MudDialog>
+    <DialogContent>
+		<MudForm Model="@MemberRental" @ref="@_memberForm" Validation="@(Validator.ValidateValue(MemberRental))">
+            <MudGrid>
+			</MudGrid>
+		</MudForm>
+	</DialogContent>
+</MudDialog>
+
+@code {
+	 MudForm _memberForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public MemberRentalDto MemberRental { get; set; } = null!;
+
+
+	void Cancel() => MudDialog.Cancel();
+
+	async Task OnSubmit()
+	{
+		try
+		{
+			_saving = true;
+			await _memberForm.Validate().ConfigureAwait(false);
+			if (!_memberForm.IsValid)
+				return;
+			MudDialog.Close(DialogResult.Ok(MemberRental));
+		}
+		finally
+		{
+			_saving = false;
+		}
+	}
+}

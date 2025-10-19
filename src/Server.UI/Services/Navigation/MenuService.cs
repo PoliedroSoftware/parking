@@ -32,13 +32,8 @@ public class MenuService : IMenuService
                             Title = "Member",
                             Href = "/pages/Members",
                             PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Charge",
-                            Href = "/pages/Charges",
-                            PageStatus = PageStatus.Completed
                         }
+                         
                         
                     }
                 },

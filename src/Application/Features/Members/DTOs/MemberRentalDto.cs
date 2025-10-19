@@ -30,9 +30,23 @@ public class MemberRentalDto
     public decimal AmountPaid { get; set; }
 
     // 繳費時間
-    public DateTime PaymentTime { get; set; } = DateTime.Now;
+    public DateTime? PaymentTime { get; set; } = DateTime.Now;
 
-    public PaymentMethods PaymentMethodId { get; set; } = PaymentMethods.None;
+    public PaymentMethods? PaymentMethodId { get; set; } = PaymentMethods.None;
     public string? Notes { get; set; }
+    private class Mapping : Profile
+    {
+        public Mapping()
+        {
+            CreateMap<MemberRental, MemberRentalDto>(MemberList.None);
 
+            CreateMap<MemberRentalDto, MemberRental>(MemberList.None)
+
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedById, opt => opt.Ignore())
+            .ForMember(dest => dest.LastModifiedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.LastModifiedById, opt => opt.Ignore())
+            .ForMember(dest => dest.DomainEvents, opt => opt.Ignore());
+        }
+    }
 }

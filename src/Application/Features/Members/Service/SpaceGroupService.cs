@@ -3,21 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Tenants.Caching;
-using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 using ZiggyCreatures.Caching.Fusion;
 
-namespace CleanArchitecture.Blazor.Application.Features.Charges.Services;
+namespace CleanArchitecture.Blazor.Application.Features.Members.Service;
 
-public class ChargesService:IChargesService
+public class SpaceGroupService:ISpaceGroupService
 {
     private readonly IApplicationDbContextFactory _dbContextFactory;
     private readonly IMapper _mapper;
     private readonly IFusionCache _fusionCache;
 
-    public ChargesService(
+    public SpaceGroupService(
         IMapper mapper,
         IFusionCache fusionCache,
         IApplicationDbContextFactory dbContextFactory)
@@ -28,26 +29,26 @@ public class ChargesService:IChargesService
     }
 
     public event Func<Task>? OnChange;
-    public List<ChargeDto> DataSource { get; private set; } = new();
+    public List<SpaceGroupDto> DataSource { get; private set; } = new();
 
 
     public async Task InitializeAsync()
     {
         await using var db = await _dbContextFactory.CreateAsync();
-        DataSource = _fusionCache.GetOrSet(ChargeCacheKey.GetAllCacheKey,
-            _ => db.Charges.Where(x=>x.EffectiveDate>DateTime.Today).ProjectTo<ChargeDto>(_mapper.ConfigurationProvider)
+        DataSource = _fusionCache.GetOrSet(CarparkCacheKey.GetAllCacheKey,
+            _ => db.SpaceGroups.ProjectTo<SpaceGroupDto>(_mapper.ConfigurationProvider)
                 .OrderBy(x => x.Name)
-                .ToList()) ?? new List<ChargeDto>();
+                .ToList()) ?? new List<SpaceGroupDto>();
     }
 
     public async Task RefreshAsync()
     {
-        _fusionCache.Remove(ChargeCacheKey.GetAllCacheKey);
+        _fusionCache.Remove(CarparkCacheKey.GetAllCacheKey);
         await using var db = await _dbContextFactory.CreateAsync();
         DataSource = _fusionCache.GetOrSet(ChargeCacheKey.GetAllCacheKey,
-            _ => db.Charges.Where(x => x.EffectiveDate > DateTime.Today).ProjectTo<ChargeDto>(_mapper.ConfigurationProvider)
+            _ => db.SpaceGroups.ProjectTo<SpaceGroupDto>(_mapper.ConfigurationProvider)
                 .OrderBy(x => x.Name)
-                .ToList()) ?? new List<ChargeDto>();
+                .ToList()) ?? new List<SpaceGroupDto>();
         if (OnChange != null) await OnChange.Invoke();
     }
 }

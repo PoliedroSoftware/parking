@@ -54,9 +54,10 @@ public class UpdateMemberCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Tenant id")]
     public string? TenantId {get;set;} 
     [Description("Tenant")]
-    public TenantDto? Tenant {get;set;} 
-
-      public string CacheKey => MemberCacheKey.GetAllCacheKey;
+    public TenantDto? Tenant {get;set;}
+    [Description("Member rentals")]
+    public List<MemberRentalDto>? MemberRentals { get; set; }
+    public string CacheKey => MemberCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => MemberCacheKey.Tags;
 
     private class Mapping : Profile

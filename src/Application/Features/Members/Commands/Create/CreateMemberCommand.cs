@@ -12,6 +12,7 @@
 #nullable disable warnings
 
 using CleanArchitecture.Blazor.Application.Features.Members.Caching;
+using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 
@@ -54,9 +55,10 @@ public class CreateMemberCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Tenant id")]
     public string? TenantId {get;set;} 
     [Description("Tenant")]
-    public TenantDto? Tenant {get;set;} 
-
-      public string CacheKey => MemberCacheKey.GetAllCacheKey;
+    public TenantDto? Tenant {get;set;}
+    [Description("Member rentals")]
+    public List<MemberRentalDto>? MemberRentals { get; set; }
+    public string CacheKey => MemberCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => MemberCacheKey.Tags;
       private class Mapping : Profile
     {

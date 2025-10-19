@@ -17,57 +17,61 @@ using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
 
 namespace CleanArchitecture.Blazor.Application.Features.Members.Commands.Update;
 
-public class UpdateMemberCommand: ICacheInvalidatorRequest<Result<int>>
+public class UpdateMemberCommand : ICacheInvalidatorRequest<Result<int>>
 {
-      [Description("Id")]
-      public int Id { get; set; }
-          [Description("License plate")]
-    public string? LicensePlate {get;set;} 
+    [Description("Id")]
+    public int Id { get; set; }
+    [Description("License plate")]
+    public string? LicensePlate { get; set; }
     [Description("Card id")]
-    public string? CardId {get;set;} 
+    public string? CardId { get; set; }
     [Description("Start date")]
-    public DateTime? StartDate {get;set;} 
+    public DateTime? StartDate { get; set; }
     [Description("Expiry date")]
-    public DateTime? ExpiryDate {get;set;} 
+    public DateTime? ExpiryDate { get; set; }
     [Description("Space group id")]
-    public int? SpaceGroupId {get;set;} 
+    public int? SpaceGroupId { get; set; }
     [Description("Space group")]
-    public SpaceGroupDto? SpaceGroup {get;set;} 
+    public SpaceGroupDto? SpaceGroup { get; set; }
     [Description("Space type")]
-    public SpaceTypes? SpaceType {get;set;} 
+    public SpaceTypes? SpaceType { get; set; }
     [Description("Space no")]
-    public string? SpaceNo {get;set;} 
+    public string? SpaceNo { get; set; }
     [Description("Is active")]
-    public bool IsActive {get;set;} 
+    public bool IsActive { get; set; }
     [Description("Name")]
-    public string Name {get;set;} 
+    public string Name { get; set; }
     [Description("Phone number")]
-    public string? PhoneNumber {get;set;} 
+    public string? PhoneNumber { get; set; }
     [Description("Mobile number")]
-    public string? MobileNumber {get;set;} 
+    public string? MobileNumber { get; set; }
     [Description("Email")]
-    public string? Email {get;set;} 
+    public string? Email { get; set; }
     [Description("Address")]
-    public string? Address {get;set;} 
+    public string? Address { get; set; }
     [Description("Notes")]
-    public string? Notes {get;set;} 
+    public string? Notes { get; set; }
     [Description("Tenant id")]
-    public string? TenantId {get;set;} 
+    public string? TenantId { get; set; }
     [Description("Tenant")]
-    public TenantDto? Tenant {get;set;}
+    public TenantDto? Tenant { get; set; }
     [Description("Member rentals")]
     public List<MemberRentalDto>? MemberRentals { get; set; }
     [Description("Member Vehicles")]
     public List<VehicleDto>? MemberVehicles { get; set; } = new List<VehicleDto>();
     public string CacheKey => MemberCacheKey.GetAllCacheKey;
-      public IEnumerable<string>? Tags => MemberCacheKey.Tags;
+    public IEnumerable<string>? Tags => MemberCacheKey.Tags;
 
     private class Mapping : Profile
     {
         public Mapping()
         {
-            CreateMap<UpdateMemberCommand, Member>(MemberList.None);
-            CreateMap<MemberDto,UpdateMemberCommand>(MemberList.None);
+            CreateMap<UpdateMemberCommand, Member>(MemberList.None)
+                .ForMember(x => x.SpaceGroup, y => y.Ignore())
+                .ForMember(x => x.MemberRentals, y => y.Ignore())
+                .ForMember(x => x.MemberVehicles, y => y.Ignore())
+                .ForMember(x => x.Tenant, y => y.Ignore()); ;
+            CreateMap<MemberDto, UpdateMemberCommand>(MemberList.None);
         }
     }
 
@@ -86,17 +90,56 @@ public class UpdateMemberCommandHandler : IRequestHandler<UpdateMemberCommand, R
     }
     public async Task<Result<int>> Handle(UpdateMemberCommand request, CancellationToken cancellationToken)
     {
-       await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
-       var item = await db.Members.FindAsync(request.Id, cancellationToken);
-       if (item == null)
-       {
-           return await Result<int>.FailureAsync($"Member with id: [{request.Id}] not found.");
-       }
-       item = _mapper.Map(request, item);
-	    // raise a update domain event
-	   item.AddDomainEvent(new MemberUpdatedEvent(item));
-       await db.SaveChangesAsync(cancellationToken);
-       return await Result<int>.SuccessAsync(item.Id);
+        await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
+        var item = await db.Members.FindAsync(request.Id, cancellationToken);
+        if (item == null)
+        {
+            return await Result<int>.FailureAsync($"Member with id: [{request.Id}] not found.");
+        }
+        item.SpaceGroupId=request.SpaceGroup?.Id;
+        var existingmembervehicle = await db.MemberVehicles.Where(x => x.MemberId == item.Id).ToListAsync();
+        var membervehicleToRemove = existingmembervehicle.Where(ev => request.MemberVehicles == null || !request.MemberVehicles.Any(rv => rv.Id == ev.VehicleId)).ToList();
+        if (membervehicleToRemove.Any())
+        {
+            db.MemberVehicles.RemoveRange(membervehicleToRemove);
+        }
+        foreach (var vehicleDto in request.MemberVehicles ?? Enumerable.Empty<VehicleDto>())
+        {
+            var existingVehicle = existingmembervehicle.FirstOrDefault(ev => ev.VehicleId == vehicleDto.Id);
+            if (existingVehicle == null)
+            {
+                db.MemberVehicles.Add(new MemberVehicle() { MemberId = item.Id, VehicleId = vehicleDto.Id });
+            }
+        }
+
+
+        var existingMemberRentals= await db.MemberRentals.Where(x => x.MemberId == item.Id).ToListAsync();
+        var memberRentalToRemove = existingMemberRentals.Where(er => request.MemberRentals == null || !request.MemberRentals.Any(rr => rr.Id == er.Id)).ToList();
+        if (memberRentalToRemove.Any())
+        {
+            db.MemberRentals.RemoveRange(memberRentalToRemove);
+        }
+        foreach(var rentalDto in request.MemberRentals ?? Enumerable.Empty<MemberRentalDto>())
+        {
+            var existingRental = existingMemberRentals.FirstOrDefault(er => er.Id == rentalDto.Id);
+            if (existingRental == null)
+            {
+                var newRental = _mapper.Map<MemberRental>(rentalDto);
+                newRental.MemberId = item.Id;
+                db.MemberRentals.Add(newRental);
+            }
+            else
+            {
+                _mapper.Map(rentalDto, existingRental);
+                db.MemberRentals.Update(existingRental);
+            }
+        }
+
+        item = _mapper.Map(request, item);
+        // raise a update domain event
+        item.AddDomainEvent(new MemberUpdatedEvent(item));
+        await db.SaveChangesAsync(cancellationToken);
+        return await Result<int>.SuccessAsync(item.Id);
     }
 }
 

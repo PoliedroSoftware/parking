@@ -22,44 +22,44 @@ public class MemberDto
 {
     [Description("Id")]
     public int Id { get; set; }
-        [Description("License plate")]
-    public string? LicensePlate {get;set;} 
+    [Description("License plate")]
+    public string? LicensePlate { get; set; }
     [Description("Card id")]
-    public string? CardId {get;set;} 
+    public string? CardId { get; set; }
     [Description("Start date")]
-    public DateTime? StartDate {get;set;} 
+    public DateTime? StartDate { get; set; }
     [Description("Expiry date")]
-    public DateTime? ExpiryDate {get;set;} 
+    public DateTime? ExpiryDate { get; set; }
     [Description("Vehicles")]
-    public List<MemberVehicleDto>? MemberVehicles { get;set;} 
+    public List<VehicleDto>? MemberVehicles { get; set; }
     [Description("Space group id")]
-    public int? SpaceGroupId {get;set;} 
+    public int? SpaceGroupId { get; set; }
     [Description("Space group")]
-    public SpaceGroupDto? SpaceGroup {get;set;} 
+    public SpaceGroupDto? SpaceGroup { get; set; }
     [Description("Space type")]
-    public SpaceTypes? SpaceType {get;set;} 
+    public SpaceTypes? SpaceType { get; set; }
     [Description("Space no")]
-    public string? SpaceNo {get;set;} 
+    public string? SpaceNo { get; set; }
     [Description("Is active")]
-    public bool IsActive {get;set;} 
+    public bool IsActive { get; set; }
     [Description("Name")]
-    public string Name {get;set;} 
+    public string Name { get; set; }
     [Description("Phone number")]
-    public string? PhoneNumber {get;set;} 
+    public string? PhoneNumber { get; set; }
     [Description("Mobile number")]
-    public string? MobileNumber {get;set;} 
+    public string? MobileNumber { get; set; }
     [Description("Email")]
-    public string? Email {get;set;} 
+    public string? Email { get; set; }
     [Description("Address")]
-    public string? Address {get;set;} 
+    public string? Address { get; set; }
     [Description("Notes")]
-    public string? Notes {get;set;} 
+    public string? Notes { get; set; }
     [Description("Member rentals")]
-    public List<MemberRentalDto>? MemberRentals {get;set;} 
+    public List<MemberRentalDto>? MemberRentals { get; set; }
     [Description("Tenant id")]
-    public string? TenantId {get;set;} 
+    public string? TenantId { get; set; }
     [Description("Tenant")]
-    public TenantDto? Tenant {get;set;} 
+    public TenantDto? Tenant { get; set; }
 
 
     private class Mapping : Profile
@@ -67,8 +67,10 @@ public class MemberDto
         public Mapping()
         {
             CreateMap<Member, MemberDto>(MemberList.None)
-                .ForMember(y=>y.MemberRentals,y=>y.Ignore())
-                .ForMember(x=>x.MemberVehicles,y=>y.Ignore());
+                .ForMember(x=>x.MemberRentals,y=>y.Ignore())
+                .ForMember(x=>x.MemberVehicles,y=>y.Ignore())
+                .ForMember(y => y.MemberRentals, y => y.Ignore())
+                .ForMember(x => x.MemberVehicles, y => y.Ignore());
             CreateMap<MemberDto, Member>(MemberList.None)
                 .ForMember(y => y.MemberRentals, y => y.Ignore())
                 .ForMember(x => x.MemberVehicles, y => y.Ignore())

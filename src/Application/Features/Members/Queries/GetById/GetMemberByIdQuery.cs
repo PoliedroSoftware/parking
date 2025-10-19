@@ -15,9 +15,11 @@
 #nullable enable
 #nullable disable warnings
 
-using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Members.Caching;
+using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Members.Specifications;
+using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
+using CleanArchitecture.Blazor.Domain.Entities;
 
 namespace CleanArchitecture.Blazor.Application.Features.Members.Queries.GetById;
 
@@ -47,6 +49,18 @@ public class GetMemberByIdQueryHandler :
         var data = await db.Members.ApplySpecification(new MemberByIdSpecification(request.Id))
                                                 .ProjectTo<MemberDto>(_mapper.ConfigurationProvider)
                                                 .FirstAsync(cancellationToken) ?? throw new NotFoundException($"Member with id: [{request.Id}] not found.");
+
+        var memberVehicles = await db.MemberVehicles
+                                    .Where(x => x.MemberId == request.Id)
+                                    .Select(x => x.Vehicle)
+                                    .ProjectTo<VehicleDto>(_mapper.ConfigurationProvider)
+                                    .ToListAsync(cancellationToken);
+        data.MemberVehicles = memberVehicles;
+        var memberRentals = await db.MemberRentals
+                                    .Where(x => x.MemberId == request.Id)
+                                    .ProjectTo<MemberRentalDto>(_mapper.ConfigurationProvider)
+                                    .ToListAsync(cancellationToken);
+        data.MemberRentals = memberRentals;
         return await Result<MemberDto>.SuccessAsync(data);
     }
 }

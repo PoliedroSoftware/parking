@@ -57,9 +57,9 @@ public class CreateMemberCommand : ICacheInvalidatorRequest<Result<int>>
     [Description("Tenant")]
     public TenantDto? Tenant { get; set; }
     [Description("Member rentals")]
-    public List<MemberRentalDto>? MemberRentals { get; set; }
+    public List<MemberRentalDto>? MemberRentals { get; set; } = new List<MemberRentalDto>();
     [Description("Member Vehicles")]
-    public List<MemberVehicleDto>? MemberVehicles { get; set; }
+    public List<VehicleDto>? MemberVehicles { get; set; } = new List<VehicleDto>();
     public string CacheKey => MemberCacheKey.GetAllCacheKey;
     public IEnumerable<string>? Tags => MemberCacheKey.Tags;
     private class Mapping : Profile
@@ -69,6 +69,7 @@ public class CreateMemberCommand : ICacheInvalidatorRequest<Result<int>>
             CreateMap<CreateMemberCommand, Member>(MemberList.None)
                 .ForMember(x=>x.SpaceGroup,y=>y.Ignore())
                 .ForMember(x => x.MemberRentals, y => y.Ignore())
+                .ForMember(x=>x.MemberVehicles,y=>y.Ignore())
                 .ForMember(x => x.Tenant, y => y.Ignore());
         }
     }
@@ -91,10 +92,15 @@ public class CreateMemberCommandHandler : IRequestHandler<CreateMemberCommand, R
         var item = _mapper.Map<Member>(request);
         item.SpaceGroupId = request.SpaceGroup?.Id;
         item.MemberRentals=new List<MemberRental>();
+        item.MemberVehicles = new List<MemberVehicle>();
         foreach (var ren in request.MemberRentals??  Enumerable.Empty<MemberRentalDto>())
         {
             var renEntity = _mapper.Map<MemberRental>(ren);
             item.MemberRentals.Add(renEntity);
+        }
+        foreach(var vehicle in request.MemberVehicles ?? Enumerable.Empty<VehicleDto>())
+        {
+            item.MemberVehicles.Add(new MemberVehicle() { VehicleId=vehicle.Id });
         }
         // raise a create domain event
         item.AddDomainEvent(new MemberCreatedEvent(item));

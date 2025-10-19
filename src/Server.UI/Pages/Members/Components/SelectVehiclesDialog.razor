@@ -1,0 +1,109 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Members.Queries.Pagination
+@using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Members> L
+<MudDialog>
+	<DialogContent>
+		<MudPaper Class="d-flex flex-row gap-3 pa-2 mb-3">
+			<MudTextField Label="@L["Park Name"]" @bind-Value="Query.CarparkName"></MudTextField>
+			<MudTextField Label="@L["Zone Name"]" @bind-Value="Query.ZoneName"></MudTextField>
+			<MudTextField Label="@L["Keywords"]" @bind-Value="Query.Keyword"></MudTextField>
+			<MudButton StartIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" OnClick="Search">@L["Search"]</MudButton>
+		</MudPaper>
+		<MudDataGrid ServerData="@(ServerReload)"
+					 MultiSelection="true"
+					 T="VehicleDto"
+					 SelectOnRowClick="false"
+					 @bind-SelectedItems="_selectedItems"
+					 Hover="true" @ref="_grid">
+			<Columns>
+				<SelectColumn ShowInFooter="false"></SelectColumn>
+				<PropertyColumn Property="x => x.Zone" Title="@L["Park"]">
+					<CellTemplate>
+						<div class="d-flex flex-column">
+							<MudText Typo="Typo.body1">@context.Item.Zone?.Carpark?.Name.Code</MudText>
+							<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Zone?.Carpark?.Name.Tc</MudText>
+						</div>
+					</CellTemplate>
+				</PropertyColumn>
+				<PropertyColumn Property="x => x.Zone" Title="@L["Zone"]">
+					<CellTemplate>
+						<div class="d-flex flex-column">
+							<MudText Typo="Typo.body1">@context.Item.Zone?.Name.Code</MudText>
+							<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Zone?.Name.Tc</MudText>
+						</div>
+					</CellTemplate>
+				</PropertyColumn>
+
+				<PropertyColumn Property="x => x.Name" Title="@L["Name"]" />
+				<PropertyColumn Property="x => x.Zone" Title="@L["Charge"]">
+					<CellTemplate>
+						<div class="d-flex flex-column">
+							<MudText Typo="Typo.body1">@context.Item.Charge?.Name</MudText>
+							<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Charge?.Description</MudText>
+						</div>
+					</CellTemplate>
+				</PropertyColumn>
+				<PropertyColumn Property="x => x.ServiceCategoryId" Title="@L["Service Category"]" />
+				<PropertyColumn Property="x => x.VehicleTypeId" Title="@L["Vehicle Type"]" />
+				<PropertyColumn Property="x => x.Capacity" Title="@L["Capacity"]" />
+
+			</Columns>
+		</MudDataGrid>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+		<MudButton OnClick="OnSubmit" Disabled="@(_selectedItems.Count == 0)">@AppStrings.Save</MudButton>
+	</DialogActions>
+</MudDialog>
+@code {
+
+ 
+	private bool _loading = false;
+
+	private MudDataGrid<VehicleDto> _grid = default!;
+	private HashSet<VehicleDto> _selectedItems = new();
+	[Parameter]
+	public UserProfile? UserProfile { get; set; } = null!;
+	[CascadingParameter]
+	IMudDialogInstance MudDialog { get; set; } = default!;
+	public string? TenantId => UserProfile?.TenantId;
+	private VehiclesPaginationQuery Query = new VehiclesPaginationQuery();
+	void Cancel() => MudDialog.Cancel();
+	private async Task<GridData<VehicleDto>> ServerReload(GridState<VehicleDto> state)
+	{
+		try
+		{
+			_loading = true;
+			Query.CurrentUser = UserProfile;
+			var sortDefinition = state.SortDefinitions.FirstOrDefault();
+			Query.OrderBy = sortDefinition?.SortBy ?? "Id";
+			Query.SortDirection = (sortDefinition != null && sortDefinition.Descending)
+											? SortDirection.Descending.ToString()
+											: SortDirection.Ascending.ToString();
+			Query.PageNumber = state.Page + 1;
+			Query.PageSize = state.PageSize;
+
+			var result = await Mediator.Send(Query).ConfigureAwait(false);
+			return new GridData<VehicleDto>() { TotalItems = result.TotalItems, Items = result.Items };
+		}
+		finally
+		{
+			_loading = false;
+		}
+
+	}
+	async Task Search()
+	{
+		await _grid.ReloadServerData();
+	}
+	async Task OnSubmit()
+	{
+
+
+
+		MudDialog.Close(DialogResult.Ok(_selectedItems));
+
+	}
+}

@@ -57,6 +57,8 @@ public class UpdateMemberCommand: ICacheInvalidatorRequest<Result<int>>
     public TenantDto? Tenant {get;set;}
     [Description("Member rentals")]
     public List<MemberRentalDto>? MemberRentals { get; set; }
+    [Description("Member Vehicles")]
+    public List<VehicleDto>? MemberVehicles { get; set; } = new List<VehicleDto>();
     public string CacheKey => MemberCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => MemberCacheKey.Tags;
 

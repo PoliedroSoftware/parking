@@ -27,7 +27,7 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         builder.Property(e => e.PhoneNumber).HasMaxLength(32);
         builder.Property(e => e.Email).HasMaxLength(64);
         builder.Property(e => e.Address).HasMaxLength(256);
-        builder.Property(e => e.Notes).HasMaxLength(512);
+        builder.Property(e => e.Notes).HasMaxLength(512).IsRequired(false);
 
         builder.HasIndex(e => e.LicensePlate).IsUnique();
         builder.HasIndex(e => e.CardId).IsUnique();

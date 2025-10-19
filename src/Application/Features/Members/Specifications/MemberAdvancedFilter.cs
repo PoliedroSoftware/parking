@@ -41,3 +41,9 @@ public class MemberAdvancedFilter: PaginationFilter
     public MemberListView ListView { get; set; } = MemberListView.All;
     public UserProfile? CurrentUser { get; set; }
 }
+public class VehicleAdvancedFilter : PaginationFilter
+{
+    public string ZoneName { get; set; }
+    public string CarparkName { get; set; }
+    public UserProfile? CurrentUser { get; set; }
+}

@@ -13,8 +13,7 @@ namespace CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 public class VehicleDto
 {
     public int Id { get; set; }
-    public int? MemberId { get; set; }
-    public MemberDto? Member { get; set; }
+ 
     // 車類名稱 Vehicle Type Name
     public string Name { get; set; } = string.Empty;
 

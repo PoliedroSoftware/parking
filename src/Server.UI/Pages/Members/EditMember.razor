@@ -44,7 +44,7 @@
 
 						</MudItem>
 						<MudItem xs="12" md="4">
-							<SpaceGroupAutocomplete T="SpaceGroupDto" Label="@L[_model.GetMemberDescription(x => x.SpaceGroup)]" @bind-Value="_model.SpaceGroup" For="@(() => _model.SpaceGroup)" Min="0" Required="true" RequiredError="@L["space group id is required!"]"></SpaceGroupAutocomplete>
+							<SpaceGroupAutocomplete T="SpaceGroupDto" Label="@L[_model.GetMemberDescription(x => x.SpaceGroup)]" @bind-Value="_model.SpaceGroup" For="@(() => _model.SpaceGroup)" Required="true" RequiredError="@L["space group id is required!"]"></SpaceGroupAutocomplete>
 						</MudItem>
 						<MudItem xs="12" md="4">
 							<MudTextField Label="@L["Space Group Capacity"]" Value="_model.SpaceGroup?.Capacity" ReadOnly></MudTextField>
@@ -66,16 +66,49 @@
 							<MudTextField Label="@L[_model.GetMemberDescription(x => x.PhoneNumber)]" @bind-Value="_model.PhoneNumber" For="@(() => _model.PhoneNumber)" Required="true" RequiredError="@L["phone number is required!"]"></MudTextField>
 						</MudItem>
 						<MudItem xs="12" md="4">
-							<MudTextField Label="@L[_model.GetMemberDescription(x => x.MobileNumber)]" @bind-Value="_model.MobileNumber" For="@(() => _model.MobileNumber)" Required="false" RequiredError="@L["mobile number is required!"]"></MudTextField>
+							<MudTextField Label="@L[_model.GetMemberDescription(x => x.MobileNumber)]" @bind-Value="_model.MobileNumber" For="@(() => _model.MobileNumber)" Required="true" RequiredError="@L["mobile number is required!"]"></MudTextField>
 						</MudItem>
 						<MudItem xs="12" md="4">
-							<MudTextField Label="@L[_model.GetMemberDescription(x => x.Email)]" @bind-Value="_model.Email" For="@(() => _model.Email)" Required="false" RequiredError="@L["email is required!"]"></MudTextField>
+							<MudTextField Label="@L[_model.GetMemberDescription(x => x.Email)]" @bind-Value="_model.Email" For="@(() => _model.Email)" Required="true" RequiredError="@L["email is required!"]"></MudTextField>
 						</MudItem>
 						<MudItem xs="12" md="4">
 							<MudTextField Label="@L[_model.GetMemberDescription(x => x.Address)]" @bind-Value="_model.Address" For="@(() => _model.Address)" Required="true" RequiredError="@L["address is required!"]"></MudTextField>
 						</MudItem>
 						<MudItem xs="12" md="4">
 							<MudTextField Label="@L[_model.GetMemberDescription(x => x.Notes)]" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Required="false" RequiredError="@L["notes is required!"]"></MudTextField>
+						</MudItem>
+						<MudItem xs="12">
+							<MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+								<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Vehicles"]</MudText>
+								<MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddMemberVehicle">@L["Add"]</MudButton>
+							</MudStack>
+							@if (_model.MemberVehicles != null && _model.MemberVehicles.Any())
+							{
+								<MudTable Items="@_model.MemberVehicles" Breakpoint="Breakpoint.Sm" Dense>
+									<HeaderContent>
+										<MudTh>@L["Name"]</MudTh>
+										<MudTh>@L["Service Categories"]</MudTh>
+										<MudTh>@L["Vehicle Types"]</MudTh>
+										<MudTh>@L["Zone"]</MudTh>
+										<MudTh>@L["Charge"]</MudTh>
+										<MudTh>@L["Capacity"]</MudTh>
+										<MudTh>@L["IsActive"]</MudTh>
+										<MudTh></MudTh>
+									</HeaderContent>
+									<RowTemplate>
+										<MudTd>@context.Name</MudTd>
+										<MudTd>@context.ServiceCategoryId?.GetDescription()</MudTd>
+										<MudTd>@context.VehicleTypeId?.GetDescription()</MudTd>
+										<MudTd>@($"{context.Zone?.Name.Code} - {context.Zone?.Name.Tc}")" </MudTd>
+										<MudTd>@($"{context.Charge?.Name} - {context.Charge?.Description}")"</MudTd>
+										<MudTd>@context.Capacity</MudTd>
+										<MudTd>@(context.IsActive? L["Yes"] : L["No"])</MudTd>
+										<MudTd DataLabel="Molar">
+											<MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => _model.MemberVehicles.Remove(context))"> @L["Delete"]</MudIconButton>
+										</MudTd>
+									</RowTemplate>
+								</MudTable>
+							}
 						</MudItem>
 
 						<MudItem xs="12">
@@ -129,6 +162,8 @@
 
 
 @code {
+	[CascadingParameter]
+	private UserProfile? UserProfile { get; set; }
 	public string? Title { get; private set; }
 	[Parameter]
 	public int Id { get; set; }
@@ -157,6 +192,30 @@
 			Snackbar.Add($"{errors}", Severity.Error);
 		});
 
+	}
+	async Task AddMemberVehicle()
+	{
+		await _memberForm.Validate();
+		if (!_memberForm.IsValid) return;
+
+		var parameters = new DialogParameters<SelectVehiclesDialog>(){
+			{  x=>x.UserProfile, UserProfile }
+			};
+		var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<SelectVehiclesDialog>(L["Select Vehicles"], parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled)
+		{
+			var list = (HashSet<VehicleDto>)result.Data!;
+			foreach (var item in list)
+			{
+				if (!_model.MemberVehicles!.Any(x => x.Id == item.Id))
+				{
+					_model.MemberVehicles!.Add(item);
+				}
+			}
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 	async Task AddMemberRental()
 	{

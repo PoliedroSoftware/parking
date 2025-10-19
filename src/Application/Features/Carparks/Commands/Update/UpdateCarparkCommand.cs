@@ -91,6 +91,135 @@ public class UpdateCarparkCommandHandler : IRequestHandler<UpdateCarparkCommand,
         {
             return await Result<int>.FailureAsync($"Carpark with id: [{request.Id}] not found.");
         }
+        var existingZones = await db.Zones.Where(x => x.CarparkId == item.Id).ToListAsync();
+        var zoneToRemove = existingZones
+            .Where(ep => request.Zones == null || !request.Zones.Any(rp => rp.Id == ep.Id))
+            .ToList();
+        if (zoneToRemove.Any())
+        {
+            db.Zones.RemoveRange(zoneToRemove);
+        }
+        if (request.Zones != null && request.Zones.Any())
+        {
+            foreach (var zoneDto in request.Zones)
+            {
+                if (zoneDto.Id > 0)
+                {
+                    var zoneEntry = existingZones.Find(x => x.Id == zoneDto.Id);
+                    if (zoneEntry != null)
+                    {
+                        zoneEntry = _mapper.Map(zoneDto, zoneEntry);
+                        db.Zones.Update(zoneEntry);
+                    }
+                }
+                else if (!string.IsNullOrEmpty(zoneDto.Name.Code))
+                {
+                    var zoneEntry = _mapper.Map<Zone>(zoneDto);
+                    db.Zones.Add(zoneEntry);
+                }
+
+                var existingSpaceGroups = await db.SpaceGroups.Where(x => x.ZoneId == zoneDto.Id).ToListAsync();
+                var spaceGroupToRemove = existingSpaceGroups
+                    .Where(esg => zoneDto.SpaceGroups == null || !zoneDto.SpaceGroups.Any(rsg => rsg.Id == esg.Id))
+                    .ToList();
+                if (spaceGroupToRemove.Any())
+                {
+                    db.SpaceGroups.RemoveRange(spaceGroupToRemove);
+                }
+                if (zoneDto.SpaceGroups != null && zoneDto.SpaceGroups.Any())
+                {
+                    foreach (var spaceGroupDto in zoneDto.SpaceGroups)
+                    {
+                        if (spaceGroupDto.Id > 0)
+                        {
+                            var spaceGroupEntry = existingSpaceGroups.Find(x => x.Id == spaceGroupDto.Id);
+                            if (spaceGroupEntry != null)
+                            {
+                                spaceGroupEntry = _mapper.Map(spaceGroupDto, spaceGroupEntry);
+                                db.SpaceGroups.Update(spaceGroupEntry);
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(spaceGroupDto.Name))
+                        {
+                            var spaceGroupEntry = _mapper.Map<SpaceGroup>(spaceGroupDto);
+                            var zoneId = zoneDto.Id > 0 ? zoneDto.Id : item.Zones.Last().Id;
+                            spaceGroupEntry.ZoneId = zoneId;
+                            db.SpaceGroups.Add(spaceGroupEntry);
+                        }
+                    }
+                }
+
+
+
+                var existingGates = await db.Gates.Where(x => x.ZoneId == zoneDto.Id).ToListAsync();
+                var gateToRemove = existingGates
+                    .Where(eg => zoneDto.Gates == null || !zoneDto.Gates.Any(rg => rg.Id == eg.Id))
+                    .ToList();
+                if (gateToRemove.Any())
+                {
+                    db.Gates.RemoveRange(gateToRemove);
+                }
+                if (zoneDto.Gates != null && zoneDto.Gates.Any())
+                {
+                    foreach(var gateDto in zoneDto.Gates)
+                    {
+                        if (gateDto.Id > 0)
+                        {
+                            var gateEntry = existingGates.Find(x => x.Id == gateDto.Id);
+                            if (gateEntry != null)
+                            {
+                                gateEntry = _mapper.Map(gateDto, gateEntry);
+                                db.Gates.Update(gateEntry);
+                            }
+
+                        }
+                        else if (!string.IsNullOrEmpty(gateDto.Name))
+                        {
+                            var gateEntry = _mapper.Map<Gate>(gateDto);
+                            var zoneId = zoneDto.Id > 0 ? zoneDto.Id : item.Zones.Last().Id;
+                            gateEntry.ZoneId = zoneId;
+                            db.Gates.Add(gateEntry);
+                        }
+                    }
+                }
+
+
+
+                var existingVehicles = await db.Vehicles.Where(x => x.ZoneId == zoneDto.Id).ToListAsync();
+                var vehicleToRemove = existingVehicles
+                    .Where(ev => zoneDto.Vehicles == null || !zoneDto.Vehicles.Any(rv => rv.Id == ev.Id))
+                    .ToList();
+                if (vehicleToRemove.Any())
+                {
+                    db.Vehicles.RemoveRange(vehicleToRemove);
+                }
+                if (zoneDto.Vehicles != null && zoneDto.Vehicles.Any())
+                {
+                    foreach (var vehicleDto in zoneDto.Vehicles)
+                    {
+                        if (vehicleDto.Id > 0)
+                        {
+                            var vehicleEntry = existingVehicles.Find(x => x.Id == vehicleDto.Id);
+                            if (vehicleEntry != null)
+                            {
+                                vehicleEntry = _mapper.Map(vehicleDto, vehicleEntry);
+                                vehicleEntry.ChargeId = vehicleDto.Charge?.Id;
+                                db.Vehicles.Update(vehicleEntry);
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(vehicleDto.Name))
+                        {
+                            var vehicleEntry = _mapper.Map<Vehicle>(vehicleDto);
+                            vehicleEntry.ChargeId = vehicleDto.Charge?.Id;
+                            var zoneId = zoneDto.Id > 0 ? zoneDto.Id : item.Zones.Last().Id;
+                            vehicleEntry.ZoneId = zoneId;
+                            db.Vehicles.Add(vehicleEntry);
+                        }
+                    }
+                }
+            }
+        }
+
         item = _mapper.Map(request, item);
         // raise a update domain event
         item.AddDomainEvent(new CarparkUpdatedEvent(item));

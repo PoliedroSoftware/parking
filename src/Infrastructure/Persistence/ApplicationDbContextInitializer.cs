@@ -214,7 +214,7 @@ public class ApplicationDbContextInitializer
             var standardRate = new Charge
             {
                 Name = "Standard Hourly Rate",
-                EffectiveDate = DateTime.UtcNow.Date.AddDays(-7),
+                EffectiveDate = DateTime.UtcNow.Date.AddYears(1),
                 Description = "Standard hourly parking rate with peak / night preferences",
                 BeforeContent = new RateContent
                 {
@@ -249,13 +249,46 @@ public class ApplicationDbContextInitializer
                     Max12Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 150, CeilingAmountHoliday = 180 },
                     Max24Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 230, CeilingAmountHoliday = 260 },
                     FullDayPark = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 200, CeilingAmountHoliday = 240 }
+                },
+                AfterContent = new RateContent
+                {
+                    NormalCharges =
+                    [
+                        new ChargeItem { Duration = 30, PriceWeekday = 11, PriceHoliday = 13 },
+                        new ChargeItem { Duration = 60, PriceWeekday = 19, PriceHoliday = 23 },
+                        new ChargeItem { Duration = 120, PriceWeekday = 32, PriceHoliday = 38 }
+                    ],
+                    SpecialPeriod =
+                    [
+                        new ChargePeriod { StartTime = "18:00", EndTime = "23:00" }
+                    ],
+                    SpecialCharges =
+                    [
+                        new ChargeItem { Duration = 30, PriceWeekday = 10, PriceHoliday = 12 },
+                        new ChargeItem { Duration = 60, PriceWeekday = 17, PriceHoliday = 21 }
+                    ],
+                    DayPark = new ReducedItem
+                    {
+                        Period = [new ChargePeriod { StartTime = "08:00", EndTime = "20:00" }],
+                        CeilingAmountWeekday = 115,
+                        CeilingAmountHoliday = 135
+                    },
+                    NightPark = new ReducedItem
+                    {
+                        Period = [new ChargePeriod { StartTime = "18:30", EndTime = "07:30" }],
+                        CeilingAmountWeekday = 42,
+                        CeilingAmountHoliday = 52
+                    },
+                    Max12Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 145, CeilingAmountHoliday = 165 },
+                    Max24Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 185, CeilingAmountHoliday = 205 },
+                    FullDayPark = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 175, CeilingAmountHoliday = 195 }
                 }
             };
 
             var evFriendlyRate = new Charge
             {
                 Name = "EV Friendly Rate",
-                EffectiveDate = DateTime.UtcNow.Date.AddDays(-3),
+                EffectiveDate = DateTime.UtcNow.Date.AddDays(90),
                 Description = "Discounted evening rate for EV vehicles",
                 BeforeContent = new RateContent
                 {
@@ -264,13 +297,62 @@ public class ApplicationDbContextInitializer
                         new ChargeItem { Duration = 30, PriceWeekday = 10, PriceHoliday = 12 },
                         new ChargeItem { Duration = 60, PriceWeekday = 18, PriceHoliday = 22 }
                     ],
+                    SpecialPeriod =
+                    [
+                        new ChargePeriod { StartTime = "18:30", EndTime = "22:30" } // Evening promo period
+                    ],
+                    SpecialCharges =
+                    [
+                        new ChargeItem { Duration = 30, PriceWeekday = 9, PriceHoliday = 11 }
+                    ],
+                    DayPark = new ReducedItem
+                    {
+                        Period = [ new ChargePeriod { StartTime = "08:00", EndTime = "20:00" } ],
+                        CeilingAmountWeekday = 110,
+                        CeilingAmountHoliday = 130
+                    },
                     NightPark = new ReducedItem
                     {
                         Period = [ new ChargePeriod { StartTime = "19:00", EndTime = "07:00" } ],
                         CeilingAmountWeekday = 40,
                         CeilingAmountHoliday = 50
                     },
-                    Max24Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 180, CeilingAmountHoliday = 200 }
+                    Max12Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 140, CeilingAmountHoliday = 160 },
+                    Max24Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 180, CeilingAmountHoliday = 200 },
+                    FullDayPark = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 170, CeilingAmountHoliday = 190 }
+                },
+                AfterContent = new RateContent
+                {
+                    NormalCharges =
+                    [
+                        new ChargeItem { Duration = 30, PriceWeekday = 11, PriceHoliday = 13 },
+                        new ChargeItem { Duration = 60, PriceWeekday = 19, PriceHoliday = 23 },
+                        new ChargeItem { Duration = 120, PriceWeekday = 32, PriceHoliday = 38 }
+                    ],
+                    SpecialPeriod =
+                    [
+                        new ChargePeriod { StartTime = "18:00", EndTime = "23:00" }
+                    ],
+                    SpecialCharges =
+                    [
+                        new ChargeItem { Duration = 30, PriceWeekday = 10, PriceHoliday = 12 },
+                        new ChargeItem { Duration = 60, PriceWeekday = 17, PriceHoliday = 21 }
+                    ],
+                    DayPark = new ReducedItem
+                    {
+                        Period = [ new ChargePeriod { StartTime = "08:00", EndTime = "20:00" } ],
+                        CeilingAmountWeekday = 115,
+                        CeilingAmountHoliday = 135
+                    },
+                    NightPark = new ReducedItem
+                    {
+                        Period = [ new ChargePeriod { StartTime = "18:30", EndTime = "07:30" } ],
+                        CeilingAmountWeekday = 42,
+                        CeilingAmountHoliday = 52
+                    },
+                    Max12Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 145, CeilingAmountHoliday = 165 },
+                    Max24Park = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 185, CeilingAmountHoliday = 205 },
+                    FullDayPark = new MaxReducedItem { IsActive = true, CeilingAmountWeekday = 175, CeilingAmountHoliday = 195 }
                 }
             };
 

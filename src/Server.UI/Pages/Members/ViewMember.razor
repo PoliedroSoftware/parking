@@ -6,114 +6,167 @@
 @inject IStringLocalizer<Members> L
 @attribute [Authorize(Policy = Permissions.Members.View)]
 <PageTitle>@Title</PageTitle>
-<Breadcrumbs  OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<Breadcrumbs OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
 <MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
-@if (_model != null)
-{
-    <MudCard Class="pa-2">
-        <MudCardHeader>
-            <CardHeaderContent>
-                 <MudText Typo="Typo.h6">@Title</MudText>
-            </CardHeaderContent>
-        </MudCardHeader>
-        <MudCardContent>
-            <MudGrid Spacing="3" Class="readonly-grid">
-                <MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.LicensePlate)]" Value="_model.LicensePlate"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.CardId)]" Value="_model.CardId"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.StartDate)]" Value="@_model.StartDate?.ToString("d")"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.ExpiryDate)]" Value="@_model.ExpiryDate?.ToString("d")"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.SpaceGroupId)]" Value="_model.SpaceGroupId"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.SpaceType)]" Value="_model.SpaceType?.GetDescription()"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.SpaceNo)]" Value="_model.SpaceNo"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.IsActive)]" Value="_model.IsActive"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Name)]" Value="_model.Name"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.PhoneNumber)]" Value="_model.PhoneNumber"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.MobileNumber)]" Value="_model.MobileNumber"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Email)]" Value="_model.Email"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Address)]" Value="_model.Address"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Notes)]" Value="_model.Notes"></ReadOnlyField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.TenantId)]" Value="_model.TenantId"></ReadOnlyField>
-                </MudItem> 
+	@if (_model != null)
+	{
+		<MudCard Class="pa-2">
+			<MudCardHeader>
+				<CardHeaderContent>
+					<MudText Typo="Typo.h6">@Title</MudText>
+				</CardHeaderContent>
+			</MudCardHeader>
+			<MudCardContent>
+				<MudGrid Spacing="3" Class="readonly-grid">
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.LicensePlate)]" Value="_model.LicensePlate"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.CardId)]" Value="_model.CardId"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.StartDate)]" Value="@_model.StartDate?.ToString("d")"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.ExpiryDate)]" Value="@_model.ExpiryDate?.ToString("d")"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.SpaceGroupId)]" Value="_model.SpaceGroupId"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.SpaceType)]" Value="_model.SpaceType?.GetDescription()"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.SpaceNo)]" Value="_model.SpaceNo"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x => x.IsActive)]" Value="_model.IsActive"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.Name)]" Value="_model.Name"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.PhoneNumber)]" Value="_model.PhoneNumber"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.MobileNumber)]" Value="_model.MobileNumber"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.Email)]" Value="_model.Email"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.Address)]" Value="_model.Address"></ReadOnlyField>
+					</MudItem>
+					<MudItem xs="12" md="6">
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.Notes)]" Value="_model.Notes"></ReadOnlyField>
+					</MudItem>
 
-            </MudGrid>
-        </MudCardContent>
-        <MudCardActions></MudCardActions>
-    </MudCard>
- }
+
+
+				</MudGrid>
+				<MudDivider Class="my-4" />
+				<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Vehicles"]</MudText>
+				@if (_model.MemberVehicles != null && _model.MemberVehicles.Any())
+				{
+					<MudTable Items="@_model.MemberVehicles" Breakpoint="Breakpoint.Sm" Dense>
+						<HeaderContent>
+							<MudTh>@L["Name"]</MudTh>
+							<MudTh>@L["Service Categories"]</MudTh>
+							<MudTh>@L["Vehicle Types"]</MudTh>
+							<MudTh>@L["Zone"]</MudTh>
+							<MudTh>@L["Charge"]</MudTh>
+							<MudTh>@L["Capacity"]</MudTh>
+							<MudTh>@L["IsActive"]</MudTh>
+						</HeaderContent>
+						<RowTemplate>
+							<MudTd>@context.Name</MudTd>
+							<MudTd>@context.ServiceCategoryId?.GetDescription()</MudTd>
+							<MudTd>@context.VehicleTypeId?.GetDescription()</MudTd>
+							<MudTd>@($"{context.Zone?.Name.Code} - {context.Zone?.Name.Tc}") </MudTd>
+							<MudTd>@($"{context.Charge?.Name} - {context.Charge?.Description}")</MudTd>
+							<MudTd>@context.Capacity</MudTd>
+							<MudTd>@(context.IsActive? L["Yes"] : L["No"])</MudTd>
+						</RowTemplate>
+					</MudTable>
+				}
+				<MudDivider Class="my-4" />
+				<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Rental"]</MudText>
+				@if (_model.MemberRentals != null && _model.MemberRentals.Any())
+				{
+					<MudTable Items="@_model.MemberRentals" Breakpoint="Breakpoint.Sm" Dense>
+						<HeaderContent>
+							<MudTh>@L["Start Date"]</MudTh>
+							<MudTh>@L["Expiry Date"]</MudTh>
+							<MudTh>@L["Rental Fee"]</MudTh>
+							<MudTh>@L["Deposit"]</MudTh>
+							<MudTh>@L["Amount Due"]</MudTh>
+							<MudTh>@L["Amount Paid"]</MudTh>
+							<MudTh>@L["Payment Time"]</MudTh>
+							<MudTh>@L["Payment Methods"]</MudTh>
+							<MudTh>@L["Notes"]</MudTh>
+						</HeaderContent>
+						<RowTemplate>
+							<MudTd>@context.StartDate?.ToString("d")</MudTd>
+							<MudTd>@context.ExpiryDate?.ToString("d")</MudTd>
+							<MudTd>@context.RentalFee</MudTd>
+							<MudTd>@context.Deposit</MudTd>
+							<MudTd>@context.AmountDue</MudTd>
+							<MudTd>@context.AmountPaid</MudTd>
+							<MudTd>@context.PaymentTime</MudTd>
+							<MudTd>@context.PaymentMethodId</MudTd>
+							<MudTd>@context.Notes</MudTd>
+						</RowTemplate>
+					</MudTable>
+				}
+			</MudCardContent>
+			<MudCardActions></MudCardActions>
+		</MudCard>
+	}
 </MudContainer>
- 
+
 
 @code {
-    public string? Title { get; private set; }
-    [Parameter]
-    public int Id { get; set; }
-    private List<BreadcrumbItem>? _breadcrumbItems; 
-    private MemberDto? _model;
-    protected override async Task OnInitializedAsync()
-    {
-        Title = L["Member"];
-        _breadcrumbItems = new List<BreadcrumbItem>
-        {
-            new BreadcrumbItem(L["Home"], href: "/"),
-            new BreadcrumbItem(L["Members"], href: "/pages/members")
-        };
-        var result = await Mediator.Send(new GetMemberByIdQuery() { Id = Id });
-        result.Map(data =>
-        {
-            _model = data;
-            return data;
-        }).Match(data =>
-        {
-            _breadcrumbItems.Add(new BreadcrumbItem(data.Name, null, disabled: true));
-        }, errors =>
-        {
-            Snackbar.Add(errors, MudBlazor.Severity.Error);
-        });
+	public string? Title { get; private set; }
+	[Parameter]
+	public int Id { get; set; }
+	private List<BreadcrumbItem>? _breadcrumbItems;
+	private MemberDto? _model;
+	protected override async Task OnInitializedAsync()
+	{
+		Title = L["Member"];
+		_breadcrumbItems = new List<BreadcrumbItem>
+		{
+			new BreadcrumbItem(L["Home"], href: "/"),
+			new BreadcrumbItem(L["Members"], href: "/pages/members")
+		};
+		var result = await Mediator.Send(new GetMemberByIdQuery() { Id = Id });
+		result.Map(data =>
+		{
+			_model = data;
+			return data;
+		}).Match(data =>
+		{
+			_breadcrumbItems.Add(new BreadcrumbItem(data.Name, null, disabled: true));
+		}, errors =>
+		{
+			Snackbar.Add(errors, MudBlazor.Severity.Error);
+		});
 
-    }
-    void GoEdit()
-    {
-        Navigation.NavigateTo($"/pages/Members/edit/{Id}");
-    }
-    async Task Delete()
-    {
-        var contentText = string.Format(AppStrings.DeleteConfirmation, _model.Name);
-        var command = new DeleteMemberCommand(new int[] { _model.Id });
-        await DialogServiceHelper.ShowDeleteConfirmationDialogAsync(command, AppStrings.DeleteConfirmationTitle, contentText, async () =>
-        {
-            await InvokeAsync(() =>
-            {
-                Navigation.NavigateTo($"/pages/Members");
-            });
-        });
-    }
+	}
+	void GoEdit()
+	{
+		Navigation.NavigateTo($"/pages/Members/edit/{Id}");
+	}
+	async Task Delete()
+	{
+		var contentText = string.Format(AppStrings.DeleteConfirmation, _model.Name);
+		var command = new DeleteMemberCommand(new int[] { _model.Id });
+		await DialogServiceHelper.ShowDeleteConfirmationDialogAsync(command, AppStrings.DeleteConfirmationTitle, contentText, async () =>
+		{
+			await InvokeAsync(() =>
+			{
+				Navigation.NavigateTo($"/pages/Members");
+			});
+		});
+	}
 }

@@ -99,8 +99,8 @@
 										<MudTd>@context.Name</MudTd>
 										<MudTd>@context.ServiceCategoryId?.GetDescription()</MudTd>
 										<MudTd>@context.VehicleTypeId?.GetDescription()</MudTd>
-										<MudTd>@($"{context.Zone?.Name.Code} - {context.Zone?.Name.Tc}")" </MudTd>
-										<MudTd>@($"{context.Charge?.Name} - {context.Charge?.Description}")"</MudTd>
+										<MudTd>@($"{context.Zone?.Name.Code} - {context.Zone?.Name.Tc}") </MudTd>
+										<MudTd>@($"{context.Charge?.Name} - {context.Charge?.Description}")</MudTd>
 										<MudTd>@context.Capacity</MudTd>
 										<MudTd>@(context.IsActive? L["Yes"] : L["No"])</MudTd>
 										<MudTd DataLabel="Molar">

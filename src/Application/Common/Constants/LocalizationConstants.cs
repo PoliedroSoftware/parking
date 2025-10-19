@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace CleanArchitecture.Blazor.Application.Common.Constants;
@@ -21,8 +21,8 @@ public static class LocalizationConstants
         },
         new()
         {
-            Code = "de-DE",
-            DisplayName = "Deutsch (Deutschland)"
+            Code = "zh-TW",
+            DisplayName = "中文（繁體，台灣）"
         },
         new()
         {

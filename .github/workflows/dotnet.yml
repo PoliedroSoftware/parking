@@ -28,4 +28,4 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore AceParking.Blazor.slnx
     - name: Build
-      run: dotnet build AceParking.Blazor.sln --configuration Debug --no-restore
+      run: dotnet build AceParking.Blazor.slnx --configuration Debug --no-restore

@@ -31,7 +31,7 @@
 						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.ExpiryDate)]" Value="@_model.ExpiryDate?.ToString("d")"></ReadOnlyField>
 					</MudItem>
 					<MudItem xs="12" md="6">
-						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.SpaceGroupId)]" Value="_model.SpaceGroupId"></ReadOnlyField>
+						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.SpaceGroup)]" Value="_model.SpaceGroup?.Name"></ReadOnlyField>
 					</MudItem>
 					<MudItem xs="12" md="6">
 						<ReadOnlyField Label="@L[_model.GetMemberDescription(x => x.SpaceType)]" Value="_model.SpaceType?.GetDescription()"></ReadOnlyField>

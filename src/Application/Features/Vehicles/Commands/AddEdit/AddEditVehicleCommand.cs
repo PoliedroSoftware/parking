@@ -18,46 +18,48 @@ using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 namespace CleanArchitecture.Blazor.Application.Features.Vehicles.Commands.AddEdit;
 
-public class AddEditVehicleCommand: ICacheInvalidatorRequest<Result<int>>
+public class AddEditVehicleCommand : ICacheInvalidatorRequest<Result<int>>
 {
-      [Description("Id")]
-      public int Id { get; set; }
-          [Description("Name")]
-    public string Name {get;set;} 
-    [Description("Service category id")]
-    public ServiceCategories? ServiceCategoryId {get;set;} 
-    [Description("Vehicle type id")]
-    public VehicleTypes? VehicleTypeId {get;set;} 
+    [Description("Id")]
+    public int Id { get; set; }
+    [Description("Name")]
+    public string Name { get; set; }
+    [Description("Service category")]
+    public ServiceCategories? ServiceCategoryId { get; set; }
+    [Description("Vehicle type")]
+    public VehicleTypes? VehicleTypeId { get; set; }
     [Description("Zone id")]
-    public int? ZoneId {get;set;} 
+    public int? ZoneId { get; set; }
     [Description("Zone")]
-    public ZoneDto? Zone {get;set;} 
+    public ZoneDto? Zone { get; set; }
     [Description("Charge id")]
-    public int? ChargeId {get;set;} 
+    public int? ChargeId { get; set; }
     [Description("Charge")]
-    public ChargeDto? Charge {get;set;} 
+    public ChargeDto? Charge { get; set; }
     [Description("Capacity")]
-    public int Capacity {get;set;} 
+    public int Capacity { get; set; }
     [Description("Allow entry when full")]
-    public bool AllowEntryWhenFull {get;set;} 
+    public bool AllowEntryWhenFull { get; set; }
     [Description("Manual full")]
-    public bool ManualFull {get;set;} 
+    public bool ManualFull { get; set; }
     [Description("Can recognize plate")]
-    public bool CanRecognizePlate {get;set;} 
+    public bool CanRecognizePlate { get; set; }
     [Description("Is active")]
-    public bool IsActive {get;set;} 
+    public bool IsActive { get; set; }
     [Description("Occupied")]
-    public int Occupied {get;set;} 
+    public int Occupied { get; set; }
 
 
-      public string CacheKey => VehicleCacheKey.GetAllCacheKey;
-      public IEnumerable<string>? Tags => VehicleCacheKey.Tags;
+    public string CacheKey => VehicleCacheKey.GetAllCacheKey;
+    public IEnumerable<string>? Tags => VehicleCacheKey.Tags;
     private class Mapping : Profile
     {
         public Mapping()
         {
             CreateMap<VehicleDto, AddEditVehicleCommand>(MemberList.None);
-            CreateMap<AddEditVehicleCommand, Vehicle>(MemberList.None);
+            CreateMap<AddEditVehicleCommand, Vehicle>(MemberList.None)
+                .ForMember(x=>x.Zone,y=>y.Ignore())
+                .ForMember(x=>x.Charge,y=>y.Ignore());
         }
     }
 }
@@ -84,21 +86,25 @@ public class AddEditVehicleCommandHandler : IRequestHandler<AddEditVehicleComman
                 return await Result<int>.FailureAsync($"Vehicle with id: [{request.Id}] not found.");
             }
             item = _mapper.Map(request, item);
-			// raise a update domain event
-			item.AddDomainEvent(new VehicleUpdatedEvent(item));
+            item.ChargeId = request.Charge?.Id;
+            item.ZoneId = request.Zone?.Id;
+            // raise a update domain event
+            item.AddDomainEvent(new VehicleUpdatedEvent(item));
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);
         }
         else
         {
             var item = _mapper.Map<Vehicle>(request);
+            item.ChargeId = request.Charge?.Id;
+            item.ZoneId = request.Zone?.Id;
             // raise a create domain event
-			item.AddDomainEvent(new VehicleCreatedEvent(item));
+            item.AddDomainEvent(new VehicleCreatedEvent(item));
             db.Vehicles.Add(item);
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);
         }
-       
+
     }
 }
 

@@ -311,7 +311,8 @@
 			title,
 			new DialogParameters<VehicleFormDialog>()
 			{
-				{x => x._model, command }
+				{x => x._model, command },
+				{x=>x._carpark, command.Zone?.Carpark  }
 			},
 			async () =>
 			{

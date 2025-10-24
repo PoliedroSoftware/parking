@@ -25,7 +25,7 @@ public class GatesWithPaginationQuery : GateAdvancedFilter, ICacheableRequest<Pa
 {
     public override string ToString()
     {
-        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
+        return $"Listview:{ListView}:{CurrentUser?.UserId},{ZoneId},{CarparkId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
     }
     public string CacheKey => GateCacheKey.GetPaginationCacheKey($"{this}");
     public IEnumerable<string>? Tags => GateCacheKey.Tags;

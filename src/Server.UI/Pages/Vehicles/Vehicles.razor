@@ -43,7 +43,6 @@
 						<MudEnumSelect Style="min-width:120px" TEnum="VehicleListView" ValueChanged="OnListViewChanged" Value="_vehiclesQuery.ListView" Dense="true" Label="@L["List View"]">
 						</MudEnumSelect>
 						<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
-
 							@foreach (var carpark in CarparkService.DataSource)
 							{
 								<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>

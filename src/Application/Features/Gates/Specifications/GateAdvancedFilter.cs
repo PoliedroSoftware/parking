@@ -38,6 +38,8 @@ public enum GateListView
 /// </summary>
 public class GateAdvancedFilter: PaginationFilter
 {
+    public int? CarparkId { get; set; }
+    public int? ZoneId { get; set; }
     public GateListView ListView { get; set; } = GateListView.All;
     public UserProfile? CurrentUser { get; set; }
 }

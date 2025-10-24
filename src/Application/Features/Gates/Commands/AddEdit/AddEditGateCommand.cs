@@ -17,42 +17,43 @@ using CleanArchitecture.Blazor.Application.Features.Gates.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 namespace CleanArchitecture.Blazor.Application.Features.Gates.Commands.AddEdit;
 
-public class AddEditGateCommand: ICacheInvalidatorRequest<Result<int>>
+public class AddEditGateCommand : ICacheInvalidatorRequest<Result<int>>
 {
-      [Description("Id")]
-      public int Id { get; set; }
-          [Description("Name")]
-    public string Name {get;set;} 
+    [Description("Id")]
+    public int Id { get; set; }
+    [Description("Name")]
+    public string Name { get; set; }
     [Description("Zone id")]
-    public int? ZoneId {get;set;} 
+    public int? ZoneId { get; set; }
     [Description("Zone")]
-    public ZoneDto? Zone {get;set;} 
+    public ZoneDto? Zone { get; set; }
     [Description("Gate type")]
-    public GateType? GateType {get;set;} 
+    public GateType? GateType { get; set; }
     [Description("Lane no")]
-    public int LaneNo {get;set;} 
+    public int LaneNo { get; set; }
     [Description("Is upper")]
-    public bool IsUpper {get;set;} 
+    public bool IsUpper { get; set; }
     [Description("Is lefthand")]
-    public bool IsLefthand {get;set;}
+    public bool IsLefthand { get; set; }
     [Description("Hourly permit types")]
     public IEnumerable<PermitTypes>? HourlyPermitTypes { get; set; } = [PermitTypes.OctopusCard];
     [Description("Monthly permit types")]
     public IEnumerable<PermitTypes>? MonthlyPermitTypes { get; set; } = [PermitTypes.Smartcard, PermitTypes.LicensePlate];
     [Description("Is active")]
-    public bool IsActive {get;set;} 
+    public bool IsActive { get; set; } = true;
     [Description("Description")]
-    public string? Description {get;set;} 
+    public string? Description { get; set; }
 
 
-      public string CacheKey => GateCacheKey.GetAllCacheKey;
-      public IEnumerable<string>? Tags => GateCacheKey.Tags;
+    public string CacheKey => GateCacheKey.GetAllCacheKey;
+    public IEnumerable<string>? Tags => GateCacheKey.Tags;
     private class Mapping : Profile
     {
         public Mapping()
         {
             CreateMap<GateDto, AddEditGateCommand>(MemberList.None);
-            CreateMap<AddEditGateCommand, Gate>(MemberList.None);
+            CreateMap<AddEditGateCommand, Gate>(MemberList.None)
+                .ForMember(x => x.Zone, y => y.Ignore());
         }
     }
 }
@@ -79,21 +80,23 @@ public class AddEditGateCommandHandler : IRequestHandler<AddEditGateCommand, Res
                 return await Result<int>.FailureAsync($"Gate with id: [{request.Id}] not found.");
             }
             item = _mapper.Map(request, item);
-			// raise a update domain event
-			item.AddDomainEvent(new GateUpdatedEvent(item));
+            item.ZoneId= request.Zone?.Id;
+            // raise a update domain event
+            item.AddDomainEvent(new GateUpdatedEvent(item));
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);
         }
         else
         {
             var item = _mapper.Map<Gate>(request);
+            item.ZoneId = request.Zone?.Id;
             // raise a create domain event
-			item.AddDomainEvent(new GateCreatedEvent(item));
+            item.AddDomainEvent(new GateCreatedEvent(item));
             db.Gates.Add(item);
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);
         }
-       
+
     }
 }
 

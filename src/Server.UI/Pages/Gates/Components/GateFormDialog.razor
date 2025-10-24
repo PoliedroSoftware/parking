@@ -1,102 +1,122 @@
-﻿@using CleanArchitecture.Blazor.Application.Features.Gates.Commands.AddEdit
+﻿@using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Carparks.Services
+@using CleanArchitecture.Blazor.Application.Features.Gates.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Zones.Services
 
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<Gates> L
-
+@inject ICarparkService CarparkService
+@inject IZoneService ZoneService
 <MudDialog>
-    <DialogContent>
-        <MudForm Model="@_model" @ref="@_gateForm" Validation="@(Validator.ValidateValue(_model))">
-            <MudGrid>
-                <MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.ZoneId)]" @bind-Value="_model.ZoneId" For="@(() => _model.ZoneId)" Min="0" Required="false" RequiredError="@L["zone id is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudEnumSelect TEnum="Nullable<GateType>" Label="@L[_model.GetMemberDescription(x=>x.GateType)]" @bind-Value="_model.GateType" For="@(() => _model.GateType)" Required="false" RequiredError="@L["gate type is required!"]"></MudEnumSelect>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.LaneNo)]" @bind-Value="_model.LaneNo" For="@(() => _model.LaneNo)" Min="0" Required="false" RequiredError="@L["lane no is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsUpper)]" @bind-Value="_model.IsUpper" For="@(() => _model.IsUpper)" Color="Color.Primary" ></MudCheckBox>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsLefthand)]" @bind-Value="_model.IsLefthand" For="@(() => _model.IsLefthand)" Color="Color.Primary" ></MudCheckBox>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsActive)]" @bind-Value="_model.IsActive" For="@(() => _model.IsActive)" Color="Color.Primary" ></MudCheckBox>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
-                </MudItem> 
+	<DialogContent>
+		<MudForm Model="@_model" @ref="@_gateForm" Validation="@(Validator.ValidateValue(_model))">
+			<MudGrid>
+				<MudItem xs="12" md="6">
+					<MudSelect T="CarparkDto" Label="@L["Select carpark"]" Value="_carpark" ValueChanged="OnCarparkChanged" ToStringFunc="@(x => $"{x?.Name.Code} - {x?.Name.Tc}")">
 
-            </MudGrid>
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
-        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
-        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
-    </DialogActions>
+					@foreach (var carpark in CarparkService.DataSource)
+					{
+						<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
+					}
+				</MudSelect>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudSelect T="ZoneDto" Label="@L["Zone"]" @bind-Value="_model.Zone" ToStringFunc="@(x => $"{x?.Name.Code} - {x?.Name.Tc}")">
+
+						@foreach (var zone in ZoneService.DataSource.Where(x => x.CarparkId == _carpark?.Id))
+					{
+						<MudSelectItem T="ZoneDto" Value="zone">@($"{zone.Name.Code} - {zone.Name.Tc}") </MudSelectItem>
+					}
+				</MudSelect>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudTextField Label="@L[_model.GetMemberDescription(x => x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
+				</MudItem>
+		
+				<MudItem xs="12" md="6">
+					<MudEnumSelect TEnum="Nullable<GateType>" Label="@L[_model.GetMemberDescription(x => x.GateType)]" @bind-Value="_model.GateType" For="@(() => _model.GateType)" Required="false" RequiredError="@L["gate type is required!"]"></MudEnumSelect>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudSelect T="PermitTypes" MultiSelection="true" Label="@L[_model.GetMemberDescription(x => x.HourlyPermitTypes)]" @bind-SelectedValues="_model.HourlyPermitTypes">
+						@foreach (var permitType in Enum.GetValues<PermitTypes>())
+						{
+							<MudSelectItem T="PermitTypes" Value="permitType">@permitType.GetDisplayTc()</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudSelect T="PermitTypes" MultiSelection="true" Label="@L[_model.GetMemberDescription(x => x.MonthlyPermitTypes)]" @bind-SelectedValues="_model.MonthlyPermitTypes">
+						@foreach (var permitType in Enum.GetValues<PermitTypes>())
+						{
+							<MudSelectItem T="PermitTypes" Value="permitType">@permitType.GetDisplayTc()</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudNumericField Label="@L[_model.GetMemberDescription(x => x.LaneNo)]" @bind-Value="_model.LaneNo" For="@(() => _model.LaneNo)" Min="0" Required="false" RequiredError="@L["lane no is required!"]"></MudNumericField>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudCheckBox Label="@L[_model.GetMemberDescription(x => x.IsUpper)]" @bind-Value="_model.IsUpper" For="@(() => _model.IsUpper)" Color="Color.Primary"></MudCheckBox>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudCheckBox Label="@L[_model.GetMemberDescription(x => x.IsLefthand)]" @bind-Value="_model.IsLefthand" For="@(() => _model.IsLefthand)" Color="Color.Primary"></MudCheckBox>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudCheckBox Label="@L[_model.GetMemberDescription(x => x.IsActive)]" @bind-Value="_model.IsActive" For="@(() => _model.IsActive)" Color="Color.Primary"></MudCheckBox>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudTextField Label="@L[_model.GetMemberDescription(x => x.Description)]" For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+				</MudItem>
+
+			</MudGrid>
+		</MudForm>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+	 
+		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+	</DialogActions>
 </MudDialog>
 
 @code {
-    MudForm _gateForm = new();
-    private bool _saving = false;
-    private bool _savingnew = false;
-    [CascadingParameter]
-    IMudDialogInstance MudDialog { get; set; } = default!;
-    [EditorRequired] [Parameter] public AddEditGateCommand _model { get; set; } = null!;
-    async Task OnSubmit()
-    {
-        try
-        {
-            _saving = true;
-            await _gateForm.Validate().ConfigureAwait(false);
-            if (!_gateForm.IsValid)
-                return;
-            var result = await Mediator.Send(_model);
-            result.Match(data =>
-            {
-                MudDialog.Close(DialogResult.Ok(true));
-                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-            }, errors =>
-            {
-                Snackbar.Add(errors, MudBlazor.Severity.Error);
-            });
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
-    async Task OnSaveAndNew()
-    {
-        try
-        {
-            _savingnew = true;
-            await _gateForm.Validate().ConfigureAwait(false);
-            if (!_gateForm.IsValid)
-               return;
-            var result = await Mediator.Send(_model);
-            await result.MatchAsync(async data =>
-            {
-                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-                await Task.Delay(300);
-                _model = new AddEditGateCommand() { };
-            }, errors =>
-            {
-                Snackbar.Add(errors, MudBlazor.Severity.Error);
-                return Task.CompletedTask;
-            });
-        }
-        finally
-        {
-            _savingnew = false;
-        }
-    }
-    void Cancel() => MudDialog.Cancel();
+	MudForm _gateForm = new();
+	private bool _saving = false;
+	private bool _savingnew = false;
+	[CascadingParameter]
+	IMudDialogInstance MudDialog { get; set; } = default!;
+	[Parameter]
+	public CarparkDto? _carpark{ get; set; }
+	[EditorRequired][Parameter] public AddEditGateCommand _model { get; set; } = null!;
+	void OnCarparkChanged(CarparkDto? carpark)
+	{
+		_carpark = carpark;
+		_model.Zone = null;
+	}
+	async Task OnSubmit()
+	{
+		try
+		{
+			_saving = true;
+			await _gateForm.Validate().ConfigureAwait(false);
+			if (!_gateForm.IsValid)
+				return;
+			var result = await Mediator.Send(_model);
+			result.Match(data =>
+			{
+				MudDialog.Close(DialogResult.Ok(true));
+				Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+			}, errors =>
+			{
+				Snackbar.Add(errors, MudBlazor.Severity.Error);
+			});
+		}
+		finally
+		{
+			_saving = false;
+		}
+	}
+	 
+	void Cancel() => MudDialog.Cancel();
 }

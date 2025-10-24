@@ -60,7 +60,7 @@ public class MenuService : IMenuService
                     { new()
                         {
                             Title = "SpaceGroup",
-                            Href = "/pages/spacegoups",
+                            Href = "/pages/spacegroups",
                             PageStatus = PageStatus.Completed
                         },
                         new()

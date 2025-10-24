@@ -40,7 +40,8 @@ public class AddEditSpaceGroupCommand: ICacheInvalidatorRequest<Result<int>>
         public Mapping()
         {
             CreateMap<SpaceGroupDto, AddEditSpaceGroupCommand>(MemberList.None);
-            CreateMap<AddEditSpaceGroupCommand, SpaceGroup>(MemberList.None);
+            CreateMap<AddEditSpaceGroupCommand, SpaceGroup>(MemberList.None)
+                .ForMember(x=>x.Zone,y=>y.Ignore());
         }
     }
 }
@@ -67,16 +68,18 @@ public class AddEditSpaceGroupCommandHandler : IRequestHandler<AddEditSpaceGroup
                 return await Result<int>.FailureAsync($"SpaceGroup with id: [{request.Id}] not found.");
             }
             item = _mapper.Map(request, item);
-			// raise a update domain event
-			item.AddDomainEvent(new SpaceGroupUpdatedEvent(item));
+            item.ZoneId = request.Zone?.Id;
+            // raise a update domain event
+            item.AddDomainEvent(new SpaceGroupUpdatedEvent(item));
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);
         }
         else
         {
             var item = _mapper.Map<SpaceGroup>(request);
+            item.ZoneId= request.Zone?.Id;
             // raise a create domain event
-			item.AddDomainEvent(new SpaceGroupCreatedEvent(item));
+            item.AddDomainEvent(new SpaceGroupCreatedEvent(item));
             db.SpaceGroups.Add(item);
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);

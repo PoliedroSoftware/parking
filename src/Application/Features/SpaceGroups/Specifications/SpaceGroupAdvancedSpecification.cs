@@ -29,6 +29,8 @@ public class SpaceGroupAdvancedSpecification : Specification<SpaceGroup>
         var last30daysrange = today.GetDateRange(SpaceGroupListView.LAST_30_DAYS.ToString(),filter.CurrentUser.LocalTimeOffset);
 
         Query.Where(q => q.Name != null)
+             .Where(q=>q.ZoneId==filter.ZoneId,filter.ZoneId!=null)
+             .Where(q=>q.Zone.CarparkId==filter.CarparkId,filter.CarparkId!=null)
              .Where(filter.Keyword,!string.IsNullOrEmpty(filter.Keyword))
              .Where(q => q.CreatedById == filter.CurrentUser.UserId, filter.ListView == SpaceGroupListView.My && filter.CurrentUser is not null)
              .Where(x => x.CreatedAt >= todayrange.Start && x.CreatedAt < todayrange.End.AddDays(1), filter.ListView == SpaceGroupListView.TODAY)

@@ -38,6 +38,8 @@ public enum SpaceGroupListView
 /// </summary>
 public class SpaceGroupAdvancedFilter: PaginationFilter
 {
+    public int? CarparkId { get; set; }
+    public int? ZoneId { get; set; }
     public SpaceGroupListView ListView { get; set; } = SpaceGroupListView.All;
     public UserProfile? CurrentUser { get; set; }
 }

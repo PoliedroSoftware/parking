@@ -42,7 +42,7 @@ public class MemberRentalDto
     public decimal AmountPaid { get; set; }
     [Description("Payment time")]
     public DateTime? PaymentTime { get; set; }
-    [Description("Payment method id")]
+    [Description("Payment method")]
     public PaymentMethods? PaymentMethodId { get; set; }
     [Description("Notes")]
     public string? Notes { get; set; }

@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ISpaceGroupService, SpaceGroupService>();
         services.AddScoped<IZoneService, ZoneService>();
         services.AddScoped<ICarparkService, CarparkService>();
+        services.AddScoped<IMemberService, MemberService>();
         return services;
     }
     

@@ -1,5 +1,7 @@
 ﻿@page "/pages/gates"
 
+@using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Carparks.Services
 @using CleanArchitecture.Blazor.Application.Features.Gates.Caching
 @using CleanArchitecture.Blazor.Application.Features.Gates.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Gates.Specifications
@@ -8,11 +10,14 @@
 @using CleanArchitecture.Blazor.Application.Features.Gates.Queries.Export
 @using CleanArchitecture.Blazor.Application.Features.Gates.Queries.Pagination
 @using CleanArchitecture.Blazor.Application.Features.Gates.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Zones.Services
 @using CleanArchitecture.Blazor.Server.UI.Pages.Gates.Components
 
 @inject IStringLocalizer<Gates> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
-
+@inject ICarparkService CarparkService
+@inject IZoneService ZoneService
 @attribute [Authorize(Policy = Permissions.Gates.View)]
 <PageTitle>@Title</PageTitle>
 
@@ -34,8 +39,25 @@
 				<MudIcon Icon="@Icons.Material.Filled.Window" Size="Size.Large" />
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
-					<MudEnumSelect Style="min-width:120px" TEnum="GateListView" ValueChanged="OnListViewChanged" Value="_gatesQuery.ListView" Dense="true" Label="@L["List View"]">
-					</MudEnumSelect>
+					<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+						<MudEnumSelect Style="min-width:120px" TEnum="GateListView" ValueChanged="OnListViewChanged" Value="_gatesQuery.ListView" Dense="true" Label="@L["List View"]">
+						</MudEnumSelect>
+						<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
+
+							@foreach (var carpark in CarparkService.DataSource)
+							{
+								<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
+							}
+						</MudSelect>
+						<MudSelect T="ZoneDto" Label="@L["Filter by zone"]" ValueChanged="OnZoneFilterChanged" Clearable>
+
+							@foreach (var zone in ZoneService.DataSource.Where(x => x.CarparkId == _gatesQuery.CarparkId))
+							{
+								<MudSelectItem T="ZoneDto" Value="zone">@($"{zone.Name.Code} - {zone.Name.Tc}") </MudSelectItem>
+							}
+						</MudSelect>
+					</MudStack>
+					
 				</MudStack>
 			</MudStack>
 			<MudStack Spacing="0" AlignItems="AlignItems.End">
@@ -60,31 +82,7 @@
 							@AppStrings.Delete
 						</MudButton>
 					}
-					<MudMenu TransformOrigin="Origin.BottomRight" AnchorOrigin="Origin.BottomRight" EndIcon="@Icons.Material.Filled.MoreVert" Label="@AppStrings.More">
-
-
-						@if (_accessRights.Export)
-						{
-							<MudMenuItem Disabled="@_exporting"
-										 OnClick="OnExport">
-								@AppStrings.Export
-							</MudMenuItem>
-						}
-						@if (_accessRights.Import)
-						{
-							<MudMenuItem>
-								<MudFileUpload T="IBrowserFile" FilesChanged="OnImportData" Accept=".xlsx">
-									<ActivatorContent>
-										<MudButton Class="pa-0 ma-0" Style="font-weight:400;text-transform:none;"
-												   Variant="Variant.Text"
-												   Disabled="@_uploading">
-											@AppStrings.Import
-										</MudButton>
-									</ActivatorContent>
-								</MudFileUpload>
-							</MudMenuItem>
-						}
-					</MudMenu>
+					 
 				</MudToolBar>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
@@ -160,6 +158,29 @@
 				<MudChip T="string" Value="@context.Item.GateType?.GetDescription()" />
 			</CellTemplate>
 		</PropertyColumn>
+		<PropertyColumn Property="x => x.HourlyPermitTypes" Title="@L[_gateDto.GetMemberDescription(x => x.HourlyPermitTypes)]">
+			<CellTemplate>
+				@if (context.Item.HourlyPermitTypes != null)
+				{
+					@foreach (var item in context.Item.HourlyPermitTypes)
+					{
+						<MudChip T="string" Value="@item.GetDisplayTc()" Class="ma-1" />
+					}
+				}
+			 
+			</CellTemplate>
+			</PropertyColumn>
+		<PropertyColumn Property="x => x.MonthlyPermitTypes" Title="@L[_gateDto.GetMemberDescription(x => x.MonthlyPermitTypes)]">
+			<CellTemplate>
+				@if (context.Item.MonthlyPermitTypes != null)
+				{
+					@foreach (var item in context.Item.MonthlyPermitTypes)
+					{
+						<MudChip T="string" Value="@item.GetDisplayTc()" Class="ma-1" />
+					}
+				}
+				</CellTemplate>
+			</PropertyColumn>
 		<PropertyColumn Property="x => x.LaneNo" Title="@L[_gateDto.GetMemberDescription(x => x.LaneNo)]" />
 		<PropertyColumn Property="x => x.IsUpper" Title="@L[_gateDto.GetMemberDescription(x => x.IsUpper)]">
 			<CellTemplate>
@@ -234,6 +255,8 @@
 	{
 		Title = L[_gateDto.GetClassDescription()];
 		_accessRights = await PermissionService.GetAccessRightsAsync<GatesAccessRights>();
+		await ZoneService.RefreshAsync();
+		await CarparkService.RefreshAsync();
 	}
 
 	private async Task<GridData<GateDto>> ServerReload(GridState<GateDto> state)
@@ -257,6 +280,19 @@
 			_loading = false;
 		}
 
+	}
+	private async Task OncarparkFilterChanged(CarparkDto? carpark)
+	{
+		_selectedGates.Clear();
+		_gatesQuery.CarparkId = carpark?.Id;
+		_gatesQuery.ZoneId = null;
+		await _gatesGrid.ReloadServerData();
+	}
+	private async Task OnZoneFilterChanged(ZoneDto? zone)
+	{
+		_selectedGates.Clear();
+		_gatesQuery.ZoneId = zone?.Id;
+		await _gatesGrid.ReloadServerData();
 	}
 	private async Task OnSearch(string text)
 	{
@@ -282,7 +318,8 @@
 			title,
 			new DialogParameters<GateFormDialog>()
 			{
-				{x => x._model, command }
+				{x => x._model, command },
+				{ x => x._carpark, command.Zone?.Carpark  }
 			},
 			async () =>
 			{
@@ -292,7 +329,7 @@
 	}
 	private void OnDataGridRowClick(GateDto dto)
 	{
-		Navigation.NavigateTo($"/pages/gates/view/{dto.Id}");
+		//Navigation.NavigateTo($"/pages/gates/view/{dto.Id}");
 	}
 	private Task OnCreate()
 	{
@@ -302,10 +339,10 @@
 
 	private Task OnEditGate(GateDto dto)
 	{
-		//var command = Mapper.Map<AddEditGateCommand>(dto);
-		//return ShowEditFormDialog(L["Edit Gate"], command);
-		Navigation.NavigateTo($"/pages/gates/edit/{dto.Id}");
-		return Task.CompletedTask;
+		var command = Mapper.Map<AddEditGateCommand>(dto);
+		return ShowEditFormDialog(L["Edit Gate"], command);
+		// Navigation.NavigateTo($"/pages/gates/edit/{dto.Id}");
+		// return Task.CompletedTask;
 	}
 
 	private Task OnDeleteGate(GateDto dto)

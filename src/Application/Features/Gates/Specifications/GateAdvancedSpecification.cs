@@ -29,6 +29,8 @@ public class GateAdvancedSpecification : Specification<Gate>
         var last30daysrange = today.GetDateRange(GateListView.LAST_30_DAYS.ToString(),filter.CurrentUser.LocalTimeOffset);
 
         Query.Where(q => q.Name != null)
+              .Where(x=>x.ZoneId==filter.ZoneId,filter.ZoneId!=null)
+              .Where(x=>x.Zone.CarparkId==filter.CarparkId,filter.CarparkId!=null)
              .Where(filter.Keyword,!string.IsNullOrEmpty(filter.Keyword))
              .Where(q => q.CreatedById == filter.CurrentUser.UserId, filter.ListView == GateListView.My && filter.CurrentUser is not null)
              .Where(x => x.CreatedAt >= todayrange.Start && x.CreatedAt < todayrange.End.AddDays(1), filter.ListView == GateListView.TODAY)

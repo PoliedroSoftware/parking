@@ -43,7 +43,7 @@ public class AddEditMemberRentalCommand: ICacheInvalidatorRequest<Result<int>>
     public decimal AmountPaid {get;set;} 
     [Description("Payment time")]
     public DateTime? PaymentTime {get;set;} 
-    [Description("Payment method id")]
+    [Description("Payment method")]
     public PaymentMethods? PaymentMethodId {get;set;} 
     [Description("Notes")]
     public string? Notes {get;set;} 
@@ -56,7 +56,8 @@ public class AddEditMemberRentalCommand: ICacheInvalidatorRequest<Result<int>>
         public Mapping()
         {
             CreateMap<MemberRentalDto, AddEditMemberRentalCommand>(MemberList.None);
-            CreateMap<AddEditMemberRentalCommand, MemberRental>(MemberList.None);
+            CreateMap<AddEditMemberRentalCommand, MemberRental>(MemberList.None)
+                .ForMember(x=>x.Member,y=>y.Ignore());
         }
     }
 }
@@ -83,16 +84,18 @@ public class AddEditMemberRentalCommandHandler : IRequestHandler<AddEditMemberRe
                 return await Result<int>.FailureAsync($"MemberRental with id: [{request.Id}] not found.");
             }
             item = _mapper.Map(request, item);
-			// raise a update domain event
-			item.AddDomainEvent(new MemberRentalUpdatedEvent(item));
+            item.MemberId=request.Member?.Id;
+            // raise a update domain event
+            item.AddDomainEvent(new MemberRentalUpdatedEvent(item));
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);
         }
         else
         {
             var item = _mapper.Map<MemberRental>(request);
+            item.MemberId = request.Member?.Id;
             // raise a create domain event
-			item.AddDomainEvent(new MemberRentalCreatedEvent(item));
+            item.AddDomainEvent(new MemberRentalCreatedEvent(item));
             db.MemberRentals.Add(item);
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);

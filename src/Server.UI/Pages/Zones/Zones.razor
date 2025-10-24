@@ -1,5 +1,7 @@
 ﻿@page "/pages/zones"
 
+@using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Carparks.Services
 @using CleanArchitecture.Blazor.Application.Features.Zones.Caching
 @using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Zones.Specifications
@@ -12,7 +14,7 @@
 
 @inject IStringLocalizer<Zones> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
-
+@inject ICarparkService CarparkService
 @attribute [Authorize(Policy = Permissions.Zones.View)]
 <PageTitle>@Title</PageTitle>
 
@@ -34,8 +36,17 @@
 				<MudIcon Icon="@Icons.Material.Filled.Window" Size="Size.Large" />
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
+					<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
 					<MudEnumSelect Style="min-width:120px" TEnum="ZoneListView" ValueChanged="OnListViewChanged" Value="_zonesQuery.ListView" Dense="true" Label="@L["List View"]">
 					</MudEnumSelect>
+					<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
+						 
+						@foreach (var carpark in CarparkService.DataSource)
+						{
+							<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
+						}
+					</MudSelect>
+					</MudStack>
 				</MudStack>
 			</MudStack>
 			<MudStack Spacing="0" AlignItems="AlignItems.End">
@@ -60,34 +71,7 @@
 							@AppStrings.Delete
 						</MudButton>
 					}
-					<MudMenu TransformOrigin="Origin.BottomRight" AnchorOrigin="Origin.BottomRight" EndIcon="@Icons.Material.Filled.MoreVert" Label="@AppStrings.More">
-						@if (_accessRights.Clone)
-						{
-							<MudMenuItem Disabled="@(_selectedZones.Count != 1)" OnClick="OnCloneZone">@AppStrings.Clone</MudMenuItem>
-						}
-
-						@if (_accessRights.Export)
-						{
-							<MudMenuItem Disabled="@_exporting"
-										 OnClick="OnExport">
-								@AppStrings.Export
-							</MudMenuItem>
-						}
-						@if (_accessRights.Import)
-						{
-							<MudMenuItem>
-								<MudFileUpload T="IBrowserFile" FilesChanged="OnImportData" Accept=".xlsx">
-									<ActivatorContent>
-										<MudButton Class="pa-0 ma-0" Style="font-weight:400;text-transform:none;"
-												   Variant="Variant.Text"
-												   Disabled="@_uploading">
-											@AppStrings.Import
-										</MudButton>
-									</ActivatorContent>
-								</MudFileUpload>
-							</MudMenuItem>
-						}
-					</MudMenu>
+					 
 				</MudToolBar>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
@@ -133,18 +117,63 @@
 				}
 			</CellTemplate>
 		</TemplateColumn>
-		<PropertyColumn Property="x => x.Name" Title="@L[_zoneDto.GetMemberDescription(x => x.Name)]">
+		<PropertyColumn Property="x => x.CarparkId" Title="@L[_zoneDto.GetMemberDescription(x => x.Carpark)]">
 			<CellTemplate>
 				<div class="d-flex flex-column">
-					<MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Description</MudText>
+					<MudText Typo="Typo.body1">@context.Item.Carpark?.Name.Code</MudText>
+					<MudText Typo="Typo.body2">@context.Item.Carpark?.Name.Tc</MudText>
 				</div>
 			</CellTemplate>
 		</PropertyColumn>
-		<PropertyColumn Property="x => x.IsMain" Title="@L[_zoneDto.GetMemberDescription(x => x.IsMain)]" />
-		<PropertyColumn Property="x => x.CarparkId" Title="@L[_zoneDto.GetMemberDescription(x => x.CarparkId)]" />
-		<PropertyColumn Property="x => x.HolidaySets" Title="@L[_zoneDto.GetMemberDescription(x => x.HolidaySets)]" />
-		<PropertyColumn Property="x => x.IsOpenCashbox" Title="@L[_zoneDto.GetMemberDescription(x => x.IsOpenCashbox)]" />
-		<PropertyColumn Property="x => x.Identifier" Title="@L[_zoneDto.GetMemberDescription(x => x.Identifier)]" />
+		<PropertyColumn Property="x => x.Name.Code" Title="@L["Name"]" Sortable="false">
+			<CellTemplate>
+				<div class="d-flex flex-column">
+					<MudText Typo="Typo.body1" >@context.Item.Name.Code</MudText>
+					<MudText Typo="Typo.body2">@context.Item.Name.Tc</MudText>
+				</div>
+			</CellTemplate>
+		</PropertyColumn>
+		 
+		<PropertyColumn Property="x => x.IsMain" Title="@L[_zoneDto.GetMemberDescription(x => x.IsMain)]">
+			<CellTemplate>
+				@if (context.Item.IsMain)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+				}
+				else
+				{
+					<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" />
+				}
+			</CellTemplate>
+		</PropertyColumn>
+		
+		<PropertyColumn Property="x => x.HolidaySets" Title="@L[_zoneDto.GetMemberDescription(x => x.HolidaySets)]">
+			<CellTemplate>
+				<MudStack Row Spacing="2">
+					<MudCheckBox Label="@L["PH"]" Value="@(context.Item.HolidaySets!.Split(',')[0] == "1")"  ReadOnly ></MudCheckBox>
+					<MudCheckBox Label="@L["Mon"]" Value="@(context.Item.HolidaySets!.Split(',')[1] == "1")" ReadOnly> </MudCheckBox>
+					<MudCheckBox Label="@L["Tue"]" Value="@(context.Item.HolidaySets!.Split(',')[2] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Label="@L["Wed"]" Value="@(context.Item.HolidaySets!.Split(',')[3] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Label="@L["Thu"]" Value="@(context.Item.HolidaySets!.Split(',')[4] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Label="@L["Fri"]" Value="@(context.Item.HolidaySets!.Split(',')[5] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Label="@L["Sat"]" Value="@(context.Item.HolidaySets!.Split(',')[6] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Label="@L["Sun"]" Value="@(context.Item.HolidaySets!.Split(',')[7] == "1")" ReadOnly></MudCheckBox>
+				</MudStack>
+			</CellTemplate>
+		</PropertyColumn>
+		<PropertyColumn Property="x => x.IsOpenCashbox" Title="@L[_zoneDto.GetMemberDescription(x => x.IsOpenCashbox)]">
+			<CellTemplate>
+				@if (context.Item.IsOpenCashbox)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+				}
+				else
+				{
+					<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" />
+				}
+			</CellTemplate>
+		</PropertyColumn>
+		<PropertyColumn Property="x => x.Description" Title="@L[_zoneDto.GetMemberDescription(x => x.Description)]" />
 
 	</Columns>
 	<NoRecordsContent>
@@ -182,6 +211,7 @@
 	{
 		Title = L[_zoneDto.GetClassDescription()];
 		_accessRights = await PermissionService.GetAccessRightsAsync<ZonesAccessRights>();
+		await	CarparkService.RefreshAsync();
 	}
 
 	private async Task<GridData<ZoneDto>> ServerReload(GridState<ZoneDto> state)
@@ -212,6 +242,12 @@
 		_zonesQuery.Keyword = text;
 		await _zonesGrid.ReloadServerData();
 	}
+	private async Task OncarparkFilterChanged(CarparkDto? carpark)
+	{
+		_zonesQuery.CarparkId = carpark?.Id;
+		_selectedZones.Clear();
+		await _zonesGrid.ReloadServerData();
+	}
 	private async Task OnListViewChanged(ZoneListView listview)
 	{
 		_zonesQuery.ListView = listview;
@@ -240,36 +276,19 @@
 	}
 	private void OnDataGridRowClick(ZoneDto dto)
 	{
-		Navigation.NavigateTo($"/pages/zones/view/{dto.Id}");
+		//Navigation.NavigateTo($"/pages/zones/view/{dto.Id}");
 	}
 	private Task OnCreate()
 	{
-		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", "") };
+		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", ""), HourlySets=new (), MonthlySets=new() };
 		return ShowEditFormDialog(L["New Zone"], command);
 	}
-	private Task OnCloneZone()
-	{
-		var dto = _selectedZones.First();
-		var command = new AddEditZoneCommand()
-		{
-			IsMain = dto.IsMain,
-			Name = new MultiCodeName(dto.Name.Code, dto.Name.En, dto.Name.Tc),
-			CarparkId = dto.CarparkId,
-			HolidaySets = dto.HolidaySets,
-			IsOpenCashbox = dto.IsOpenCashbox,
-			Description = dto.Description,
-			Identifier = dto.Identifier,
-			Holidays = dto.Holidays,
-
-		};
-		return ShowEditFormDialog(L["Clone Zone"], command);
-	}
+	
 	private Task OnEditZone(ZoneDto dto)
 	{
-		//var command = Mapper.Map<AddEditZoneCommand>(dto);
-		//return ShowEditFormDialog(L["Edit Zone"], command);
-		Navigation.NavigateTo($"/pages/zones/edit/{dto.Id}");
-		return Task.CompletedTask;
+		var command = Mapper.Map<AddEditZoneCommand>(dto);
+		return ShowEditFormDialog(L["Edit Zone"], command);
+		 
 	}
 
 	private Task OnDeleteZone(ZoneDto dto)
@@ -300,49 +319,6 @@
 	}
 
 
-	private async Task OnExport()
-	{
-		_exporting = true;
-		var request = new ExportZonesQuery()
-		{
-			Keyword = _zonesQuery.Keyword,
-			CurrentUser = UserProfile,
-			ListView = _zonesQuery.ListView,
-			OrderBy = _zonesGrid.SortDefinitions.Values.FirstOrDefault()?.SortBy ?? "Id",
-			SortDirection = (_zonesGrid.SortDefinitions.Values.FirstOrDefault()?.Descending ?? true) ? SortDirection.Descending.ToString() : SortDirection.Ascending.ToString()
-		};
-		var result = await Mediator.Send(request);
-		await result.MatchAsync(
-			async data =>
-			{
-				await BlazorDownloadFileService.DownloadFileAsync($"{L["Zones"]}.xlsx", result.Data, contentType: "application/octet-stream");
-				Snackbar.Add($"{AppStrings.ExportSuccess}", MudBlazor.Severity.Info);
-			},
-			errors =>
-			{
-				Snackbar.Add($"{errors}", MudBlazor.Severity.Error);
-				return Task.CompletedTask;
-			});
-		_exporting = false;
-	}
-	private async Task OnImportData(IBrowserFile file)
-	{
-		_uploading = true;
-		var stream = new MemoryStream();
-		await file.OpenReadStream().CopyToAsync(stream);
-		var command = new ImportZonesCommand(file.Name, stream.ToArray());
-		var result = await Mediator.Send(command);
-		await result.MatchAsync(
-			async data =>
-			{
-				await _zonesGrid.ReloadServerData();
-				Snackbar.Add($"{AppStrings.ImportSuccess}", MudBlazor.Severity.Info);
-			}, errors =>
-			{
-				Snackbar.Add($"{errors}", MudBlazor.Severity.Error);
-				return Task.CompletedTask;
-			});
-		_uploading = false;
-	}
+	 
 
 }

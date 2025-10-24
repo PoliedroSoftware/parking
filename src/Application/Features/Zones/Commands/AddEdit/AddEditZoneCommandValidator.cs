@@ -20,7 +20,7 @@ public class AddEditZoneCommandValidator : AbstractValidator<AddEditZoneCommand>
                 RuleFor(v => v.CarparkId).NotNull(); 
     RuleFor(v => v.HolidaySets).MaximumLength(255); 
     RuleFor(v => v.Description).MaximumLength(255); 
-    RuleFor(v => v.Identifier).MaximumLength(255); 
+
 
      }
 

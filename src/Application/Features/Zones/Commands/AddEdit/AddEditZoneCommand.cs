@@ -29,27 +29,33 @@ public class AddEditZoneCommand: ICacheInvalidatorRequest<Result<int>>
     [Description("Carpark id")]
     public int CarparkId {get;set;} 
     [Description("Carpark")]
-    public CarparkDto? Carpark {get;set;} 
+    public CarparkDto? Carpark {get;set;}
     [Description("Holiday sets")]
-    public string? HolidaySets {get;set;} 
+    public string? HolidaySets { get; set; } = "1,0,0,0,0,0,1,1";
     [Description("Is open cashbox")]
     public bool IsOpenCashbox {get;set;} 
     [Description("Description")]
     public string? Description {get;set;} 
-    [Description("Identifier")]
-    public string? Identifier {get;set;} 
-    [Description("Holidays")]
-    public bool[] Holidays {get;set;} 
+    
 
+    [Description("Hourly Sets")]
+    public HourlySets HourlySets { get; set; } = new();
 
-      public string CacheKey => ZoneCacheKey.GetAllCacheKey;
+    // 月租泊車服務設定 Monthly Parking Service Settings
+    [Description("Monthly Sets")]
+    public MonthlySets MonthlySets { get; set; } = new();
+
+    public string CacheKey => ZoneCacheKey.GetAllCacheKey;
       public IEnumerable<string>? Tags => ZoneCacheKey.Tags;
     private class Mapping : Profile
     {
         public Mapping()
         {
             CreateMap<ZoneDto, AddEditZoneCommand>(MemberList.None);
-            CreateMap<AddEditZoneCommand, Zone>(MemberList.None);
+            CreateMap<AddEditZoneCommand, Zone>(MemberList.None)
+                .ForMember(x=>x.Carpark,y=>y.Ignore())
+                .ForMember(x=>x.Vehicles,y=>y.Ignore())
+                .ForMember(x=>x.Gates,y=>y.Ignore());
         }
     }
 }
@@ -75,6 +81,7 @@ public class AddEditZoneCommandHandler : IRequestHandler<AddEditZoneCommand, Res
             {
                 return await Result<int>.FailureAsync($"Zone with id: [{request.Id}] not found.");
             }
+            item.CarparkId = request.Carpark!.Id;
             item = _mapper.Map(request, item);
 			// raise a update domain event
 			item.AddDomainEvent(new ZoneUpdatedEvent(item));
@@ -84,8 +91,9 @@ public class AddEditZoneCommandHandler : IRequestHandler<AddEditZoneCommand, Res
         else
         {
             var item = _mapper.Map<Zone>(request);
+            item.CarparkId = request.Carpark!.Id;
             // raise a create domain event
-			item.AddDomainEvent(new ZoneCreatedEvent(item));
+            item.AddDomainEvent(new ZoneCreatedEvent(item));
             db.Zones.Add(item);
             await db.SaveChangesAsync(cancellationToken);
             return await Result<int>.SuccessAsync(item.Id);

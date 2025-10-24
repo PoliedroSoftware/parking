@@ -185,6 +185,7 @@ public class ApplicationDbContextInitializer
 
     private async Task SeedDataAsync()
     {
+        var tenant = await _context.Tenants.FirstAsync();
         // 1. 基础字典数据 (仅首次种子)
         if (!await _context.PicklistSets.AnyAsync())
         {
@@ -442,7 +443,7 @@ public class ApplicationDbContextInitializer
             ];
             basementZone.Gates = [ new Gate { Name = "B1 Ramp", GateType = GateType.EntryExit, LaneNo = 3, Description = "Ramp connecting to main." } ];
             vipZone.Gates = [ new Gate { Name = "VIP Gate", GateType = GateType.EntryExit, LaneNo = 4, Description = "Restricted access gate." } ];
-
+            carpark.TenantId = tenant.Id;
             await _context.Carparks.AddAsync(carpark);
             await _context.SaveChangesAsync();
         }
@@ -461,6 +462,7 @@ public class ApplicationDbContextInitializer
 
             var member1 = new Member
             {
+                TenantId = tenant.Id,
                 LicensePlate = "AB1234",
                 CardId = "CARD-0001",
                 StartDate = now,
@@ -478,6 +480,7 @@ public class ApplicationDbContextInitializer
             };
             var member2 = new Member
             {
+                TenantId = tenant.Id,
                 LicensePlate = "EV8888",
                 CardId = "CARD-0002",
                 StartDate = now.AddDays(-10),
@@ -495,6 +498,7 @@ public class ApplicationDbContextInitializer
             };
             var member3 = new Member
             {
+                TenantId = tenant.Id,
                 LicensePlate = "MC3456",
                 CardId = "CARD-0003",
                 StartDate = now.AddMonths(-2),

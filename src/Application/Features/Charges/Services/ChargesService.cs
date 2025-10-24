@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using CleanArchitecture.Blazor.Application.Features.Charges.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.DTOs;
-using CleanArchitecture.Blazor.Application.Features.Tenants.Caching;
-using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
 using ZiggyCreatures.Caching.Fusion;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Blazor.Application.Features.Charges.Services;
 
-public class ChargesService:IChargesService
+public class ChargesService : IChargesService
 {
     private readonly IApplicationDbContextFactory _dbContextFactory;
     private readonly IMapper _mapper;
@@ -30,24 +30,46 @@ public class ChargesService:IChargesService
     public event Func<Task>? OnChange;
     public List<ChargeDto> DataSource { get; private set; } = new();
 
-
-    public async Task InitializeAsync()
-    {
-        await using var db = await _dbContextFactory.CreateAsync();
-        DataSource = _fusionCache.GetOrSet(ChargeCacheKey.GetAllCacheKey,
-            _ => db.Charges.Where(x=>x.EffectiveDate>DateTime.Today).ProjectTo<ChargeDto>(_mapper.ConfigurationProvider)
-                .OrderBy(x => x.Name)
-                .ToList()) ?? new List<ChargeDto>();
-    }
+    public async Task InitializeAsync() => DataSource = await LoadAsync(forceRefresh: false);
 
     public async Task RefreshAsync()
     {
-        _fusionCache.Remove(ChargeCacheKey.GetAllCacheKey);
+        DataSource = await LoadAsync(forceRefresh: true);
+        await RaiseOnChangeAsync();
+    }
+
+    private async Task<List<ChargeDto>> LoadAsync(bool forceRefresh)
+    {
+        if (forceRefresh)
+        {
+            _fusionCache.Remove(ChargeCacheKey.GetAllCacheKey);
+        }
+
         await using var db = await _dbContextFactory.CreateAsync();
-        DataSource = _fusionCache.GetOrSet(ChargeCacheKey.GetAllCacheKey,
-            _ => db.Charges.Where(x => x.EffectiveDate > DateTime.Today).ProjectTo<ChargeDto>(_mapper.ConfigurationProvider)
-                .OrderBy(x => x.Name)
-                .ToList()) ?? new List<ChargeDto>();
-        if (OnChange != null) await OnChange.Invoke();
+        var list = await _fusionCache.GetOrSetAsync(
+            ChargeCacheKey.GetAllCacheKey,
+            async _ => await QueryChargesAsync(db)
+        );
+
+        return list ?? new List<ChargeDto>();
+    }
+
+    private Task<List<ChargeDto>> QueryChargesAsync(IApplicationDbContext db)
+    {
+        var today = DateTime.Today;
+        return db.Charges
+            .Where(x => x.EffectiveDate > today)
+            .ProjectTo<ChargeDto>(_mapper.ConfigurationProvider)
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+    }
+
+    private async Task RaiseOnChangeAsync()
+    {
+        var handler = OnChange;
+        if (handler != null)
+        {
+            await handler.Invoke();
+        }
     }
 }

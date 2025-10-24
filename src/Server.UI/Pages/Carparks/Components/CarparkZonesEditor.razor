@@ -48,6 +48,95 @@
                             <MudCheckBox Label="@L["Sun"]" Value="@(zone.HolidaySets!.Split(',')[7] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 7))"></MudCheckBox>
                         </MudStack>
                     </MudItem>
+					<MudItem xs="12">
+						<MudTabs Elevation="1" ApplyEffectsToContainer="true" PanelClass="pa-6">
+							<MudTabPanel Text="@L["Hourly Sets"]">
+								<MudGrid Spacing="2">
+									<MudItem xs="6">
+										<MudSelect T="PermitTypes" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="zone.HourlySets.Permits" Required="true" RequiredError="@L["permit type is required!"]">
+											@foreach (var item in Enum.GetValues<PermitTypes>())
+											{
+												<MudSelectItem T="PermitTypes" Value="item">@item.GetDisplayTc()</MudSelectItem>
+											}
+										</MudSelect>
+									</MudItem>
+									<MudItem xs="6">
+										<MudSelect T="LicensePlateVerifications" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="zone.HourlySets.PlateVerifications" Required="true" RequiredError="@L["plate verifications is required!"]">
+											@foreach (var item in Enum.GetValues<LicensePlateVerifications>())
+											{
+												<MudSelectItem T="LicensePlateVerifications" Value="item">@item.GetDisplayTc()</MudSelectItem>
+											}
+										</MudSelect>
+
+									</MudItem>
+									<MudItem xs="6">
+										<MudNumericField Label="@L["Capacity"]" @bind-Value="zone.HourlySets.Capacity" For="@(() => zone.HourlySets.Capacity)" Min="0" Required="true" RequiredError="@L["capacity is required!"]"></MudNumericField>
+									</MudItem>
+									<MudItem xs="6">
+										<MudNumericField Label="@L["Adjustment"]" @bind-Value="zone.HourlySets.Adjustment" For="@(() => zone.HourlySets.Adjustment)" Min="0" RequiredError="@L["capacity is required!"]"></MudNumericField>
+									</MudItem>
+									<MudItem xs="6">
+										<MudCheckBox Label="@L["Manual Full"]" @bind-Value="zone.HourlySets.ManualFull"></MudCheckBox>
+									</MudItem>
+									<MudItem xs="6">
+										<MudNumericField Label="@L["Grace Period"]" @bind-Value="zone.HourlySets.GracePeriod" For="@(() => zone.HourlySets.GracePeriod)" Min="0"></MudNumericField>
+									</MudItem>
+									<MudItem xs="6">
+										<MudNumericField Label="@L["Exit Buffer"]" @bind-Value="zone.HourlySets.ExitBuffer" For="@(() => zone.HourlySets.ExitBuffer)" Min="0"></MudNumericField>
+									</MudItem>
+									<MudItem xs="6">
+										<MudNumericField Label="@L["Lost Ticket Fee"]" @bind-Value="zone.HourlySets.LostTicketFee" For="@(() => zone.HourlySets.LostTicketFee)" Min="0"></MudNumericField>
+									</MudItem>
+									<MudItem xs="6">
+									</MudItem>
+								</MudGrid>
+							</MudTabPanel>
+							<MudTabPanel Text="@L["Monthly Sets"]">
+								<MudGrid Spacing="2">
+									<MudItem xs="6">
+										<MudSelect T="PermitTypes" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="zone.MonthlySets.Permits" Required="true" RequiredError="@L["permit type is required!"]">
+											@foreach (var item in Enum.GetValues<PermitTypes>())
+											{
+												<MudSelectItem T="PermitTypes" Value="item">@item.GetDisplayTc()</MudSelectItem>
+											}
+										</MudSelect>
+									</MudItem>
+									<MudItem xs="6">
+										<MudSelect T="LicensePlateVerifications" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="zone.MonthlySets.PlateVerifications" Required="true" RequiredError="@L["plate verifications is required!"]">
+											@foreach (var item in Enum.GetValues<LicensePlateVerifications>())
+											{
+												<MudSelectItem T="LicensePlateVerifications" Value="item">@item.GetDisplayTc()</MudSelectItem>
+											}
+										</MudSelect>
+
+									</MudItem>
+									<MudItem xs="6">
+										<MudSelect T="AntiPassbackControls" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="zone.MonthlySets.AntiPassbacks" Required="true" RequiredError="@L["anti passbacks is required!"]">
+											@foreach (var item in Enum.GetValues<AntiPassbackControls>())
+											{
+												<MudSelectItem T="AntiPassbackControls" Value="item">@item.GetDisplayTc()</MudSelectItem>
+											}
+										</MudSelect>
+									</MudItem>
+									<MudItem xs="6">
+										<MudSelect T="MonthlyConversions" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="zone.MonthlySets.Conversions" Required="true" RequiredError="@L["conversions is required!"]">
+											@foreach (var item in Enum.GetValues<MonthlyConversions>())
+											{
+												<MudSelectItem T="MonthlyConversions" Value="item">@item.GetDisplayTc()</MudSelectItem>
+											}
+										</MudSelect>
+
+									</MudItem>
+									<MudItem xs="6">
+
+										<MudNumericField Label="@L["Deposit"]" @bind-Value="zone.MonthlySets.Deposit" For="@(() => zone.MonthlySets.Deposit)" Min="0" RequiredError="@L["deposit is required!"]"></MudNumericField>
+
+									</MudItem>
+
+								</MudGrid>
+							</MudTabPanel>
+						</MudTabs>
+					</MudItem>
                 </MudGrid>
                 <MudGrid Spacing="2">
                     <MudItem xs="12" Class="mt-4">

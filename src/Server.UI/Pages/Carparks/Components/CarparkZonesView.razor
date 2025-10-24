@@ -41,6 +41,77 @@
 							<ReadOnlyField CheckBox="true" Label="@L["Sun"]" Value="@IsHoliday(zone, 7)" />
 						</MudStack>
 					</MudItem>
+					<MudItem xs="12">
+						<MudTabs Elevation="1" ApplyEffectsToContainer="true" PanelClass="pa-6">
+							<MudTabPanel Text="@L["Hourly Sets"]">
+								<MudGrid Spacing="2">
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Permit Types"]" Value="zone.HourlySets.Permits?.Select(x => x.GetDisplayTc())">
+											 
+										</ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Plate Verifications"]" Value="zone.HourlySets.PlateVerifications?.Select(x => x.GetDisplayTc())">
+											 
+										</ReadOnlyField>
+
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Capacity"]" Value="zone.HourlySets.Capacity" ></ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Adjustment"]" Value="zone.HourlySets.Adjustment" ></ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Manual Full"]" Value="zone.HourlySets.ManualFull"></ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Grace Period"]" Value="zone.HourlySets.GracePeriod"></ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Exit Buffer"]" Value="zone.HourlySets.ExitBuffer"></ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Lost Ticket Fee"]" Value="zone.HourlySets.LostTicketFee"></ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+									</MudItem>
+								</MudGrid>
+							</MudTabPanel>
+							<MudTabPanel Text="@L["Monthly Sets"]">
+								<MudGrid Spacing="2">
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Permit Types"]" Value="zone.MonthlySets.Permits?.Select(x=>x.GetDisplayTc())" >
+											
+										</ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Plate Verifications"]" Value="zone.MonthlySets.PlateVerifications?.Select(x=>x.GetDisplayTc())" >
+									
+										</ReadOnlyField>
+
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Permit Types"]" Value="zone.MonthlySets.AntiPassbacks?.Select(x => x.GetDisplayTc())">
+											
+										</ReadOnlyField>
+									</MudItem>
+									<MudItem xs="6">
+										<ReadOnlyField Label="@L["Plate Verifications"]" Value="zone.MonthlySets.Conversions?.Select(x => x.GetDisplayTc())">
+											 
+										</ReadOnlyField>
+
+									</MudItem>
+									<MudItem xs="6">
+
+										<ReadOnlyField Label="@L["Deposit"]" Value="zone.MonthlySets.Deposit"></ReadOnlyField>
+
+									</MudItem>
+
+								</MudGrid>
+							</MudTabPanel>
+						</MudTabs>
+					</MudItem>
 				</MudGrid>
 				<MudGrid Spacing="2">
 					<MudItem xs="12" Class="mt-4">

@@ -161,7 +161,7 @@ public class UpdateCarparkCommandHandler : IRequestHandler<UpdateCarparkCommand,
                 }
                 if (zoneDto.Gates != null && zoneDto.Gates.Any())
                 {
-                    foreach(var gateDto in zoneDto.Gates)
+                    foreach (var gateDto in zoneDto.Gates)
                     {
                         if (gateDto.Id > 0)
                         {
@@ -221,6 +221,7 @@ public class UpdateCarparkCommandHandler : IRequestHandler<UpdateCarparkCommand,
         }
 
         item = _mapper.Map(request, item);
+        db.Carparks.Update(item);
         // raise a update domain event
         item.AddDomainEvent(new CarparkUpdatedEvent(item));
         await db.SaveChangesAsync(cancellationToken);

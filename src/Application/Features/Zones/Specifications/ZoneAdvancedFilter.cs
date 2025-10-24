@@ -39,5 +39,6 @@ public enum ZoneListView
 public class ZoneAdvancedFilter: PaginationFilter
 {
     public ZoneListView ListView { get; set; } = ZoneListView.All;
+    public int? CarparkId { get; set; }
     public UserProfile? CurrentUser { get; set; }
 }

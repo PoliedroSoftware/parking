@@ -108,43 +108,7 @@
 							</MudTable>
 						}
 					</MudItem>
-					<MudItem xs="12">
-						<MudStack Row Spacing="2" AlignItems="AlignItems.Center">
-							<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Rental"]</MudText>
-							<MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddMemberRental">@L["Add"]</MudButton>
-						</MudStack>
-						@if (_model.MemberRentals != null && _model.MemberRentals.Any())
-						{
-							<MudTable Items="@_model.MemberRentals" Breakpoint="Breakpoint.Sm" Dense>
-								<HeaderContent>
-									<MudTh>@L["Start Date"]</MudTh>
-									<MudTh>@L["Expiry Date"]</MudTh>
-									<MudTh>@L["Rental Fee"]</MudTh>
-									<MudTh>@L["Deposit"]</MudTh>
-									<MudTh>@L["Amount Due"]</MudTh>
-									<MudTh>@L["Amount Paid"]</MudTh>
-									<MudTh>@L["Payment Time"]</MudTh>
-									<MudTh>@L["Payment Methods"]</MudTh>
-									<MudTh>@L["Notes"]</MudTh>
-									<MudTh></MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd>@context.StartDate?.ToString("d")</MudTd>
-									<MudTd>@context.ExpiryDate?.ToString("d")</MudTd>
-									<MudTd>@context.RentalFee</MudTd>
-									<MudTd>@context.Deposit</MudTd>
-									<MudTd>@context.AmountDue</MudTd>
-									<MudTd>@context.AmountPaid</MudTd>
-									<MudTd>@context.PaymentTime</MudTd>
-									<MudTd>@context.PaymentMethodId</MudTd>
-									<MudTd>@context.Notes</MudTd>
-									<MudTd DataLabel="Molar">
-										<MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditMemberRental(context))"> @L["Edit"]</MudIconButton>
-										<MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => _model.MemberRentals.Remove(context))"> @L["Delete"]</MudIconButton></MudTd>
-								</RowTemplate>
-							</MudTable>
-						}
-					</MudItem>
+					 
 
 				</MudGrid>
 			</MudForm>
@@ -163,7 +127,7 @@
 	MudForm _memberForm = new();
 	private bool _saving = false;
 	private List<BreadcrumbItem>? _breadcrumbItems;
-	private CreateMemberCommand _model = new() { MemberRentals=new List<MemberRentalDto>() { },MemberVehicles=new List<VehicleDto>() };
+	private CreateMemberCommand _model = new() {MemberVehicles=new List<VehicleDto>() };
 	protected override Task OnInitializedAsync()
 	{
 		Title = L["New Member"];

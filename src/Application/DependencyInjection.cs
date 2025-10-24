@@ -3,8 +3,10 @@
 
 using CleanArchitecture.Blazor.Application.Common.ExceptionHandlers;
 using CleanArchitecture.Blazor.Application.Common.PublishStrategies;
+using CleanArchitecture.Blazor.Application.Features.Carparks.Services;
 using CleanArchitecture.Blazor.Application.Features.Charges.Services;
 using CleanArchitecture.Blazor.Application.Features.Members.Service;
+using CleanArchitecture.Blazor.Application.Features.Zones.Services;
 using CleanArchitecture.Blazor.Application.Pipeline;
 using CleanArchitecture.Blazor.Application.Pipeline.PreProcessors;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +34,8 @@ public static class DependencyInjection
       
         services.AddScoped<IChargesService, ChargesService>();
         services.AddScoped<ISpaceGroupService, SpaceGroupService>();
+        services.AddScoped<IZoneService, ZoneService>();
+        services.AddScoped<ICarparkService, CarparkService>();
         return services;
     }
     

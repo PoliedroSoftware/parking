@@ -1,96 +1,191 @@
-﻿@using CleanArchitecture.Blazor.Application.Features.Zones.Commands.AddEdit
+﻿@using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Carparks.Services
+@using CleanArchitecture.Blazor.Application.Features.Zones.Commands.AddEdit
 
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<Zones> L
-
+@inject ICarparkService CarparkService
 <MudDialog>
-    <DialogContent>
-        <MudForm Model="@_model" @ref="@_zoneForm" Validation="@(Validator.ValidateValue(_model))">
-            <MudGrid>
-                <MudItem xs="12" md="6"> 
-                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsMain)]" @bind-Value="_model.IsMain" For="@(() => _model.IsMain)" Color="Color.Primary" ></MudCheckBox>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.CarparkId)]" @bind-Value="_model.CarparkId" For="@(() => _model.CarparkId)" Min="0" Required="false" RequiredError="@L["carpark id is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.HolidaySets)]" @bind-Value="_model.HolidaySets" For="@(() => _model.HolidaySets)" Required="false" RequiredError="@L["holiday sets is required!"]"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsOpenCashbox)]" @bind-Value="_model.IsOpenCashbox" For="@(() => _model.IsOpenCashbox)" Color="Color.Primary" ></MudCheckBox>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Description)]"  For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Identifier)]" @bind-Value="_model.Identifier" For="@(() => _model.Identifier)" Required="false" RequiredError="@L["identifier is required!"]"></MudTextField>
-                </MudItem> 
+	<DialogContent>
+		<MudForm Model="@_model" @ref="@_zoneForm" Validation="@(Validator.ValidateValue(_model))">
+			<MudGrid>
+				<MudItem xs="12" md="6">
+					<MudSelect T="CarparkDto" Label="@L[_model.GetMemberDescription(x => x.Carpark)]" ToStringFunc="@(s => $"{s?.Name.Code} - {s?.Name.Tc}")" @bind-Value="_model.Carpark" For="@(() => _model.Carpark)" Required="true" RequiredError="@L["carpark is required!"]">
+						@foreach (var carpark in CarparkService.DataSource)
+						{
+							<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}")"</MudSelectItem>
+						}
+					</MudSelect>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudTextField Label="@L["Zone Code"]" @bind-Value="_model.Name.Code" For="@(() => _model.Name.Code)" Required="true" RequiredError="@L["zone code is required!"]"></MudTextField>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudTextField Label="@L["Zone Name"]" @bind-Value="_model.Name.Tc" For="@(() => _model.Name.Tc)" Required="true" RequiredError="@L["zone name is required!"]"></MudTextField>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudTextField Label="@L["Zone En Name"]" @bind-Value="_model.Name.En" For="@(() => _model.Name.En)" Required="true" RequiredError="@L["zone en name is required!"]"></MudTextField>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudCheckBox Label="@L[_model.GetMemberDescription(x => x.IsMain)]" @bind-Value="_model.IsMain" For="@(() => _model.IsMain)" Color="Color.Primary"></MudCheckBox>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudCheckBox Label="@L[_model.GetMemberDescription(x => x.IsOpenCashbox)]" @bind-Value="_model.IsOpenCashbox" For="@(() => _model.IsOpenCashbox)" Color="Color.Primary"></MudCheckBox>
+				</MudItem>
+				<MudItem xs="12" md="12">
+					<MudText Typo="Typo.body2">@L["Holiday Options"]</MudText>
+					<MudStack Row Spacing="2">
+						<MudCheckBox Label="@L["PH"]" Value="@(_model.HolidaySets!.Split(',')[0] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 0))"></MudCheckBox>
+						<MudCheckBox Label="@L["Mon"]" Value="@(_model.HolidaySets!.Split(',')[1] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 1))"></MudCheckBox>
+						<MudCheckBox Label="@L["Tue"]" Value="@(_model.HolidaySets!.Split(',')[2] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 2))"></MudCheckBox>
+						<MudCheckBox Label="@L["Wed"]" Value="@(_model.HolidaySets!.Split(',')[3] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 3))"></MudCheckBox>
+						<MudCheckBox Label="@L["Thu"]" Value="@(_model.HolidaySets!.Split(',')[4] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 4))"></MudCheckBox>
+						<MudCheckBox Label="@L["Fri"]" Value="@(_model.HolidaySets!.Split(',')[5] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 5))"></MudCheckBox>
+						<MudCheckBox Label="@L["Sat"]" Value="@(_model.HolidaySets!.Split(',')[6] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 6))"></MudCheckBox>
+						<MudCheckBox Label="@L["Sun"]" Value="@(_model.HolidaySets!.Split(',')[7] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 7))"></MudCheckBox>
+					</MudStack>
+				</MudItem>
+				<MudItem xs="12">
+					<MudTabs Elevation="1" ApplyEffectsToContainer="true" PanelClass="pa-6">
+						<MudTabPanel Text="@L["Hourly Sets"]">
+							<MudGrid Spacing="2">
+								<MudItem xs="6">
+									<MudSelect T="PermitTypes" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="_model.HourlySets.Permits" Required="true" RequiredError="@L["permit type is required!"]">
+										@foreach (var item in Enum.GetValues<PermitTypes>())
+										{
+											<MudSelectItem T="PermitTypes" Value="item">@item.GetDisplayTc()</MudSelectItem>
+										}
+									</MudSelect>
+								</MudItem>
+								<MudItem xs="6">
+									<MudSelect T="LicensePlateVerifications" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="_model.HourlySets.PlateVerifications" Required="true" RequiredError="@L["plate verifications is required!"]">
+										@foreach (var item in Enum.GetValues<LicensePlateVerifications>())
+										{
+											<MudSelectItem T="LicensePlateVerifications" Value="item">@item.GetDisplayTc()</MudSelectItem>
+										}
+									</MudSelect>
 
-            </MudGrid>
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
-        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
-        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
-    </DialogActions>
+								</MudItem>
+								<MudItem xs="6">
+									<MudNumericField Label="@L["Capacity"]" @bind-Value="_model.HourlySets.Capacity" For="@(() => _model.HourlySets.Capacity)" Min="0" Required="true" RequiredError="@L["capacity is required!"]"></MudNumericField>
+								</MudItem>
+								<MudItem xs="6">
+									<MudNumericField Label="@L["Adjustment"]" @bind-Value="_model.HourlySets.Adjustment" For="@(() => _model.HourlySets.Adjustment)" Min="0" RequiredError="@L["capacity is required!"]"></MudNumericField>
+								</MudItem>
+								<MudItem xs="6">
+									<MudCheckBox Label="@L["Manual Full"]" @bind-Value="_model.HourlySets.ManualFull"></MudCheckBox>
+								</MudItem>
+								<MudItem xs="6">
+									<MudNumericField Label="@L["Grace Period"]" @bind-Value="_model.HourlySets.GracePeriod" For="@(() => _model.HourlySets.GracePeriod)" Min="0"></MudNumericField>
+								</MudItem>
+								<MudItem xs="6">
+									<MudNumericField Label="@L["Exit Buffer"]" @bind-Value="_model.HourlySets.ExitBuffer" For="@(() => _model.HourlySets.ExitBuffer)" Min="0"></MudNumericField>
+								</MudItem>
+								<MudItem xs="6">
+									<MudNumericField Label="@L["Lost Ticket Fee"]" @bind-Value="_model.HourlySets.LostTicketFee" For="@(() => _model.HourlySets.LostTicketFee)" Min="0"></MudNumericField>
+								</MudItem>
+								<MudItem xs="6">
+								</MudItem>
+							</MudGrid>
+						</MudTabPanel>
+						<MudTabPanel Text="@L[_model.GetMemberDescription(x => x.MonthlySets)]">
+							<MudGrid Spacing="2">
+								<MudItem xs="6">
+									<MudSelect T="PermitTypes" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="_model.MonthlySets.Permits" Required="true" RequiredError="@L["permit type is required!"]">
+										@foreach (var item in Enum.GetValues<PermitTypes>())
+										{
+											<MudSelectItem T="PermitTypes" Value="item">@item.GetDisplayTc()</MudSelectItem>
+										}
+									</MudSelect>
+								</MudItem>
+								<MudItem xs="6">
+									<MudSelect T="LicensePlateVerifications" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="_model.MonthlySets.PlateVerifications" Required="true" RequiredError="@L["plate verifications is required!"]">
+										@foreach (var item in Enum.GetValues<LicensePlateVerifications>())
+										{
+											<MudSelectItem T="LicensePlateVerifications" Value="item">@item.GetDisplayTc()</MudSelectItem>
+										}
+									</MudSelect>
+
+								</MudItem>
+								<MudItem xs="6">
+									<MudSelect T="AntiPassbackControls" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="_model.MonthlySets.AntiPassbacks" Required="true" RequiredError="@L["anti passbacks is required!"]">
+										@foreach (var item in Enum.GetValues<AntiPassbackControls>())
+										{
+											<MudSelectItem T="AntiPassbackControls" Value="item">@item.GetDisplayTc()</MudSelectItem>
+										}
+									</MudSelect>
+								</MudItem>
+								<MudItem xs="6">
+									<MudSelect T="MonthlyConversions" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="_model.MonthlySets.Conversions" Required="true" RequiredError="@L["conversions is required!"]">
+										@foreach (var item in Enum.GetValues<MonthlyConversions>())
+										{
+											<MudSelectItem T="MonthlyConversions" Value="item">@item.GetDisplayTc()</MudSelectItem>
+										}
+									</MudSelect>
+
+								</MudItem>
+								<MudItem xs="6">
+									 
+									<MudNumericField Label="@L["Deposit"]" @bind-Value="_model.MonthlySets.Deposit" For="@(() => _model.MonthlySets.Deposit)" Min="0" RequiredError="@L["deposit is required!"]"></MudNumericField>
+									 
+								</MudItem>
+						 
+							</MudGrid>
+						</MudTabPanel>
+					</MudTabs>
+				</MudItem>
+				<MudItem xs="12" md="12">
+					<MudTextField Label="@L[_model.GetMemberDescription(x => x.Description)]" For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
+
+
+				</MudItem>
+
+
+			</MudGrid>
+		</MudForm>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+	</DialogActions>
 </MudDialog>
 
 @code {
-    MudForm _zoneForm = new();
-    private bool _saving = false;
-    private bool _savingnew = false;
-    [CascadingParameter]
-    IMudDialogInstance MudDialog { get; set; } = default!;
-    [EditorRequired] [Parameter] public AddEditZoneCommand _model { get; set; } = null!;
-    async Task OnSubmit()
-    {
-        try
-        {
-            _saving = true;
-            await _zoneForm.Validate().ConfigureAwait(false);
-            if (!_zoneForm.IsValid)
-                return;
-            var result = await Mediator.Send(_model);
-            result.Match(data =>
-            {
-                MudDialog.Close(DialogResult.Ok(true));
-                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-            }, errors =>
-            {
-                Snackbar.Add(errors, MudBlazor.Severity.Error);
-            });
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
-    async Task OnSaveAndNew()
-    {
-        try
-        {
-            _savingnew = true;
-            await _zoneForm.Validate().ConfigureAwait(false);
-            if (!_zoneForm.IsValid)
-               return;
-            var result = await Mediator.Send(_model);
-            await result.MatchAsync(async data =>
-            {
-                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-                await Task.Delay(300);
-                _model = new AddEditZoneCommand() { Name=new Domain.Common.MultiCodeName("","","") };
-            }, errors =>
-            {
-                Snackbar.Add(errors, MudBlazor.Severity.Error);
-                return Task.CompletedTask;
-            });
-        }
-        finally
-        {
-            _savingnew = false;
-        }
-    }
-    void Cancel() => MudDialog.Cancel();
+	MudForm _zoneForm = new();
+	private bool _saving = false;
+	private bool _savingnew = false;
+	[CascadingParameter]
+	IMudDialogInstance MudDialog { get; set; } = default!;
+	[EditorRequired][Parameter] public AddEditZoneCommand _model { get; set; } = null!;
+	async Task OnSubmit()
+	{
+		try
+		{
+			_saving = true;
+			await _zoneForm.Validate().ConfigureAwait(false);
+			if (!_zoneForm.IsValid)
+				return;
+			var result = await Mediator.Send(_model);
+			result.Match(data =>
+			{
+				MudDialog.Close(DialogResult.Ok(true));
+				Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+			}, errors =>
+			{
+				Snackbar.Add(errors, MudBlazor.Severity.Error);
+			});
+		}
+		finally
+		{
+			_saving = false;
+		}
+	}
+	void HolidayValueChange(AddEditZoneCommand zone, bool value, int index)
+	{
+		var holidaySets = zone.HolidaySets?.Split(',') ?? new string[] { "0", "0", "0", "0", "0", "0", "0", "0" };
+		holidaySets[index] = value ? "1" : "0";
+		zone.HolidaySets = string.Join(',', holidaySets);
+	}
+	void Cancel() => MudDialog.Cancel();
 }

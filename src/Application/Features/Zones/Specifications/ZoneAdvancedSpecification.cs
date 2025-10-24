@@ -28,8 +28,9 @@ public class ZoneAdvancedSpecification : Specification<Zone>
         var todayrange = today.GetDateRange(ZoneListView.TODAY.ToString(), filter.CurrentUser.LocalTimeOffset);
         var last30daysrange = today.GetDateRange(ZoneListView.LAST_30_DAYS.ToString(),filter.CurrentUser.LocalTimeOffset);
 
-        Query.Where(q => q.Name != null)
+        Query.Where(q => q.Name.Code != null)
              .Where(filter.Keyword,!string.IsNullOrEmpty(filter.Keyword))
+             .Where(q => q.CarparkId==filter.CarparkId,filter.CarparkId!=null)
              .Where(q => q.CreatedById == filter.CurrentUser.UserId, filter.ListView == ZoneListView.My && filter.CurrentUser is not null)
              .Where(x => x.CreatedAt >= todayrange.Start && x.CreatedAt < todayrange.End.AddDays(1), filter.ListView == ZoneListView.TODAY)
              .Where(x => x.CreatedAt >= last30daysrange.Start, filter.ListView == ZoneListView.LAST_30_DAYS);

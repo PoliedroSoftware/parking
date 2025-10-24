@@ -23,9 +23,9 @@ public class VehicleDto
     public int Id { get; set; }
     [Description("Name")]
     public string Name { get; set; }
-    [Description("Service category id")]
+    [Description("Service category")]
     public ServiceCategories? ServiceCategoryId { get; set; }
-    [Description("Vehicle type id")]
+    [Description("Vehicle type")]
     public VehicleTypes? VehicleTypeId { get; set; }
     [Description("Zone id")]
     public int? ZoneId { get; set; }

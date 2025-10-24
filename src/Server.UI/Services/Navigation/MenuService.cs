@@ -16,7 +16,7 @@ public class MenuService : IMenuService
                 new()
                 {
                     Title = "Park",
-                    Icon = Icons.Material.Filled.ShoppingCart,
+                    Icon = Icons.Material.Filled.LocalParking,
                     PageStatus = PageStatus.Completed,
                     IsParent = true,
                     MenuItems = new List<MenuSectionSubItemModel>
@@ -24,20 +24,71 @@ public class MenuService : IMenuService
                         new()
                         {
                             Title = "Carpark",
-                            Href = "/pages/Carparks",
+                            Href = "/pages/carparks",
+                            PageStatus = PageStatus.Completed
+                        },
+                        new()
+                        {
+                            Title = "Zone",
+                            Href = "/pages/zones",
+                            PageStatus = PageStatus.Completed
+                        },
+                        new()
+                        {
+                            Title = "Vehicles",
+                            Href = "/pages/vehicles",
+                            PageStatus = PageStatus.Completed
+                        },
+                        new()
+                        {
+                            Title = "Gates",
+                            Href = "/pages/gates",
+                            PageStatus = PageStatus.Completed
+                        },
+                        
+                         
+                        
+                    }
+                },
+                new()
+                {
+                    Title = "Management",
+                    Icon = Icons.Material.Filled.Groups,
+                    PageStatus = PageStatus.Completed,
+                    IsParent = true,
+                    MenuItems = new List<MenuSectionSubItemModel>
+                    { new()
+                        {
+                            Title = "SpaceGroup",
+                            Href = "/pages/spacegoups",
                             PageStatus = PageStatus.Completed
                         },
                         new()
                         {
                             Title = "Member",
-                            Href = "/pages/Members",
+                            Href = "/pages/members",
                             PageStatus = PageStatus.Completed
                         }
-                         
-                        
                     }
                 },
-                 
+                new()
+                {
+                    Title = "Reports",
+                    Icon = Icons.Material.Filled.InsertChartOutlined,
+                    PageStatus = PageStatus.Completed,
+                    IsParent = true,
+                    MenuItems = new List<MenuSectionSubItemModel>
+                    { new()
+                        {
+                            Title = "Member Rentals Report",
+                            Href = "/pages/memberrentals",
+                            PageStatus = PageStatus.Completed
+                        },
+                         
+                    }
+                }
+
+
             }
         },
         new MenuSectionModel

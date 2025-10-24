@@ -48,8 +48,12 @@ public class ZoneDto
     public string? Identifier => $"Z{Id}";
     [Description("Holidays")]
     public bool[] Holidays => [.. HolidaySets.Split(',').Select(x => x == "1")];
-    
+    [Description("Hourly Sets")]
+    public HourlySets HourlySets { get; set; } = new();
 
+    // 月租泊車服務設定 Monthly Parking Service Settings
+    [Description("Monthly Sets")]
+    public MonthlySets MonthlySets { get; set; } = new();
     private class Mapping : Profile
     {
         public Mapping()

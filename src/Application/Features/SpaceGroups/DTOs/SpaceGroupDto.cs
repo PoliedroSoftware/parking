@@ -39,8 +39,10 @@ public class SpaceGroupDto
     {
         public Mapping()
         {
-            CreateMap<SpaceGroup, SpaceGroupDto>(MemberList.None);
+            CreateMap<SpaceGroup, SpaceGroupDto>(MemberList.None)
+                .ForMember(x=>x.Members,y=>y.Ignore());
             CreateMap<SpaceGroupDto, SpaceGroup>(MemberList.None)
+                .ForMember(z=>z.Members,y=>y.Ignore())
                 .ForMember(dest => dest.Zone, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())

@@ -57,7 +57,7 @@ public class Zone : BaseAuditableEntity
 public class HourlySets
 {
     // 許可的時租通行證類型 Hourly Permit Types Allowed
-    public List<PermitTypes>? Permits { get; set; } = [PermitTypes.OctopusCard];
+    public IEnumerable<PermitTypes>? Permits { get; set; } =new HashSet<PermitTypes>(){PermitTypes.OctopusCard };
 
     // 時租可泊車位數 Hourly Parking Capacity
     public int Capacity { get; set; } = 100;
@@ -75,26 +75,26 @@ public class HourlySets
     public int ExitBuffer { get; set; } = 15;
 
     // 失票罰款 Lost Ticket Fee
-    public decimal LostTicketFee { get; set; } = 300m;
+    public decimal? LostTicketFee { get; set; } = 300;
 
     // 時租出入車牌驗證 Hourly License Plate Verification Requirement
-    public List<LicensePlateVerifications> PlateVerifications { get; set; } = [];
+    public IEnumerable<LicensePlateVerifications>? PlateVerifications { get; set; } = new HashSet<LicensePlateVerifications>();
 }
 
 
 public class MonthlySets
 {
     // 允許的月租通行證類型 Monthly Permit Types Allowed
-    public List<PermitTypes> Permits { get; set; } = [PermitTypes.Smartcard, PermitTypes.LicensePlate];
+    public IEnumerable<PermitTypes>? Permits { get; set; } = [PermitTypes.Smartcard, PermitTypes.LicensePlate];
 
     // 月租出入循環檢測 Anti-Passback Control,防止同一證件重複進出
-    public List<AntiPassbackControls> AntiPassbacks { get; set; } = [AntiPassbackControls.EntryExit];
+    public IEnumerable<AntiPassbackControls>? AntiPassbacks { get; set; } = [AntiPassbackControls.EntryExit];
 
     // 月租出入車牌驗證 Monthly License Plate Verification Requirement
-    public List<LicensePlateVerifications> PlateVerifications { get; set; } = [LicensePlateVerifications.EntryExit];
+    public IEnumerable<LicensePlateVerifications>? PlateVerifications { get; set; } = [LicensePlateVerifications.EntryExit];
 
     // 無效月租自動轉為時租服务 Monthly Conversion to Hourly when Monthly is not valid
-    public List<MonthlyConversions> Conversions { get; set; } = [];
+    public IEnumerable<MonthlyConversions>? Conversions { get; set; } = [];
 
     // 按金金額 Monthly Deposit Amount
     public decimal Deposit { get; set; } = 150m;

@@ -37,15 +37,15 @@
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
 					<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-					<MudEnumSelect Style="min-width:120px" TEnum="ZoneListView" ValueChanged="OnListViewChanged" Value="_zonesQuery.ListView" Dense="true" Label="@L["List View"]">
-					</MudEnumSelect>
-					<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
-						 
-						@foreach (var carpark in CarparkService.DataSource)
-						{
-							<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
-						}
-					</MudSelect>
+						<MudEnumSelect Style="min-width:120px" TEnum="ZoneListView" ValueChanged="OnListViewChanged" Value="_zonesQuery.ListView" Dense="true" Label="@L["List View"]">
+						</MudEnumSelect>
+						<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
+
+							@foreach (var carpark in CarparkService.DataSource)
+							{
+								<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
+							}
+						</MudSelect>
 					</MudStack>
 				</MudStack>
 			</MudStack>
@@ -71,7 +71,7 @@
 							@AppStrings.Delete
 						</MudButton>
 					}
-					 
+
 				</MudToolBar>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
@@ -128,12 +128,12 @@
 		<PropertyColumn Property="x => x.Name.Code" Title="@L["Name"]" Sortable="false">
 			<CellTemplate>
 				<div class="d-flex flex-column">
-					<MudText Typo="Typo.body1" >@context.Item.Name.Code</MudText>
+					<MudText Typo="Typo.body1">@context.Item.Name.Code</MudText>
 					<MudText Typo="Typo.body2">@context.Item.Name.Tc</MudText>
 				</div>
 			</CellTemplate>
 		</PropertyColumn>
-		 
+
 		<PropertyColumn Property="x => x.IsMain" Title="@L[_zoneDto.GetMemberDescription(x => x.IsMain)]">
 			<CellTemplate>
 				@if (context.Item.IsMain)
@@ -146,11 +146,11 @@
 				}
 			</CellTemplate>
 		</PropertyColumn>
-		
+
 		<PropertyColumn Property="x => x.HolidaySets" Title="@L[_zoneDto.GetMemberDescription(x => x.HolidaySets)]">
 			<CellTemplate>
 				<MudStack Row Spacing="2">
-					<MudCheckBox Label="@L["PH"]" Value="@(context.Item.HolidaySets!.Split(',')[0] == "1")"  ReadOnly ></MudCheckBox>
+					<MudCheckBox Label="@L["PH"]" Value="@(context.Item.HolidaySets!.Split(',')[0] == "1")" ReadOnly></MudCheckBox>
 					<MudCheckBox Label="@L["Mon"]" Value="@(context.Item.HolidaySets!.Split(',')[1] == "1")" ReadOnly> </MudCheckBox>
 					<MudCheckBox Label="@L["Tue"]" Value="@(context.Item.HolidaySets!.Split(',')[2] == "1")" ReadOnly></MudCheckBox>
 					<MudCheckBox Label="@L["Wed"]" Value="@(context.Item.HolidaySets!.Split(',')[3] == "1")" ReadOnly></MudCheckBox>
@@ -211,7 +211,7 @@
 	{
 		Title = L[_zoneDto.GetClassDescription()];
 		_accessRights = await PermissionService.GetAccessRightsAsync<ZonesAccessRights>();
-		await	CarparkService.RefreshAsync();
+		await CarparkService.RefreshAsync();
 	}
 
 	private async Task<GridData<ZoneDto>> ServerReload(GridState<ZoneDto> state)
@@ -280,15 +280,15 @@
 	}
 	private Task OnCreate()
 	{
-		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", ""), HourlySets=new (), MonthlySets=new() };
+		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", ""), HourlySets = new(), MonthlySets = new() };
 		return ShowEditFormDialog(L["New Zone"], command);
 	}
-	
+
 	private Task OnEditZone(ZoneDto dto)
 	{
 		var command = Mapper.Map<AddEditZoneCommand>(dto);
 		return ShowEditFormDialog(L["Edit Zone"], command);
-		 
+
 	}
 
 	private Task OnDeleteZone(ZoneDto dto)
@@ -319,6 +319,6 @@
 	}
 
 
-	 
+
 
 }

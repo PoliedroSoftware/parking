@@ -38,6 +38,8 @@ public enum VehicleListView
 /// </summary>
 public class VehicleAdvancedFilter: PaginationFilter
 {
+    public int? CarparkId { get; set; }
+    public int? ZoneId { get; set; }
     public VehicleListView ListView { get; set; } = VehicleListView.All;
     public UserProfile? CurrentUser { get; set; }
 }

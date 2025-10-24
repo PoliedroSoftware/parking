@@ -25,7 +25,7 @@ public class VehiclesWithPaginationQuery : VehicleAdvancedFilter, ICacheableRequ
 {
     public override string ToString()
     {
-        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
+        return $"Listview:{ListView}:{CurrentUser?.UserId},{CarparkId},{ZoneId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
     }
     public string CacheKey => VehicleCacheKey.GetPaginationCacheKey($"{this}");
     public IEnumerable<string>? Tags => VehicleCacheKey.Tags;

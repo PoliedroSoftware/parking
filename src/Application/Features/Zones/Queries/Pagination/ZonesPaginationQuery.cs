@@ -25,7 +25,7 @@ public class ZonesWithPaginationQuery : ZoneAdvancedFilter, ICacheableRequest<Pa
 {
     public override string ToString()
     {
-        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
+        return $"Listview:{ListView}:{CurrentUser?.UserId},{CarparkId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
     }
     public string CacheKey => ZoneCacheKey.GetPaginationCacheKey($"{this}");
     public IEnumerable<string>? Tags => ZoneCacheKey.Tags;

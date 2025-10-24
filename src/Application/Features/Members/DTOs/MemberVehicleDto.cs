@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 using CleanArchitecture.Blazor.Domain.Entities;
 

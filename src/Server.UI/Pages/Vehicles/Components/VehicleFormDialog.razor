@@ -1,0 +1,111 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.Vehicles.Commands.AddEdit
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<Vehicles> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@_model" @ref="@_vehicleForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid>
+                <MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudEnumSelect TEnum="Nullable<ServiceCategories>" Label="@L[_model.GetMemberDescription(x=>x.ServiceCategoryId)]" @bind-Value="_model.ServiceCategoryId" For="@(() => _model.ServiceCategoryId)" Required="false" RequiredError="@L["service category id is required!"]"></MudEnumSelect>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudEnumSelect TEnum="Nullable<VehicleTypes>" Label="@L[_model.GetMemberDescription(x=>x.VehicleTypeId)]" @bind-Value="_model.VehicleTypeId" For="@(() => _model.VehicleTypeId)" Required="false" RequiredError="@L["vehicle type id is required!"]"></MudEnumSelect>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.ZoneId)]" @bind-Value="_model.ZoneId" For="@(() => _model.ZoneId)" Min="0" Required="false" RequiredError="@L["zone id is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.ChargeId)]" @bind-Value="_model.ChargeId" For="@(() => _model.ChargeId)" Min="0" Required="false" RequiredError="@L["charge id is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.Capacity)]" @bind-Value="_model.Capacity" For="@(() => _model.Capacity)" Min="0" Required="false" RequiredError="@L["capacity is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.AllowEntryWhenFull)]" @bind-Value="_model.AllowEntryWhenFull" For="@(() => _model.AllowEntryWhenFull)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.ManualFull)]" @bind-Value="_model.ManualFull" For="@(() => _model.ManualFull)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.CanRecognizePlate)]" @bind-Value="_model.CanRecognizePlate" For="@(() => _model.CanRecognizePlate)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudCheckBox Label="@L[_model.GetMemberDescription(x=>x.IsActive)]" @bind-Value="_model.IsActive" For="@(() => _model.IsActive)" Color="Color.Primary" ></MudCheckBox>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.Occupied)]" @bind-Value="_model.Occupied" For="@(() => _model.Occupied)" Min="0" Required="false" RequiredError="@L["occupied is required!"]"></MudNumericField >
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    MudForm _vehicleForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public AddEditVehicleCommand _model { get; set; } = null!;
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _vehicleForm.Validate().ConfigureAwait(false);
+            if (!_vehicleForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(data =>
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+            });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingnew = true;
+            await _vehicleForm.Validate().ConfigureAwait(false);
+            if (!_vehicleForm.IsValid)
+               return;
+            var result = await Mediator.Send(_model);
+            await result.MatchAsync(async data =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditVehicleCommand() { };
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            _savingnew = false;
+        }
+    }
+    void Cancel() => MudDialog.Cancel();
+}

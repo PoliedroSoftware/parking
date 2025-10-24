@@ -1,0 +1,107 @@
+﻿@page "/pages/vehicles/view/{id:int}"
+@using CleanArchitecture.Blazor.Application.Features.Vehicles.Commands.Delete
+@using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Vehicles.Queries.GetById
+@inherits MudComponentBase
+@inject IStringLocalizer<Vehicles> L
+@attribute [Authorize(Policy = Permissions.Vehicles.View)]
+<PageTitle>@Title</PageTitle>
+<Breadcrumbs  OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
+@if (_model != null)
+{
+    <MudCard Class="pa-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                 <MudText Typo="Typo.h6">@Title</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudGrid Spacing="3" Class="readonly-grid">
+                <MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Name)]" Value="_model.Name"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.ServiceCategoryId)]" Value="_model.ServiceCategoryId?.GetDescription()"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.VehicleTypeId)]" Value="_model.VehicleTypeId?.GetDescription()"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.ZoneId)]" Value="_model.ZoneId"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.ChargeId)]" Value="_model.ChargeId"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Capacity)]" Value="_model.Capacity"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.AllowEntryWhenFull)]" Value="_model.AllowEntryWhenFull"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.ManualFull)]" Value="_model.ManualFull"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.CanRecognizePlate)]" Value="_model.CanRecognizePlate"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.IsActive)]" Value="_model.IsActive"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Occupied)]" Value="_model.Occupied"></ReadOnlyField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions></MudCardActions>
+    </MudCard>
+ }
+</MudContainer>
+ 
+
+@code {
+    public string? Title { get; private set; }
+    [Parameter]
+    public int Id { get; set; }
+    private List<BreadcrumbItem>? _breadcrumbItems; 
+    private VehicleDto? _model;
+    protected override async Task OnInitializedAsync()
+    {
+        Title = L["Vehicle"];
+        _breadcrumbItems = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem(L["Home"], href: "/"),
+            new BreadcrumbItem(L["Vehicles"], href: "/pages/vehicles")
+        };
+        var result = await Mediator.Send(new GetVehicleByIdQuery() { Id = Id });
+        result.Map(data =>
+        {
+            _model = data;
+            return data;
+        }).Match(data =>
+        {
+            _breadcrumbItems.Add(new BreadcrumbItem(data.Name, null, disabled: true));
+        }, errors =>
+        {
+            Snackbar.Add(errors, MudBlazor.Severity.Error);
+        });
+
+    }
+    void GoEdit()
+    {
+        Navigation.NavigateTo($"/pages/Vehicles/edit/{Id}");
+    }
+    async Task Delete()
+    {
+        var contentText = string.Format(AppStrings.DeleteConfirmation, _model.Name);
+        var command = new DeleteVehicleCommand(new int[] { _model.Id });
+        await DialogServiceHelper.ShowDeleteConfirmationDialogAsync(command, AppStrings.DeleteConfirmationTitle, contentText, async () =>
+        {
+            await InvokeAsync(() =>
+            {
+                Navigation.NavigateTo($"/pages/Vehicles");
+            });
+        });
+    }
+}

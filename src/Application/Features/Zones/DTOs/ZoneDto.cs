@@ -12,6 +12,9 @@
 
 
 using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Gates.DTOs;
+using CleanArchitecture.Blazor.Application.Features.SpaceGroups.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs;
 using CleanArchitecture.Blazor.Domain.Common;
 
 namespace CleanArchitecture.Blazor.Application.Features.Zones.DTOs;

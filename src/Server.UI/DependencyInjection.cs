@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using CleanArchitecture.Blazor.Application;
 using CleanArchitecture.Blazor.Application.Common.Constants;
 using CleanArchitecture.Blazor.Application.Common.Interfaces;
@@ -38,14 +38,14 @@ public static class DependencyInjection
     /// <returns>The updated service collection.</returns>
     public static IServiceCollection AddServerUI(this IServiceCollection services, IConfiguration config)
     {
-        services.AddRazorComponents().AddInteractiveServerComponents().AddHubOptions(options=> options.MaximumReceiveMessageSize = 64 * 1024);
+        services.AddRazorComponents().AddInteractiveServerComponents().AddHubOptions(options => options.MaximumReceiveMessageSize = 64 * 1024);
         services.AddCascadingAuthenticationState();
-  
+
         services.AddMudServices(config =>
         {
             MudGlobal.InputDefaults.ShrinkLabel = true;
             //MudGlobal.InputDefaults.Variant = Variant.Outlined;
-            //MudGlobal.ButtonDefaults.Variant = Variant.Outlined;
+            //MudGlobal.ButtonDefaults.Variant = Variant.Filled;
             config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
             config.SnackbarConfiguration.NewestOnTop = false;
             config.SnackbarConfiguration.ShowCloseIcon = true;
@@ -53,7 +53,7 @@ public static class DependencyInjection
             config.SnackbarConfiguration.HideTransitionDuration = 500;
             config.SnackbarConfiguration.ShowTransitionDuration = 500;
             config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
-           
+
             // we're currently planning on deprecating `PreventDuplicates`, at least to the end dev. however,
             // we may end up wanting to instead set it as internal because the docs project relies on it
             // to ensure that the Snackbar always allows duplicates. disabling the warning for now because
@@ -70,7 +70,7 @@ public static class DependencyInjection
         services.AddScoped<LocalizationCookiesMiddleware>()
             .Configure<RequestLocalizationOptions>(options =>
             {
-    
+
                 options.AddSupportedUICultures(LocalizationConstants.SupportedLanguages.Select(x => x.Code).ToArray());
                 options.AddSupportedCultures(LocalizationConstants.SupportedLanguages.Select(x => x.Code).ToArray());
                 options.DefaultRequestCulture = new RequestCulture(LocalizationConstants.DefaultLanguageCode);
@@ -94,9 +94,9 @@ public static class DependencyInjection
                 options.MaximumReceiveMessageSize = 64 * 1024;
                 options.AddFilter<UserContextHubFilter>();
             });
-        
-      
-        
+
+
+
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
         services.AddHealthChecks();
@@ -108,7 +108,7 @@ public static class DependencyInjection
             c.BaseAddress = new Uri("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             c.DefaultRequestHeaders.Add("x-goog-api-key", aiSettings.GeminiApiKey);
-           
+
         });
         services.AddScoped<LocalTimeOffset>();
         services.AddScoped<HubClient>();
@@ -154,7 +154,7 @@ public static class DependencyInjection
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
-        
+
         // Single global exception handler registration (no path) to activate IExceptionHandler + ProblemDetails pipeline.
         app.UseExceptionHandler();
         app.UseStatusCodePagesWithRedirects("/404");
@@ -164,7 +164,7 @@ public static class DependencyInjection
         app.UseAntiforgery();
         app.UseHttpsRedirection();
         app.MapStaticAssets();
-        
+
 
         if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), @"Files")))
             Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), @"Files"));
@@ -191,7 +191,7 @@ public static class DependencyInjection
             localizationOptions.RequestCultureProviders.Remove(acceptLanguageProvider);
         }
         app.UseRequestLocalization(localizationOptions);
-    app.UseMiddleware<LocalizationCookiesMiddleware>();
+        app.UseMiddleware<LocalizationCookiesMiddleware>();
         app.UseHangfireDashboard("/jobs", new DashboardOptions
         {
             Authorization = new[] { new HangfireDashboardAuthorizationFilter() },
@@ -210,7 +210,7 @@ public static class DependencyInjection
         { // We obviously need this
             KeepAliveInterval = TimeSpan.FromSeconds(30), // Just in case
         });
-       
+
         return app;
     }
 }

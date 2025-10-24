@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.DTOs;
+using CleanArchitecture.Blazor.Application.Features.SpaceGroups.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Tenants.Caching;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 using ZiggyCreatures.Caching.Fusion;

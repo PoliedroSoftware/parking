@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.Caching;
+using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 using ZiggyCreatures.Caching.Fusion;
 

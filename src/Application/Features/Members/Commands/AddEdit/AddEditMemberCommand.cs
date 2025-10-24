@@ -14,6 +14,7 @@
 
 using CleanArchitecture.Blazor.Application.Features.Members.Caching;
 using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
+using CleanArchitecture.Blazor.Application.Features.SpaceGroups.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 

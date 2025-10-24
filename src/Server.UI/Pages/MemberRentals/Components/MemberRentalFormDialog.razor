@@ -1,0 +1,114 @@
+﻿@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<MemberRentals> L
+
+<MudDialog>
+    <DialogContent>
+        <MudForm Model="@_model" @ref="@_memberrentalForm" Validation="@(Validator.ValidateValue(_model))">
+            <MudGrid>
+                <MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.MemberId)]" @bind-Value="_model.MemberId" For="@(() => _model.MemberId)" Min="0" Required="false" RequiredError="@L["member id is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.LicensePlate)]" @bind-Value="_model.LicensePlate" For="@(() => _model.LicensePlate)" Required="false" RequiredError="@L["license plate is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.CardId)]" @bind-Value="_model.CardId" For="@(() => _model.CardId)" Required="false" RequiredError="@L["card id is required!"]"></MudTextField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.StartDate)]" @bind-Date="_model.StartDate" For="@(() => _model.StartDate)" Required="false" RequiredError="@L["start date is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="false" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.RentalFee)]" @bind-Value="_model.RentalFee" For="@(() => _model.RentalFee)" Min="0.00m" Required="false" RequiredError="@L["rental fee is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.Deposit)]" @bind-Value="_model.Deposit" For="@(() => _model.Deposit)" Min="0.00m" Required="false" RequiredError="@L["deposit is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.AmountDue)]" @bind-Value="_model.AmountDue" For="@(() => _model.AmountDue)" Min="0.00m" Required="false" RequiredError="@L["amount due is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.AmountPaid)]" @bind-Value="_model.AmountPaid" For="@(() => _model.AmountPaid)" Min="0.00m" Required="false" RequiredError="@L["amount paid is required!"]"></MudNumericField >
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.PaymentTime)]" @bind-Date="_model.PaymentTime" For="@(() => _model.PaymentTime)" Required="false" RequiredError="@L["payment time is required!"]"></MudDatePicker>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudEnumSelect TEnum="Nullable<PaymentMethods>" Label="@L[_model.GetMemberDescription(x=>x.PaymentMethodId)]" @bind-Value="_model.PaymentMethodId" For="@(() => _model.PaymentMethodId)" Required="false" RequiredError="@L["payment method id is required!"]"></MudEnumSelect>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Notes)]" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Required="false" RequiredError="@L["notes is required!"]"></MudTextField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
+        <MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+        <MudLoadingButton Loading="@_saving"  OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    MudForm _memberrentalForm = new();
+    private bool _saving = false;
+    private bool _savingnew = false;
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public AddEditMemberRentalCommand _model { get; set; } = null!;
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _memberrentalForm.Validate().ConfigureAwait(false);
+            if (!_memberrentalForm.IsValid)
+                return;
+            var result = await Mediator.Send(_model);
+            result.Match(data =>
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+            });
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingnew = true;
+            await _memberrentalForm.Validate().ConfigureAwait(false);
+            if (!_memberrentalForm.IsValid)
+               return;
+            var result = await Mediator.Send(_model);
+            await result.MatchAsync(async data =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditMemberRentalCommand() { };
+            }, errors =>
+            {
+                Snackbar.Add(errors, MudBlazor.Severity.Error);
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            _savingnew = false;
+        }
+    }
+    void Cancel() => MudDialog.Cancel();
+}

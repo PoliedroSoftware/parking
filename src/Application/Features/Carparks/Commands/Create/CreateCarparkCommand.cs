@@ -12,7 +12,10 @@
 #nullable disable warnings
 
 using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
+using CleanArchitecture.Blazor.Application.Features.Gates.DTOs;
+using CleanArchitecture.Blazor.Application.Features.SpaceGroups.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Tenants.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 using CleanArchitecture.Blazor.Domain.Common;
 

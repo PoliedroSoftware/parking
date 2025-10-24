@@ -3,6 +3,7 @@ using CleanArchitecture.Blazor.Application.Features.Charges.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Charges.Services;
 using CleanArchitecture.Blazor.Application.Features.Identity.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Members.Service;
+using CleanArchitecture.Blazor.Application.Features.SpaceGroups.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
 
 

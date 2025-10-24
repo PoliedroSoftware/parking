@@ -1,0 +1,98 @@
+﻿@page "/pages/gates/view/{id:int}"
+@using CleanArchitecture.Blazor.Application.Features.Gates.Commands.Delete
+@using CleanArchitecture.Blazor.Application.Features.Gates.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Gates.Queries.GetById
+@inherits MudComponentBase
+@inject IStringLocalizer<Gates> L
+@attribute [Authorize(Policy = Permissions.Gates.View)]
+<PageTitle>@Title</PageTitle>
+<Breadcrumbs  OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
+@if (_model != null)
+{
+    <MudCard Class="pa-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                 <MudText Typo="Typo.h6">@Title</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudGrid Spacing="3" Class="readonly-grid">
+                <MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Name)]" Value="_model.Name"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.ZoneId)]" Value="_model.ZoneId"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.GateType)]" Value="_model.GateType?.GetDescription()"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.LaneNo)]" Value="_model.LaneNo"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.IsUpper)]" Value="_model.IsUpper"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.IsLefthand)]" Value="_model.IsLefthand"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField CheckBox="true" Label="@L[_model.GetMemberDescription(x=>x.IsActive)]" Value="_model.IsActive"></ReadOnlyField>
+                </MudItem> 
+<MudItem xs="12" md="6"> 
+                        <ReadOnlyField Label="@L[_model.GetMemberDescription(x=>x.Description)]" Value="_model.Description"></ReadOnlyField>
+                </MudItem> 
+
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions></MudCardActions>
+    </MudCard>
+ }
+</MudContainer>
+ 
+
+@code {
+    public string? Title { get; private set; }
+    [Parameter]
+    public int Id { get; set; }
+    private List<BreadcrumbItem>? _breadcrumbItems; 
+    private GateDto? _model;
+    protected override async Task OnInitializedAsync()
+    {
+        Title = L["Gate"];
+        _breadcrumbItems = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem(L["Home"], href: "/"),
+            new BreadcrumbItem(L["Gates"], href: "/pages/gates")
+        };
+        var result = await Mediator.Send(new GetGateByIdQuery() { Id = Id });
+        result.Map(data =>
+        {
+            _model = data;
+            return data;
+        }).Match(data =>
+        {
+            _breadcrumbItems.Add(new BreadcrumbItem(data.Name, null, disabled: true));
+        }, errors =>
+        {
+            Snackbar.Add(errors, MudBlazor.Severity.Error);
+        });
+
+    }
+    void GoEdit()
+    {
+        Navigation.NavigateTo($"/pages/Gates/edit/{Id}");
+    }
+    async Task Delete()
+    {
+        var contentText = string.Format(AppStrings.DeleteConfirmation, _model.Name);
+        var command = new DeleteGateCommand(new int[] { _model.Id });
+        await DialogServiceHelper.ShowDeleteConfirmationDialogAsync(command, AppStrings.DeleteConfirmationTitle, contentText, async () =>
+        {
+            await InvokeAsync(() =>
+            {
+                Navigation.NavigateTo($"/pages/Gates");
+            });
+        });
+    }
+}

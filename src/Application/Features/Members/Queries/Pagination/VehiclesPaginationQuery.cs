@@ -19,6 +19,7 @@ using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Members.Caching;
 using CleanArchitecture.Blazor.Application.Features.Members.Specifications;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs;
 
 namespace CleanArchitecture.Blazor.Application.Features.Members.Queries.Pagination;
 

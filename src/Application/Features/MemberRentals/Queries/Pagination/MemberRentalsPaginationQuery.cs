@@ -25,7 +25,7 @@ public class MemberRentalsWithPaginationQuery : MemberRentalAdvancedFilter, ICac
 {
     public override string ToString()
     {
-        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize}";
+        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize},{CardId},{LicensePlate}";
     }
     public string CacheKey => MemberRentalCacheKey.GetPaginationCacheKey($"{this}");
     public IEnumerable<string>? Tags => MemberRentalCacheKey.Tags;

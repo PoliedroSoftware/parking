@@ -65,11 +65,9 @@
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
 					{
-						<MudTextField T="string" ValueChanged="@(s => OnLicenseSearch(s))" Value="@_membersQuery.LicensePlate" Placeholder="@L["Search by license plate"]" Adornment="Adornment.End"
-									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+						<MudTextField T="string" ValueChanged="@(s => OnLicenseSearch(s))" Value="@_membersQuery.LicensePlate" Placeholder="@L["Search by license plate"]" >
 						</MudTextField>
-						<MudTextField T="string" ValueChanged="@(s => OnCardIdSearch(s))" Value="@_membersQuery.CardId" Placeholder="@L["Search by card id"]" Adornment="Adornment.End"
-									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+						<MudTextField T="string" ValueChanged="@(s => OnCardIdSearch(s))" Value="@_membersQuery.CardId" Placeholder="@L["Search by card id"]" >
 						</MudTextField>
 						<MudTextField T="string" ValueChanged="@(s => OnSearch(s))" Value="@_membersQuery.Keyword" Placeholder="@AppStrings.Search" Adornment="Adornment.End"
 									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">

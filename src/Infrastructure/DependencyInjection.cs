@@ -312,7 +312,7 @@ public static class DependencyInjection
         services.AddFusionCache().WithDefaultEntryOptions(new FusionCacheEntryOptions
         {
             // CACHE DURATION
-            Duration = TimeSpan.FromMinutes(60),
+            Duration = TimeSpan.FromMinutes(120),
             // —— Resilience: fail-safe & timeouts ——
             // Keep fail-safe short: if dependencies are flaky, we can serve a recent value briefly,
             // but avoid long windows for security-sensitive data.
@@ -326,8 +326,8 @@ public static class DependencyInjection
 
             // —— Anti-stampede ——
             // Spread expirations to mitigate thundering herds; short lock to avoid long waits.
-            JitterMaxDuration = TimeSpan.FromSeconds(30),
-            LockTimeout = TimeSpan.FromSeconds(1)
+            //JitterMaxDuration = TimeSpan.FromSeconds(30),
+            //LockTimeout = TimeSpan.FromSeconds(1)
         });
         return services;
     }

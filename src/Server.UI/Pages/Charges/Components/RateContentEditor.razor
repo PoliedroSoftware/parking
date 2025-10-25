@@ -6,208 +6,207 @@
 @* Reusable editor for RateContent (Before/After) *@
 
 @code {
-    [Parameter] public RateContent Content { get; set; } = default!;
- 
+	[Parameter] public RateContent Content { get; set; } = default!;
 
-    void AddNormalChargeItem()
-    {
-        Content.NormalCharges ??= new List<ChargeItem>();
-        Content.NormalCharges.Add(new ChargeItem());
-    }
-    void DeleteNormalChargeItem(ChargeItem item)
-    {
-        Content.NormalCharges?.Remove(item);
-    }
-    void AddSpecialChargeItem()
-    {
-        Content.SpecialCharges ??= new List<ChargeItem>();
-        Content.SpecialCharges.Add(new ChargeItem());
-    }
-    void DeleteSpecialChargeItem(ChargeItem item)
-    {
-        Content.SpecialCharges?.Remove(item);
-    }
-    void AddSpecialPeriodItem()
-    {
-        Content.SpecialPeriod ??= new List<ChargePeriod>();
-        Content.SpecialPeriod.Add(new ChargePeriod());
-    }
-    void DeleteSpecialPeriodItem(ChargePeriod item)
-    {
-        Content.SpecialPeriod?.Remove(item);
-    }
-    void AddDayParkPeriodItem()
-    {
-        Content.DayPark.Period ??= new List<ChargePeriod>();
-        Content.DayPark.Period.Add(new ChargePeriod());
-    }
-    void DeleteDayParkPeriodItem(ChargePeriod item)
-    {
-        Content.DayPark.Period?.Remove(item);
-    }
-    void AddNightParkPeriodItem()
-    {
-        Content.NightPark.Period ??= new List<ChargePeriod>();
-        Content.NightPark.Period.Add(new ChargePeriod());
-    }
-    void DeleteNightParkPeriodItem(ChargePeriod item)
-    {
-        Content.NightPark.Period?.Remove(item);
-    }
+
+	void AddNormalChargeItem()
+	{
+		Content.NormalCharges ??= new List<ChargeItem>();
+		Content.NormalCharges.Add(new ChargeItem());
+	}
+	void DeleteNormalChargeItem(ChargeItem item)
+	{
+		Content.NormalCharges?.Remove(item);
+	}
+	void AddSpecialChargeItem()
+	{
+		Content.SpecialCharges ??= new List<ChargeItem>();
+		Content.SpecialCharges.Add(new ChargeItem());
+	}
+	void DeleteSpecialChargeItem(ChargeItem item)
+	{
+		Content.SpecialCharges?.Remove(item);
+	}
+	void AddSpecialPeriodItem()
+	{
+		Content.SpecialPeriod ??= new List<ChargePeriod>();
+		Content.SpecialPeriod.Add(new ChargePeriod());
+	}
+	void DeleteSpecialPeriodItem(ChargePeriod item)
+	{
+		item.EndTime = "";
+		item.StartTime = "";
+	}
+	void AddDayParkPeriodItem()
+	{
+		Content.DayPark.Period ??= new List<ChargePeriod>();
+		Content.DayPark.Period.Add(new ChargePeriod());
+	}
+	void DeleteDayParkPeriodItem(ChargePeriod item)
+	{
+		item.EndTime = "";
+		item.StartTime = "";
+	}
+	void AddNightParkPeriodItem()
+	{
+		Content.NightPark.Period ??= new List<ChargePeriod>();
+		Content.NightPark.Period.Add(new ChargePeriod());
+	}
+	void DeleteNightParkPeriodItem(ChargePeriod item)
+	{
+		item.EndTime = "";
+		item.StartTime = "";
+	}
 }
 <MudStack Spacing="3">
-<MudGrid>
-    <MudItem xs="12">
-		<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+	<MudGrid>
+		<MudItem xs="12">
+			<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
 				<MudText Typo="Typo.subtitle2">@Localizer["Normal Charges"]</MudText>
-            <MudButton Disabled="@(Content.NormalCharges.Count() >= RateContent.MaxNormalChargeItems)" StartIcon="@Icons.Material.Filled.Add" OnClick="AddNormalChargeItem">@Localizer["Add"]</MudButton>
-        </MudStack>
-        @foreach (var item in Content.NormalCharges)
-        {
-            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceAround">
-                <MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
-                <MudStack Style="width: 100%" Row Spacing="2">
-                    <MudNumericField Label="Duration" @bind-Value="item.Duration" T="int"></MudNumericField>
-                    <MudNumericField Label="Price Weekday" @bind-Value="item.PriceWeekday" T="int"></MudNumericField>
-                    <MudNumericField Label="Price Holiday" @bind-Value="item.PriceHoliday" T="int"></MudNumericField>
-                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteNormalChargeItem(item))">Delete</MudIconButton>
-                </MudStack>
-            </MudStack>
-        }
-    </MudItem>
-</MudGrid>
+				<MudButton Disabled="@(Content.NormalCharges.Count() >= RateContent.MaxNormalChargeItems)" StartIcon="@Icons.Material.Filled.Add" OnClick="AddNormalChargeItem">@Localizer["Add"]</MudButton>
+				<MudText Typo="Typo.caption" Class="mud-text-second">@Localizer["Up to 5 items may be added here."]</MudText>
+			</MudStack>
+			@foreach (var item in Content.NormalCharges)
+			{
+				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceAround">
+					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
+					<MudStack Style="width: 100%" Row Spacing="2">
+						<MudNumericField Label="Duration" @bind-Value="item.Duration" T="int"></MudNumericField>
+						<MudNumericField Label="Price Weekday" @bind-Value="item.PriceWeekday" T="int"></MudNumericField>
+						<MudNumericField Label="Price Holiday" @bind-Value="item.PriceHoliday" T="int"></MudNumericField>
+						<MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteNormalChargeItem(item))">Delete</MudIconButton>
+					</MudStack>
+				</MudStack>
+			}
+		</MudItem>
+	</MudGrid>
 
-<MudGrid Justify="Justify.FlexStart">
-    <MudItem xs="12">
-        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
+	<MudGrid Justify="Justify.FlexStart">
+		<MudItem xs="12">
+			<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Spacing="2">
 				<MudText Typo="Typo.subtitle2">@Localizer["Special Period"]</MudText>
-            <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddSpecialPeriodItem">@Localizer["Add"]</MudButton>
-        </MudStack>
-        @foreach (var item in Content.SpecialPeriod)
-        {
-            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
-                <MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
-                <MudStack Row Spacing="2">
-                    <MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string"></MudTextField>
-                    <MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string"></MudTextField>
-                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteSpecialPeriodItem(item))">Delete</MudIconButton>
-                </MudStack>
-            </MudStack>
-        }
-    </MudItem>
-</MudGrid>
 
-<MudGrid>
-    <MudItem xs="12">
-		<MudStack Row AlignItems="AlignItems.Center" JJustify="Justify.FlexStart" Spacing="2">
+			</MudStack>
+			@foreach (var item in Content.SpecialPeriod)
+			{
+				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
+					<MudStack Row Spacing="2">
+						<MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string"></MudTextField>
+						<MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string"></MudTextField>
+						<MudIconButton Icon="@Icons.Material.Outlined.Clear" Color="Color.Error" OnClick="@(() => DeleteSpecialPeriodItem(item))">@Localizer["Clear"]</MudIconButton>
+					</MudStack>
+				</MudStack>
+			}
+		</MudItem>
+	</MudGrid>
+
+	<MudGrid>
+		<MudItem xs="12">
+			<MudStack Row AlignItems="AlignItems.Center" JJustify="Justify.FlexStart" Spacing="2">
 				<MudText Typo="Typo.subtitle2">@Localizer["Special Charges"]</MudText>
-            <MudButton Disabled="@(Content.SpecialCharges.Count() >= RateContent.MaxSpecialChargeItems)" StartIcon="@Icons.Material.Filled.Add" OnClick="AddSpecialChargeItem">@Localizer["Add"]</MudButton>
-        </MudStack>
-        @foreach (var item in Content.SpecialCharges)
-        {
-            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceAround">
-                <MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
-                <MudStack Style="width: 100%" Row Spacing="2">
-                    <MudNumericField Label="Duration" @bind-Value="item.Duration" T="int"></MudNumericField>
-                    <MudNumericField Label="Price Weekday" @bind-Value="item.PriceWeekday" T="int"></MudNumericField>
-                    <MudNumericField Label="Price Holiday" @bind-Value="item.PriceHoliday" T="int"></MudNumericField>
-                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteSpecialChargeItem(item))">Delete</MudIconButton>
-                </MudStack>
-            </MudStack>
-        }
-    </MudItem>
-</MudGrid>
+				<MudButton Disabled="@(Content.SpecialCharges.Count() >= RateContent.MaxSpecialChargeItems)" StartIcon="@Icons.Material.Filled.Add" OnClick="AddSpecialChargeItem">@Localizer["Add"]</MudButton>
+				<MudText Typo="Typo.caption" Class="mud-text-second">@Localizer["Up to 3 items may be added here."]</MudText>
+			</MudStack>
+			@foreach (var item in Content.SpecialCharges)
+			{
+				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceAround">
+					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
+					<MudStack Style="width: 100%" Row Spacing="2">
+						<MudNumericField Label="Duration" @bind-Value="item.Duration" T="int"></MudNumericField>
+						<MudNumericField Label="Price Weekday" @bind-Value="item.PriceWeekday" T="int"></MudNumericField>
+						<MudNumericField Label="Price Holiday" @bind-Value="item.PriceHoliday" T="int"></MudNumericField>
+						<MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteSpecialChargeItem(item))">Delete</MudIconButton>
+					</MudStack>
+				</MudStack>
+			}
+		</MudItem>
+	</MudGrid>
 
-<MudGrid Spacing="1">
-    <MudItem xs="12">
+	<MudGrid Spacing="1">
+		<MudItem xs="12">
 			<MudText Typo="Typo.subtitle2">@Localizer["Day Park"]</MudText>
-        <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddDayParkPeriodItem">@Localizer["Add"]</MudButton>
-        @foreach (var item in Content.DayPark.Period)
-        {
-            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
-                <MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
-                <MudStack Row Spacing="2">
-                    <MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string"></MudTextField>
-                    <MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string"></MudTextField>
-                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteDayParkPeriodItem(item))">Delete</MudIconButton>
-                </MudStack>
-            </MudStack>
-        }
-    </MudItem>
-    <MudItem xs="6">
-        <MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.DayPark.CeilingAmountWeekday" T="int"></MudNumericField>
-    </MudItem>
-    <MudItem xs="6">
-        <MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.DayPark.CeilingAmountHoliday" T="int"></MudNumericField>
-    </MudItem>
-</MudGrid>
 
-<MudGrid Spacing="1">
-    <MudItem xs="12">
+			@foreach (var item in Content.DayPark.Period)
+			{
+				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
+					<MudStack Row Spacing="2">
+						<MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string"></MudTextField>
+						<MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string"></MudTextField>
+						<MudIconButton Icon="@Icons.Material.Outlined.Clear" Color="Color.Error" OnClick="@(() => DeleteDayParkPeriodItem(item))">@Localizer["Clear"]</MudIconButton>
+						<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.DayPark.CeilingAmountWeekday" T="int"></MudNumericField>
+						<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.DayPark.CeilingAmountWeekday" T="int"></MudNumericField>
+					</MudStack>
+				</MudStack>
+			}
+		</MudItem>
+
+	</MudGrid>
+
+	<MudGrid Spacing="1">
+		<MudItem xs="12">
 			<MudText Typo="Typo.subtitle2">@Localizer["Night Park"]</MudText>
-        <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddNightParkPeriodItem">@Localizer["Add"]</MudButton>
-        @foreach (var item in Content.NightPark.Period)
-        {
-            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
-                <MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
-                <MudStack Row Spacing="2">
-                    <MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string"></MudTextField>
-                    <MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string"></MudTextField>
-                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="@(() => DeleteNightParkPeriodItem(item))">Delete</MudIconButton>
-                </MudStack>
-            </MudStack>
-        }
-    </MudItem>
-    <MudItem xs="6">
-        <MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.NightPark.CeilingAmountWeekday" T="int"></MudNumericField>
-    </MudItem>
-    <MudItem xs="6">
-        <MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.NightPark.CeilingAmountHoliday" T="int"></MudNumericField>
-    </MudItem>
-</MudGrid>
+		 
+			@foreach (var item in Content.NightPark.Period)
+			{
+				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
+					<MudStack Row Spacing="2">
+						<MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string"></MudTextField>
+						<MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string"></MudTextField>
+						<MudIconButton Icon="@Icons.Material.Outlined.Clear" Color="Color.Error" OnClick="@(() => DeleteNightParkPeriodItem(item))">@Localizer["Clear"]</MudIconButton>
+						<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.NightPark.CeilingAmountWeekday" T="int"></MudNumericField>
+						<MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.NightPark.CeilingAmountHoliday" T="int"></MudNumericField>
+					</MudStack>
+				</MudStack>
+			}
+		</MudItem>
+		 
+	</MudGrid>
 
-<MudGrid Spacing="1">
-    <MudItem xs="12">
+	<MudGrid Spacing="1">
+		<MudItem xs="12">
 			<MudText Typo="Typo.subtitle2">@Localizer["Max 12 hours"]</MudText>
-    </MudItem>
-    <MudItem xs="4">
-        <MudCheckBox Label="@Localizer["Is Active"]" @bind-Value="Content.Max12Park.IsActive" T="bool"></MudCheckBox>
-    </MudItem>
-    <MudItem xs="4">
-        <MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.Max12Park.CeilingAmountWeekday" T="int"></MudNumericField>
-    </MudItem>
-    <MudItem xs="4">
-        <MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.Max12Park.CeilingAmountHoliday" T="int"></MudNumericField>
-    </MudItem>
-</MudGrid>
+		</MudItem>
+		<MudItem xs="4">
+			<MudCheckBox Color="Color.Primary" Label="@Localizer["Is Active"]" @bind-Value="Content.Max12Park.IsActive" T="bool"></MudCheckBox>
+		</MudItem>
+		<MudItem xs="4">
+			<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.Max12Park.CeilingAmountWeekday" T="int"></MudNumericField>
+		</MudItem>
+		<MudItem xs="4">
+			<MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.Max12Park.CeilingAmountHoliday" T="int"></MudNumericField>
+		</MudItem>
+	</MudGrid>
 
-<MudGrid Spacing="1">
-    <MudItem xs="12">
-        <MudText Typo="Typo.subtitle2">@Localizer["Max 24 hours"]</MudText>
-    </MudItem>
-    <MudItem xs="4">
-        <MudCheckBox Label="@Localizer["Is Active"]" @bind-Value="Content.Max24Park.IsActive" T="bool"></MudCheckBox>
-    </MudItem>
-    <MudItem xs="4">
-        <MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.Max24Park.CeilingAmountWeekday" T="int"></MudNumericField>
-    </MudItem>
-    <MudItem xs="4">
-        <MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.Max24Park.CeilingAmountHoliday" T="int"></MudNumericField>
-    </MudItem>
-</MudGrid>
+	<MudGrid Spacing="1">
+		<MudItem xs="12">
+			<MudText Typo="Typo.subtitle2">@Localizer["Max 24 hours"]</MudText>
+		</MudItem>
+		<MudItem xs="4">
+			<MudCheckBox Color="Color.Primary" Label="@Localizer["Is Active"]" @bind-Value="Content.Max24Park.IsActive" T="bool"></MudCheckBox>
+		</MudItem>
+		<MudItem xs="4">
+			<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.Max24Park.CeilingAmountWeekday" T="int"></MudNumericField>
+		</MudItem>
+		<MudItem xs="4">
+			<MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.Max24Park.CeilingAmountHoliday" T="int"></MudNumericField>
+		</MudItem>
+	</MudGrid>
 
-<MudGrid Spacing="1">
-    <MudItem xs="12">
+	<MudGrid Spacing="1">
+		<MudItem xs="12">
 			<MudText Typo="Typo.subtitle2">@Localizer["Full day"]</MudText>
-    </MudItem>
-    <MudItem xs="4">
-        <MudCheckBox Label="@Localizer["Is Active"]" @bind-Value="Content.FullDayPark.IsActive" T="bool"></MudCheckBox>
-    </MudItem>
-    <MudItem xs="4">
-        <MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.FullDayPark.CeilingAmountWeekday" T="int"></MudNumericField>
-    </MudItem>
-    <MudItem xs="4">
-        <MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.FullDayPark.CeilingAmountHoliday" T="int"></MudNumericField>
-    </MudItem>
-</MudGrid>
+		</MudItem>
+		<MudItem xs="4">
+			<MudCheckBox Color="Color.Primary" Label="@Localizer["Is Active"]" @bind-Value="Content.FullDayPark.IsActive" T="bool"></MudCheckBox>
+		</MudItem>
+		<MudItem xs="4">
+			<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.FullDayPark.CeilingAmountWeekday" T="int"></MudNumericField>
+		</MudItem>
+		<MudItem xs="4">
+			<MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.FullDayPark.CeilingAmountHoliday" T="int"></MudNumericField>
+		</MudItem>
+	</MudGrid>
 </MudStack>

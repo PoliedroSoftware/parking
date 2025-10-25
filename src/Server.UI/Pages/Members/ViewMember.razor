@@ -89,35 +89,8 @@
 						</RowTemplate>
 					</MudTable>
 				}
-				<MudDivider Class="my-4" />
-				<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Rental"]</MudText>
-				@if (_model.MemberRentals != null && _model.MemberRentals.Any())
-				{
-					<MudTable Items="@_model.MemberRentals" Breakpoint="Breakpoint.Sm" Dense>
-						<HeaderContent>
-							<MudTh>@L["Start Date"]</MudTh>
-							<MudTh>@L["Expiry Date"]</MudTh>
-							<MudTh>@L["Rental Fee"]</MudTh>
-							<MudTh>@L["Deposit"]</MudTh>
-							<MudTh>@L["Amount Due"]</MudTh>
-							<MudTh>@L["Amount Paid"]</MudTh>
-							<MudTh>@L["Payment Time"]</MudTh>
-							<MudTh>@L["Payment Methods"]</MudTh>
-							<MudTh>@L["Notes"]</MudTh>
-						</HeaderContent>
-						<RowTemplate>
-							<MudTd>@context.StartDate?.ToString("d")</MudTd>
-							<MudTd>@context.ExpiryDate?.ToString("d")</MudTd>
-							<MudTd>@context.RentalFee</MudTd>
-							<MudTd>@context.Deposit</MudTd>
-							<MudTd>@context.AmountDue</MudTd>
-							<MudTd>@context.AmountPaid</MudTd>
-							<MudTd>@context.PaymentTime</MudTd>
-							<MudTd>@context.PaymentMethodId</MudTd>
-							<MudTd>@context.Notes</MudTd>
-						</RowTemplate>
-					</MudTable>
-				}
+		 
+				 
 			</MudCardContent>
 			<MudCardActions></MudCardActions>
 		</MudCard>

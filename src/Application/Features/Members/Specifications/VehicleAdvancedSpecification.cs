@@ -30,6 +30,7 @@ public class VehicleAdvancedSpecification : Specification<Vehicle>
 
         Query.Where(q => q.IsActive)
              .Where(x=>x.ServiceCategoryId== ServiceCategories.Monthly)
+
              .Where(filter.Keyword, !string.IsNullOrEmpty(filter.Keyword))
              .Where(q => q.Zone.Name.Code.Contains(filter.ZoneName) || q.Zone.Name.Tc.Contains(filter.ZoneName) || q.Zone.Name.En.Contains(filter.ZoneName), !string.IsNullOrEmpty(filter.ZoneName))
              .Where(q => q.Zone.Carpark.Name.Code.Contains(filter.CarparkName) || q.Zone.Carpark.Name.Tc.Contains(filter.CarparkName) || q.Zone.Carpark.Name.En.Contains(filter.CarparkName), !string.IsNullOrEmpty(filter.CarparkName));

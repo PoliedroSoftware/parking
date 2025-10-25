@@ -38,6 +38,8 @@ public enum MemberListView
 /// </summary>
 public class MemberAdvancedFilter: PaginationFilter
 {
+    public string? CardId { get; set; }
+    public string? LicensePlate { get; set; }
     public MemberListView ListView { get; set; } = MemberListView.All;
     public UserProfile? CurrentUser { get; set; }
 }

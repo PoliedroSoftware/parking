@@ -45,26 +45,25 @@
 							   StartIcon="@Icons.Material.Outlined.Refresh">
 						@AppStrings.Refresh
 					</MudButton>
-					@if (_accessRights.Create)
+
+					@if (_accessRights.Export)
 					{
-						<MudButton StartIcon="@Icons.Material.Outlined.Add"
-								   OnClick="OnCreate">
-							@AppStrings.New
+						<MudButton Disabled="@_exporting"
+								   OnClick="OnExport">
+							@AppStrings.Export
 						</MudButton>
 					}
-					@if (_accessRights.Delete)
-					{
-						<MudButton Disabled="@(!(_selectedMemberRentals.Count > 0))"
-								   StartIcon="@Icons.Material.Outlined.DeleteOutline"
-								   OnClick="OnDeleteSelectedMemberRentals">
-							@AppStrings.Delete
-						</MudButton>
-					}
-					 
+
 				</MudToolBar>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
 					{
+						<MudTextField T="string" ValueChanged="@(s => OnLicenseSearch(s))" Value="@_memberrentalsQuery.LicensePlate" Placeholder="@L["Search by license plate"]" Adornment="Adornment.End"
+									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+						</MudTextField>
+						<MudTextField T="string" ValueChanged="@(s => OnCardIdSearch(s))" Value="@_memberrentalsQuery.CardId" Placeholder="@L["Search by card id"]" Adornment="Adornment.End"
+									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
+						</MudTextField>
 						<MudTextField T="string" ValueChanged="@(s => OnSearch(s))" Value="@_memberrentalsQuery.Keyword" Placeholder="@AppStrings.Search" Adornment="Adornment.End"
 									  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small">
 						</MudTextField>
@@ -75,37 +74,7 @@
 	</ToolBarContent>
 	<Columns>
 		<SelectColumn ShowInFooter="false"></SelectColumn>
-		<TemplateColumn HeaderStyle="width:60px" Title="@AppStrings.Actions" Sortable="false">
-			<CellTemplate>
-				@if (_accessRights.Edit || _accessRights.Delete)
-				{
-					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Size="Size.Small"
-							 Dense="true"
-							 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-						@if (_accessRights.Edit)
-						{
-							<MudMenuItem OnClick="@(() => OnEditMemberRental(context.Item))">@AppStrings.Edit</MudMenuItem>
-						}
-						@if (_accessRights.Delete)
-						{
-							<MudMenuItem OnClick="@(() => OnDeleteMemberRental(context.Item))">@AppStrings.Delete</MudMenuItem>
-						}
-					</MudMenu>
-				}
-				else
-				{
-					<MudTooltip Text="@AppStrings.NoAllowed" Delay="300">
-						<MudIconButton Variant="Variant.Outlined"
-									   Disabled="true"
-									   Icon="@Icons.Material.Filled.DoNotTouch"
-									   Size="Size.Small"
-									   Color="Color.Surface">
-							@AppStrings.NoAllowed
-						</MudIconButton>
-					</MudTooltip>
-				}
-			</CellTemplate>
-		</TemplateColumn>
+
 		<PropertyColumn Property="x => x.MemberId" Title="@L[_memberrentalDto.GetMemberDescription(x => x.Member)]">
 			<CellTemplate>
 				<MudText>@context.Item.Member?.Name</MudText>
@@ -113,7 +82,7 @@
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.LicensePlate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.LicensePlate)]" />
 		<PropertyColumn Property="x => x.CardId" Title="@L[_memberrentalDto.GetMemberDescription(x => x.CardId)]" />
-		<PropertyColumn Property="x => x.StartDate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.StartDate)]"  Format="d" />
+		<PropertyColumn Property="x => x.StartDate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.StartDate)]" Format="d" />
 		<PropertyColumn Property="x => x.ExpiryDate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.ExpiryDate)]" Format="d" />
 		<PropertyColumn Property="x => x.RentalFee" Title="@L[_memberrentalDto.GetMemberDescription(x => x.RentalFee)]" />
 		<PropertyColumn Property="x => x.Deposit" Title="@L[_memberrentalDto.GetMemberDescription(x => x.Deposit)]" />
@@ -187,6 +156,18 @@
 		}
 
 	}
+	private async Task OnLicenseSearch(string text)
+	{
+		_selectedMemberRentals.Clear();
+		_memberrentalsQuery.LicensePlate = text;
+		await _memberrentalsGrid.ReloadServerData();
+	}
+	private async Task OnCardIdSearch(string text)
+	{
+		_selectedMemberRentals.Clear();
+		_memberrentalsQuery.CardId = text;
+		await _memberrentalsGrid.ReloadServerData();
+	}
 	private async Task OnSearch(string text)
 	{
 		_selectedMemberRentals.Clear();
@@ -228,7 +209,7 @@
 		var command = new AddEditMemberRentalCommand();
 		return ShowEditFormDialog(L["New MemberRental"], command);
 	}
-	 
+
 	private Task OnEditMemberRental(MemberRentalDto dto)
 	{
 		var command = Mapper.Map<AddEditMemberRentalCommand>(dto);
@@ -265,6 +246,37 @@
 	}
 
 
-	 
+	private async Task OnExport()
+	{
+		_exporting = true;
+		var request = new ExportMemberRentalsQuery()
+		{
+			Keyword = _memberrentalsQuery.Keyword,
+			CurrentUser = UserProfile,
+			ListView = _memberrentalsQuery.ListView,
+			OrderBy = _memberrentalsGrid.SortDefinitions.Values.FirstOrDefault()?.SortBy ?? "Id",
+			SortDirection = (_memberrentalsGrid.SortDefinitions.Values.FirstOrDefault()?.Descending ?? true) ? SortDirection.Descending.ToString() : SortDirection.Ascending.ToString()
+		};
+		var result = await Mediator.Send(request);
+		await result.MatchAsync(
+			async data =>
+			{
+				if (result.Data != null)
+				{
+					await BlazorDownloadFileService.DownloadFileAsync($"{L["remberrentalreport"]}.xlsx", result.Data, contentType: "application/octet-stream");
+					Snackbar.Add($"{AppStrings.ExportSuccess}", MudBlazor.Severity.Info);
+				}
+				else
+				{
+					Snackbar.Add("导出失败", MudBlazor.Severity.Error);
+				}
+			},
+			errors =>
+			{
+				Snackbar.Add($"{errors}", MudBlazor.Severity.Error);
+				return Task.CompletedTask;
+			});
+		_exporting = false;
+	}
 
 }

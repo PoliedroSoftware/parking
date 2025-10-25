@@ -60,7 +60,31 @@
                                 @AppStrings.Delete
                             </MudButton>
                     }
-                     
+					<MudMenu TransformOrigin="Origin.BottomRight" AnchorOrigin="Origin.BottomRight" EndIcon="@Icons.Material.Filled.MoreVert" Label="@AppStrings.More">
+						 
+
+						@if (_accessRights.Export)
+						{
+							<MudMenuItem Disabled="@_exporting"
+										 OnClick="OnExport">
+								@AppStrings.Export
+							</MudMenuItem>
+						}
+						@if (_accessRights.Import)
+						{
+							<MudMenuItem>
+								<MudFileUpload T="IBrowserFile" FilesChanged="OnImportData" Accept=".xlsx">
+									<ActivatorContent>
+										<MudButton Class="pa-0 ma-0" Style="font-weight:400;text-transform:none;"
+												   Variant="Variant.Text"
+												   Disabled="@_uploading">
+											@AppStrings.Import
+										</MudButton>
+									</ActivatorContent>
+								</MudFileUpload>
+							</MudMenuItem>
+						}
+					</MudMenu>
                 </MudStack>
                 <MudStack Row Spacing="1">
                     @if (_accessRights.Search)

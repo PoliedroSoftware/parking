@@ -24,53 +24,53 @@ namespace CleanArchitecture.Blazor.Application.Features.Holidays.Queries.Export;
 
 public class ExportHolidaysQuery : HolidayAdvancedFilter, ICacheableRequest<Result<byte[]>>
 {
-      public HolidayAdvancedSpecification Specification => new HolidayAdvancedSpecification(this);
-      public IEnumerable<string>? Tags => HolidayCacheKey.Tags;
+    public HolidayAdvancedSpecification Specification => new HolidayAdvancedSpecification(this);
+    public IEnumerable<string>? Tags => HolidayCacheKey.Tags;
     public override string ToString()
     {
         return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}";
     }
     public string CacheKey => HolidayCacheKey.GetExportCacheKey($"{this}");
 }
-    
+
 public class ExportHolidaysQueryHandler :
          IRequestHandler<ExportHolidaysQuery, Result<byte[]>>
 {
-        private readonly IMapper _mapper;
-        private readonly IApplicationDbContextFactory _dbContextFactory;
-        private readonly IExcelService _excelService;
-        private readonly IStringLocalizer<ExportHolidaysQueryHandler> _localizer;
-        private readonly HolidayDto _dto = new();
-        public ExportHolidaysQueryHandler(
-            IMapper mapper,
-            IApplicationDbContextFactory dbContextFactory,
-            IExcelService excelService,
-            IStringLocalizer<ExportHolidaysQueryHandler> localizer
-            )
-        {
-            _mapper = mapper;
-            _dbContextFactory = dbContextFactory;
-            _excelService = excelService;
-            _localizer = localizer;
-        }
-        #nullable disable warnings
-        public async Task<Result<byte[]>> Handle(ExportHolidaysQuery request, CancellationToken cancellationToken)
-        {
-            await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
-            var data = await db.Holidays.ApplySpecification(request.Specification)
-                       .OrderBy($"{request.OrderBy} {request.SortDirection}")
-                       .ProjectTo<HolidayDto>(_mapper.ConfigurationProvider)
-                       .AsNoTracking()
-                       .ToListAsync(cancellationToken);
-            var result = await _excelService.ExportAsync(data,
-                new Dictionary<string, Func<HolidayDto, object?>>()
-                {
-                                     {_localizer[_dto.GetMemberDescription(x=>x.Date)],item => item.Date}, 
-                 {_localizer[_dto.GetMemberDescription(x=>x.Name_En)],item => item.Name_En}, 
-                 {_localizer[_dto.GetMemberDescription(x=>x.Name_Tc)],item => item.Name_Tc}, 
+    private readonly IMapper _mapper;
+    private readonly IApplicationDbContextFactory _dbContextFactory;
+    private readonly IExcelService _excelService;
+    private readonly IStringLocalizer<ExportHolidaysQueryHandler> _localizer;
+    private readonly HolidayDto _dto = new();
+    public ExportHolidaysQueryHandler(
+        IMapper mapper,
+        IApplicationDbContextFactory dbContextFactory,
+        IExcelService excelService,
+        IStringLocalizer<ExportHolidaysQueryHandler> localizer
+        )
+    {
+        _mapper = mapper;
+        _dbContextFactory = dbContextFactory;
+        _excelService = excelService;
+        _localizer = localizer;
+    }
+#nullable disable warnings
+    public async Task<Result<byte[]>> Handle(ExportHolidaysQuery request, CancellationToken cancellationToken)
+    {
+        await using var db = await _dbContextFactory.CreateAsync(cancellationToken);
+        var data = await db.Holidays.ApplySpecification(request.Specification)
+                   .OrderBy($"{request.OrderBy} {request.SortDirection}")
+                   .ProjectTo<HolidayDto>(_mapper.ConfigurationProvider)
+                   .AsNoTracking()
+                   .ToListAsync(cancellationToken);
+        var result = await _excelService.ExportAsync(data,
+            new Dictionary<string, Func<HolidayDto, object?>>()
+            {
+                                     {_localizer[_dto.GetMemberDescription(x=>x.Date)],item => item.Date?.ToString("yyyy-MM-dd")},
+                                    {_localizer[_dto.GetMemberDescription(x=>x.Name_En)],item => item.Name_En},
+                 {_localizer[_dto.GetMemberDescription(x=>x.Name_Tc)],item => item.Name_Tc},
 
-                }
-                , _localizer[_dto.GetClassDescription()]);
-            return await Result<byte[]>.SuccessAsync(result);
-        }
+            }
+            , _localizer[_dto.GetClassDescription()]);
+        return await Result<byte[]>.SuccessAsync(result);
+    }
 }

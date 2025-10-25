@@ -20,9 +20,9 @@ public class HolidayDto
     public int Id { get; set; }
         [Description("Date")]
     public DateTime? Date {get;set;} 
-    [Description("Name _ en")]
+    [Description("Name English")]
     public string? Name_En {get;set;} 
-    [Description("Name _ tc")]
+    [Description("Name Traditional Chinese")]
     public string? Name_Tc {get;set;} 
 
 

@@ -31,6 +31,7 @@ public class MemberRentalAdvancedSpecification : Specification<MemberRental>
         Query.Where(q => q.MemberId != null)
                 .Where(q=>q.CardId.Contains(filter.CardId), !string.IsNullOrEmpty(filter.CardId))
                 .Where(q=>q.LicensePlate.Contains(filter.LicensePlate), !string.IsNullOrEmpty(filter.LicensePlate))
+                .Where(q=>q.PaymentTime>= filter.PaymentFrom && q.PaymentTime<=filter.PaymentTo, filter.PaymentFrom.HasValue && filter.PaymentTo.HasValue)
              .Where(filter.Keyword,!string.IsNullOrEmpty(filter.Keyword))
              .Where(q => q.CreatedById == filter.CurrentUser.UserId, filter.ListView == MemberRentalListView.My && filter.CurrentUser is not null)
              .Where(x => x.CreatedAt >= todayrange.Start && x.CreatedAt < todayrange.End.AddDays(1), filter.ListView == MemberRentalListView.TODAY)

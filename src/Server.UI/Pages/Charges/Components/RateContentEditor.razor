@@ -34,8 +34,8 @@
 	}
 	void DeleteSpecialPeriodItem(ChargePeriod item)
 	{
-		item.EndTime = "";
-		item.StartTime = "";
+		item.EndTime = null;
+		item.StartTime = null;
 	}
 	void AddDayParkPeriodItem()
 	{
@@ -44,8 +44,8 @@
 	}
 	void DeleteDayParkPeriodItem(ChargePeriod item)
 	{
-		item.EndTime = "";
-		item.StartTime = "";
+		item.EndTime = null;
+		item.StartTime = null;
 	}
 	void AddNightParkPeriodItem()
 	{
@@ -54,8 +54,8 @@
 	}
 	void DeleteNightParkPeriodItem(ChargePeriod item)
 	{
-		item.EndTime = "";
-		item.StartTime = "";
+		item.EndTime = null;
+		item.StartTime = null;
 	}
 }
 <MudStack Spacing="3">
@@ -92,8 +92,8 @@
 				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
 					<MudStack Row Spacing="2">
-						<MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string" Mask="TimeMask" HelperText="@TimeMask.Mask"></MudTextField>
-						<MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string" Mask="TimeMask" HelperText="@TimeMask.Mask"></MudTextField>
+						<MudTimePicker Label="@Localizer["Start Time"]" @bind-Time="item.StartTime" Editable="true" ShowToolbar="false"></MudTimePicker>
+						<MudTimePicker Label="@Localizer["End Time"]" @bind-Time="item.EndTime" Editable="true" ShowToolbar="false"></MudTimePicker>
 						<MudIconButton Icon="@Icons.Material.Outlined.Clear" Color="Color.Error" OnClick="@(() => DeleteSpecialPeriodItem(item))">@Localizer["Clear"]</MudIconButton>
 					</MudStack>
 				</MudStack>
@@ -132,8 +132,8 @@
 				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
 					<MudStack Row Spacing="2">
-						<MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string" Mask="TimeMask" HelperText="@TimeMask.Mask"></MudTextField>
-						<MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string" Mask="TimeMask" HelperText="@TimeMask.Mask"></MudTextField>
+						<MudTimePicker Label="@Localizer["Start Time"]" @bind-Time="item.StartTime" Editable="true" ShowToolbar="false"></MudTimePicker>
+						<MudTimePicker Label="@Localizer["End Time"]" @bind-Time="item.EndTime" Editable="true" ShowToolbar="false"></MudTimePicker>
 						<MudIconButton Icon="@Icons.Material.Outlined.Clear" Color="Color.Error" OnClick="@(() => DeleteDayParkPeriodItem(item))">@Localizer["Clear"]</MudIconButton>
 						<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.DayPark.CeilingAmountWeekday" T="int"></MudNumericField>
 						<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.DayPark.CeilingAmountWeekday" T="int"></MudNumericField>
@@ -153,8 +153,8 @@
 				<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 					<MudIcon Icon="@Icons.Material.Filled.DragIndicator"></MudIcon>
 					<MudStack Row Spacing="2">
-						<MudTextField Label="@Localizer["Start Time"]" @bind-Value="item.StartTime" T="string" Mask="TimeMask" HelperText="@TimeMask.Mask"></MudTextField>
-						<MudTextField Label="@Localizer["End Time"]" @bind-Value="item.EndTime" T="string" Mask="TimeMask" HelperText="@TimeMask.Mask"></MudTextField>
+						<MudTimePicker Label="@Localizer["Start Time"]" @bind-Time="item.StartTime" Editable="true" ShowToolbar="false"></MudTimePicker>
+						<MudTimePicker Label="@Localizer["End Time"]" @bind-Time="item.EndTime" Editable="true" ShowToolbar="false"></MudTimePicker>
 						<MudIconButton Icon="@Icons.Material.Outlined.Clear" Color="Color.Error" OnClick="@(() => DeleteNightParkPeriodItem(item))">@Localizer["Clear"]</MudIconButton>
 						<MudNumericField Label="@Localizer["Ceiling Amount Weekday"]" @bind-Value="Content.NightPark.CeilingAmountWeekday" T="int"></MudNumericField>
 						<MudNumericField Label="@Localizer["Ceiling Amount Holiday"]" @bind-Value="Content.NightPark.CeilingAmountHoliday" T="int"></MudNumericField>

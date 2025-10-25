@@ -48,8 +48,8 @@ public class RateContent
 
 public class ChargePeriod
 {
-    public string StartTime { get; set; } = ""; //開始時間
-    public string EndTime { get; set; } = "";   //結束時間
+    public TimeSpan? StartTime { get; set; }  //開始時間
+    public TimeSpan? EndTime { get; set; }    //結束時間
 }
 public class ChargeItem
 {

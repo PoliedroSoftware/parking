@@ -227,7 +227,7 @@ public class ApplicationDbContextInitializer
                     ],
                     SpecialPeriod =
                     [
-                        new ChargePeriod { StartTime = "07:30", EndTime = "09:30" }, // Morning Peak
+                        new ChargePeriod { StartTime = new TimeSpan(7,30,0), EndTime = new TimeSpan(23, 0, 0) } // Morning Peak
                     ],
                     SpecialCharges =
                     [
@@ -236,13 +236,13 @@ public class ApplicationDbContextInitializer
                     ],
                     DayPark = new ReducedItem
                     {
-                        Period = [ new ChargePeriod { StartTime = "08:00", EndTime = "20:00" } ],
+                        Period = [ new ChargePeriod { StartTime = new TimeSpan(0, 0, 0), EndTime = new TimeSpan(8, 0, 0) } ],
                         CeilingAmountWeekday = 120,
                         CeilingAmountHoliday = 140
                     },
                     NightPark = new ReducedItem
                     {
-                        Period = [ new ChargePeriod { StartTime = "20:00", EndTime = "08:00" } ],
+                        Period = [ new ChargePeriod { StartTime = new TimeSpan(20, 0, 0), EndTime = new TimeSpan(8, 0, 0) } ],
                         CeilingAmountWeekday = 60,
                         CeilingAmountHoliday = 70
                     },
@@ -260,7 +260,7 @@ public class ApplicationDbContextInitializer
                     ],
                     SpecialPeriod =
                     [
-                        new ChargePeriod { StartTime = "18:00", EndTime = "23:00" }
+                        new ChargePeriod { StartTime = new TimeSpan(20,0,0), EndTime = new TimeSpan(23, 0, 0) }
                     ],
                     SpecialCharges =
                     [
@@ -269,13 +269,13 @@ public class ApplicationDbContextInitializer
                     ],
                     DayPark = new ReducedItem
                     {
-                        Period = [new ChargePeriod { StartTime = "08:00", EndTime = "20:00" }],
+                        Period = [new ChargePeriod { StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(20, 0, 0) }],
                         CeilingAmountWeekday = 115,
                         CeilingAmountHoliday = 135
                     },
                     NightPark = new ReducedItem
                     {
-                        Period = [new ChargePeriod { StartTime = "18:30", EndTime = "07:30" }],
+                        Period = [new ChargePeriod { StartTime = new TimeSpan(18, 0, 0), EndTime = new TimeSpan(7, 0, 0) }],
                         CeilingAmountWeekday = 42,
                         CeilingAmountHoliday = 52
                     },
@@ -299,7 +299,7 @@ public class ApplicationDbContextInitializer
                     ],
                     SpecialPeriod =
                     [
-                        new ChargePeriod { StartTime = "18:30", EndTime = "22:30" } // Evening promo period
+                        new ChargePeriod { StartTime = new TimeSpan(18,0,0), EndTime = new TimeSpan(23, 0, 0) } // Evening promo period
                     ],
                     SpecialCharges =
                     [
@@ -307,13 +307,13 @@ public class ApplicationDbContextInitializer
                     ],
                     DayPark = new ReducedItem
                     {
-                        Period = [ new ChargePeriod { StartTime = "08:00", EndTime = "20:00" } ],
+                        Period = [ new ChargePeriod { StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(20, 0, 0) } ],
                         CeilingAmountWeekday = 110,
                         CeilingAmountHoliday = 130
                     },
                     NightPark = new ReducedItem
                     {
-                        Period = [ new ChargePeriod { StartTime = "19:00", EndTime = "07:00" } ],
+                        Period = [ new ChargePeriod { StartTime = new TimeSpan(18,0,0), EndTime = new TimeSpan(7, 0, 0) } ],
                         CeilingAmountWeekday = 40,
                         CeilingAmountHoliday = 50
                     },
@@ -331,7 +331,7 @@ public class ApplicationDbContextInitializer
                     ],
                     SpecialPeriod =
                     [
-                        new ChargePeriod { StartTime = "18:00", EndTime = "23:00" }
+                        new ChargePeriod { StartTime = new TimeSpan(1,0,0), EndTime = new TimeSpan(8,0,0) }
                     ],
                     SpecialCharges =
                     [
@@ -340,13 +340,13 @@ public class ApplicationDbContextInitializer
                     ],
                     DayPark = new ReducedItem
                     {
-                        Period = [ new ChargePeriod { StartTime = "08:00", EndTime = "20:00" } ],
+                        Period = [ new ChargePeriod { StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(20, 0, 0) } ],
                         CeilingAmountWeekday = 115,
                         CeilingAmountHoliday = 135
                     },
                     NightPark = new ReducedItem
                     {
-                        Period = [ new ChargePeriod { StartTime = "18:30", EndTime = "07:30" } ],
+                        Period = [ new ChargePeriod { StartTime = new TimeSpan(18, 0, 0), EndTime = new TimeSpan(23, 0, 0) } ],
                         CeilingAmountWeekday = 42,
                         CeilingAmountHoliday = 52
                     },

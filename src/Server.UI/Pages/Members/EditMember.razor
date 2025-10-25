@@ -14,7 +14,7 @@
 @attribute [Authorize(Policy = Permissions.Members.Edit)]
 
 <PageTitle>@Title</PageTitle>
-<Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems" AllowdGoBack="true"></Breadcrumbs>
 <MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
 	@if (_model != null)
 	{
@@ -41,7 +41,7 @@
 							<MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x => x.StartDate)]" @bind-Date="_model.StartDate" For="@(() => _model.StartDate)" Required="true" RequiredError="@L["start date is required!"]"></MudDatePicker>
 						</MudItem>
 						<MudItem xs="12" md="4">
-							<MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x => x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="false" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
+							<MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x => x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="true" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
 						</MudItem>
 						<MudItem xs="12" md="4">
 
@@ -81,8 +81,8 @@
 							<MudTextField Label="@L[_model.GetMemberDescription(x => x.Notes)]" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Required="false" RequiredError="@L["notes is required!"]"></MudTextField>
 						</MudItem>
 						<MudItem xs="12">
-							<MudStack Row Spacing="2" AlignItems="AlignItems.Center">
-								<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Vehicles"]</MudText>
+							<MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="my-2">
+								<MudText Typo="Typo.subtitle2" Class="my-2">@L["Vehicles"]</MudText>
 								<MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddMemberVehicle">@L["Add"]</MudButton>
 							</MudStack>
 							@if (_model.MemberVehicles != null && _model.MemberVehicles.Any())
@@ -107,7 +107,7 @@
 										<MudTd>@context.Capacity</MudTd>
 										<MudTd>@(context.IsActive? L["Yes"] : L["No"])</MudTd>
 										<MudTd DataLabel="Molar">
-											<MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => _model.MemberVehicles.Remove(context))"> @L["Delete"]</MudIconButton>
+											<MudIconButton Color="Color.Error" Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => _model.MemberVehicles.Remove(context))"> @L["Delete"]</MudIconButton>
 										</MudTd>
 									</RowTemplate>
 								</MudTable>
@@ -115,12 +115,21 @@
 						</MudItem>
 
 						 
-
+						<MudItem xs="12">
+					
+							<MudText Typo="Typo.subtitle2" Class="my-2">Retal Fee</MudText>
+							<MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="my-2">
+								<MudNumericField Label="@L["Amount"]" @bind-Value="_model.Amount" Min="0.00m"></MudNumericField>
+								<MudNumericField Label="@L["Deposit"]" Value="_model.Deposit" Min="0.00m" ReadOnly></MudNumericField>
+								<MudTextField Label="@L["Amount Note"]" @bind-Value="_model.AmountNote"></MudTextField>
+							</MudStack>
+							
+						</MudItem>
 					</MudGrid>
 				</MudForm>
 			</MudCardContent>
 			<MudCardActions Class="d-flex justify-end gap-2">
-				<MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+				<MudLoadingButton Color="Color.Primary" Variant="Variant.Filled"   Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
 			</MudCardActions>
 		</MudCard>
 	}

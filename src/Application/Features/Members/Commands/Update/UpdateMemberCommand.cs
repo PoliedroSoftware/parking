@@ -62,6 +62,12 @@ public class UpdateMemberCommand : ICacheInvalidatorRequest<Result<int>>
     public List<MemberRentalDto>? MemberRentals { get; set; }
     [Description("Member Vehicles")]
     public List<VehicleDto>? MemberVehicles { get; set; } = new List<VehicleDto>();
+    [Description("Amount")]
+    public decimal? Amount { get; set; }
+    [Description("Deposit")]
+    public decimal? Deposit => SpaceGroup?.Zone?.MonthlySets.Deposit;
+    [Description("Amount Note")]
+    public string? AmountNote { get; set; }
     public string CacheKey => MemberCacheKey.GetAllCacheKey;
     public IEnumerable<string>? Tags => MemberCacheKey.Tags;
 

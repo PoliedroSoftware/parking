@@ -49,30 +49,30 @@
 					</MudStack>
 				</MudStack>
 			</MudStack>
-			<MudStack Spacing="0" AlignItems="AlignItems.End">
-				<MudToolBar Dense WrapContent="true" Class="py-1 px-0">
-					<MudButton Disabled="@_loading"
+			<MudStack Spacing="2" AlignItems="AlignItems.End">
+				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+					<MudButton Disabled="@_loading" Color="Color.Primary" Variant="Variant.Filled"
 							   OnClick="@(() => OnRefresh())"
 							   StartIcon="@Icons.Material.Outlined.Refresh">
 						@AppStrings.Refresh
 					</MudButton>
 					@if (_accessRights.Create)
 					{
-						<MudButton StartIcon="@Icons.Material.Outlined.Add"
+						<MudButton StartIcon="@Icons.Material.Outlined.Add" Color="Color.Primary" Variant="Variant.Filled"
 								   OnClick="OnCreate">
 							@AppStrings.New
 						</MudButton>
 					}
 					@if (_accessRights.Delete)
 					{
-						<MudButton Disabled="@(!(_selectedZones.Count > 0))"
+						<MudButton Disabled="@(!(_selectedZones.Count > 0))" Color="Color.Error" Variant="Variant.Filled"
 								   StartIcon="@Icons.Material.Outlined.DeleteOutline"
 								   OnClick="OnDeleteSelectedZones">
 							@AppStrings.Delete
 						</MudButton>
 					}
 
-				</MudToolBar>
+				</MudStack>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
 					{
@@ -150,14 +150,14 @@
 		<PropertyColumn Property="x => x.HolidaySets" Title="@L[_zoneDto.GetMemberDescription(x => x.HolidaySets)]">
 			<CellTemplate>
 				<MudStack Row Spacing="2">
-					<MudCheckBox Label="@L["PH"]" Value="@(context.Item.HolidaySets!.Split(',')[0] == "1")" ReadOnly></MudCheckBox>
-					<MudCheckBox Label="@L["Mon"]" Value="@(context.Item.HolidaySets!.Split(',')[1] == "1")" ReadOnly> </MudCheckBox>
-					<MudCheckBox Label="@L["Tue"]" Value="@(context.Item.HolidaySets!.Split(',')[2] == "1")" ReadOnly></MudCheckBox>
-					<MudCheckBox Label="@L["Wed"]" Value="@(context.Item.HolidaySets!.Split(',')[3] == "1")" ReadOnly></MudCheckBox>
-					<MudCheckBox Label="@L["Thu"]" Value="@(context.Item.HolidaySets!.Split(',')[4] == "1")" ReadOnly></MudCheckBox>
-					<MudCheckBox Label="@L["Fri"]" Value="@(context.Item.HolidaySets!.Split(',')[5] == "1")" ReadOnly></MudCheckBox>
-					<MudCheckBox Label="@L["Sat"]" Value="@(context.Item.HolidaySets!.Split(',')[6] == "1")" ReadOnly></MudCheckBox>
-					<MudCheckBox Label="@L["Sun"]" Value="@(context.Item.HolidaySets!.Split(',')[7] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["PH"]" Value="@(context.Item.HolidaySets!.Split(',')[0] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary"  Label="@L["Mon"]" Value="@(context.Item.HolidaySets!.Split(',')[1] == "1")" ReadOnly> </MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["Tue"]" Value="@(context.Item.HolidaySets!.Split(',')[2] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["Wed"]" Value="@(context.Item.HolidaySets!.Split(',')[3] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["Thu"]" Value="@(context.Item.HolidaySets!.Split(',')[4] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["Fri"]" Value="@(context.Item.HolidaySets!.Split(',')[5] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["Sat"]" Value="@(context.Item.HolidaySets!.Split(',')[6] == "1")" ReadOnly></MudCheckBox>
+					<MudCheckBox Color="Color.Primary" Label="@L["Sun"]" Value="@(context.Item.HolidaySets!.Split(',')[7] == "1")" ReadOnly></MudCheckBox>
 				</MudStack>
 			</CellTemplate>
 		</PropertyColumn>

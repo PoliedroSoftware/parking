@@ -1,5 +1,7 @@
 ﻿@page "/pages/members"
 
+@using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Carparks.Services
 @using CleanArchitecture.Blazor.Application.Features.Members.Caching
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Members.Specifications
@@ -12,7 +14,7 @@
 
 @inject IStringLocalizer<Members> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
-
+@inject ICarparkService CarparkService
 @attribute [Authorize(Policy = Permissions.Members.View)]
 <PageTitle>@Title</PageTitle>
 
@@ -34,34 +36,47 @@
 				<MudIcon Icon="@Icons.Material.Filled.Window" Size="Size.Large" />
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
-					<MudEnumSelect Style="min-width:120px" TEnum="MemberListView" ValueChanged="OnListViewChanged" Value="_membersQuery.ListView" Dense="true" Label="@L["List View"]">
-					</MudEnumSelect>
+					<MudStack Row Spacing="2" AlignItems="AlignItems.Center">
+						<MudEnumSelect Style="min-width:120px" TEnum="MemberListView" ValueChanged="OnListViewChanged" Value="_membersQuery.ListView" Dense="true" Label="@L["List View"]">
+						</MudEnumSelect>
+						<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
+							@foreach (var carpark in CarparkService.DataSource)
+							{
+								<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
+							}
+						</MudSelect>
+						<MudSelect T="string" Label="@L["Filter by active"]" ValueChanged="OnActiveFilterChanged" Clearable>
+							<MudSelectItem T="string" Value="@("Active")">@L["Active"]</MudSelectItem>
+							<MudSelectItem T="string" Value="@("Inactive")">@L["Inactive"]</MudSelectItem>
+						</MudSelect>
+					</MudStack>
+					
 				</MudStack>
 			</MudStack>
-			<MudStack Spacing="0" AlignItems="AlignItems.End">
-				<MudToolBar Dense WrapContent="true" Class="py-1 px-0">
-					<MudButton Disabled="@_loading"
+			<MudStack Spacing="2" AlignItems="AlignItems.End">
+				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+					<MudButton Disabled="@_loading" Color="Color.Primary" Variant="Variant.Filled"
 							   OnClick="@(() => OnRefresh())"
 							   StartIcon="@Icons.Material.Outlined.Refresh">
 						@AppStrings.Refresh
 					</MudButton>
 					@if (_accessRights.Create)
 					{
-						<MudButton StartIcon="@Icons.Material.Outlined.Add"
+						<MudButton StartIcon="@Icons.Material.Outlined.Add" Color="Color.Primary" Variant="Variant.Filled"
 								   OnClick="OnCreate">
 							@AppStrings.New
 						</MudButton>
 					}
 					@if (_accessRights.Delete)
 					{
-						<MudButton Disabled="@(!(_selectedMembers.Count > 0))"
+						<MudButton Disabled="@(!(_selectedMembers.Count > 0))" Color="Color.Error" Variant="Variant.Filled"
 								   StartIcon="@Icons.Material.Outlined.DeleteOutline"
 								   OnClick="OnDeleteSelectedMembers">
 							@AppStrings.Delete
 						</MudButton>
 					}
 
-				</MudToolBar>
+				</MudStack>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
 					{
@@ -127,7 +142,18 @@
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.SpaceNo" Title="@L[_memberDto.GetMemberDescription(x => x.SpaceNo)]" />
-		<PropertyColumn Property="x => x.IsActive" Title="@L[_memberDto.GetMemberDescription(x => x.IsActive)]" />
+		<PropertyColumn Property="x => x.IsActive" Title="@L[_memberDto.GetMemberDescription(x => x.IsActive)]">
+			<CellTemplate>
+				@if (context.Item.IsActive)
+				{
+					<MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+				}
+				else
+				{
+					<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" />
+				}
+			</CellTemplate>
+		</PropertyColumn>
 		<PropertyColumn Property="x => x.PhoneNumber" Title="@L[_memberDto.GetMemberDescription(x => x.PhoneNumber)]" />
 		<PropertyColumn Property="x => x.MobileNumber" Title="@L[_memberDto.GetMemberDescription(x => x.MobileNumber)]" />
 		<PropertyColumn Property="x => x.Email" Title="@L[_memberDto.GetMemberDescription(x => x.Email)]" />
@@ -171,6 +197,7 @@
 	{
 		Title = L[_memberDto.GetClassDescription()];
 		_accessRights = await PermissionService.GetAccessRightsAsync<MembersAccessRights>();
+		await CarparkService.RefreshAsync();
 	}
 
 	private async Task<GridData<MemberDto>> ServerReload(GridState<MemberDto> state)
@@ -194,6 +221,23 @@
 			_loading = false;
 		}
 
+	}
+	private async Task OnActiveFilterChanged(string? isActive)
+	{
+		_selectedMembers.Clear();
+		if (string.IsNullOrEmpty( isActive))
+		_membersQuery.Active = null;
+		else if (isActive == "Active")
+			_membersQuery.Active = true;
+		else
+			_membersQuery.Active = false;
+		await _membersGrid.ReloadServerData();
+	}
+	private async Task OncarparkFilterChanged(CarparkDto? carpark)
+	{
+		_selectedMembers.Clear();
+		_membersQuery.CarparkId = carpark?.Id;
+		await _membersGrid.ReloadServerData();
 	}
 	private async Task OnSearch(string text)
 	{

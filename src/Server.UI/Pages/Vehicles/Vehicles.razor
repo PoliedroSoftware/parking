@@ -58,29 +58,29 @@
 					</MudStack>
 				</MudStack>
 			</MudStack>
-			<MudStack Spacing="0" AlignItems="AlignItems.End">
-				<MudToolBar Dense WrapContent="true" Class="py-1 px-0">
-					<MudButton Disabled="@_loading"
+			<MudStack Spacing="2" AlignItems="AlignItems.End">
+				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+					<MudButton Disabled="@_loading" Color="Color.Primary" Variant="Variant.Filled"
 							   OnClick="@(() => OnRefresh())"
 							   StartIcon="@Icons.Material.Outlined.Refresh">
 						@AppStrings.Refresh
 					</MudButton>
 					@if (_accessRights.Create)
 					{
-						<MudButton StartIcon="@Icons.Material.Outlined.Add"
+						<MudButton StartIcon="@Icons.Material.Outlined.Add" Color="Color.Primary" Variant="Variant.Filled"
 								   OnClick="OnCreate">
 							@AppStrings.New
 						</MudButton>
 					}
 					@if (_accessRights.Delete)
 					{
-						<MudButton Disabled="@(!(_selectedVehicles.Count > 0))"
+						<MudButton Disabled="@(!(_selectedVehicles.Count > 0))" Color="Color.Error" Variant="Variant.Filled"
 								   StartIcon="@Icons.Material.Outlined.DeleteOutline"
 								   OnClick="OnDeleteSelectedVehicles">
 							@AppStrings.Delete
 						</MudButton>
 					}
-				</MudToolBar>
+				</MudStack>
 				<MudStack Row Spacing="1">
 					@if (_accessRights.Search)
 					{

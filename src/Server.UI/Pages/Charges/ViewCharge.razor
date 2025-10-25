@@ -7,7 +7,7 @@
 @inject IStringLocalizer<Charges> L
 @attribute [Authorize(Policy = Permissions.Charges.View)]
 <PageTitle>@Title</PageTitle>
-<Breadcrumbs OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<Breadcrumbs OnGoEditClick="GoEdit" OnDeleteClick="Delete" BreadcrumbItems="_breadcrumbItems" AllowdGoBack="true"></Breadcrumbs>
 <MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
 	@if (_model != null)
 	{

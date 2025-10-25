@@ -25,7 +25,7 @@ public class MembersWithPaginationQuery : MemberAdvancedFilter, ICacheableReques
 {
     public override string ToString()
     {
-        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize},{CardId},{LicensePlate}";
+        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize},{CardId},{LicensePlate},{CarparkId},{Active}";
     }
     public string CacheKey => MemberCacheKey.GetPaginationCacheKey($"{this}");
     public IEnumerable<string>? Tags => MemberCacheKey.Tags;

@@ -68,7 +68,19 @@ public class MenuService : IMenuService
                             Title = "Member",
                             Href = "/pages/members",
                             PageStatus = PageStatus.Completed
-                        }
+                        },
+                        new()
+                        {
+                            Title = "Charges",
+                            Href = "/pages/Charges",
+                            PageStatus = PageStatus.Completed
+                        },
+                        new()
+                        {
+                            Title = "Holiday",
+                            Href = "/pages/Holidays",
+                            PageStatus = PageStatus.Completed
+                        },
                     }
                 },
                 new()
@@ -143,18 +155,7 @@ public class MenuService : IMenuService
                     Icon = Icons.Material.Filled.Devices,
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
-                        new()
-                        {
-                            Title = "Charges",
-                            Href = "/pages/Charges",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Holiday",
-                            Href = "/pages/Holidays",
-                            PageStatus = PageStatus.Completed
-                        },
+                        
                         new()
                         {
                             Title = "Picklist",

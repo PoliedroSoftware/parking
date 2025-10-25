@@ -38,57 +38,30 @@
                     </MudEnumSelect>
                 </MudStack>
             </MudStack>
-            <MudStack Spacing="0" AlignItems="AlignItems.End">
-                <MudToolBar Dense WrapContent="true" Class="py-1 px-0">
-                    <MudButton Disabled="@_loading"
+            <MudStack Spacing="2" AlignItems="AlignItems.End">
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+					<MudButton Disabled="@_loading" Color="Color.Primary" Variant="Variant.Filled"
                                OnClick="@(() => OnRefresh())"
                                StartIcon="@Icons.Material.Outlined.Refresh">
                         @AppStrings.Refresh
                     </MudButton>
                     @if (_accessRights.Create)
                     {
-                        <MudButton StartIcon="@Icons.Material.Outlined.Add"
+						<MudButton StartIcon="@Icons.Material.Outlined.Add" Color="Color.Primary" Variant="Variant.Filled"
                                    OnClick="OnCreate">
                             @AppStrings.New
                         </MudButton>
                     }
                     @if (_accessRights.Delete)
                     {
-                            <MudButton Disabled="@(!(_selectedHolidays.Count > 0))"
+						<MudButton Disabled="@(!(_selectedHolidays.Count > 0))" Color="Color.Error" Variant="Variant.Filled"
                                        StartIcon="@Icons.Material.Outlined.DeleteOutline"
                                          OnClick="OnDeleteSelectedHolidays">
                                 @AppStrings.Delete
                             </MudButton>
                     }
-                    <MudMenu TransformOrigin="Origin.BottomRight" AnchorOrigin="Origin.BottomRight" EndIcon="@Icons.Material.Filled.MoreVert" Label="@AppStrings.More">
-                        @if (_accessRights.Clone)
-                        {
-                            <MudMenuItem Disabled="@(_selectedHolidays.Count != 1)" OnClick="OnCloneHoliday">@AppStrings.Clone</MudMenuItem>
-                        }
-                        
-                        @if (_accessRights.Export)
-                        {
-                            <MudMenuItem Disabled="@_exporting"
-                                         OnClick="OnExport">
-                                @AppStrings.Export
-                            </MudMenuItem>
-                        }
-                        @if (_accessRights.Import)
-                        {
-                            <MudMenuItem>
-                                <MudFileUpload T="IBrowserFile" FilesChanged="OnImportData" Accept=".xlsx">
-                                    <ActivatorContent>
-                                        <MudButton Class="pa-0 ma-0" Style="font-weight:400;text-transform:none;"
-                                                   Variant="Variant.Text"
-                                                   Disabled="@_uploading">
-                                            @AppStrings.Import
-                                        </MudButton>
-                                    </ActivatorContent>
-                                </MudFileUpload>
-                            </MudMenuItem>
-                        }
-                    </MudMenu>
-                </MudToolBar>
+                     
+                </MudStack>
                 <MudStack Row Spacing="1">
                     @if (_accessRights.Search)
                     {
@@ -231,7 +204,7 @@
 	}
     private void OnDataGridRowClick(HolidayDto dto)
     {
-        Navigation.NavigateTo($"/pages/holidays/view/{dto.Id}");
+        //Navigation.NavigateTo($"/pages/holidays/view/{dto.Id}");
     }
     private Task OnCreate()
     {

@@ -10,7 +10,7 @@
 @attribute [Authorize(Policy = Permissions.Charges.Edit)]
 
 <PageTitle>@Title</PageTitle>
-<Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems"></Breadcrumbs>
+<Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems" AllowdGoBack="true"></Breadcrumbs>
 <MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
 @if (_model != null)
 {
@@ -49,7 +49,7 @@
 			</MudForm>
 		</MudCardContent>
 		<MudCardActions Class="d-flex justify-end gap-2">
-			<MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+				<MudLoadingButton Color="Color.Primary" Variant="Variant.Filled"   Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
 		</MudCardActions>
 	</MudCard>
     }

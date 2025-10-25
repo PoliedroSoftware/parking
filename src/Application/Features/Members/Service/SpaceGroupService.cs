@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CleanArchitecture.Blazor.Application.Features.Carparks.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.Caching;
 using CleanArchitecture.Blazor.Application.Features.Charges.DTOs;
+using CleanArchitecture.Blazor.Application.Features.SpaceGroups.Caching;
 using CleanArchitecture.Blazor.Application.Features.SpaceGroups.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Tenants.Caching;
 using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
@@ -36,7 +37,7 @@ public class SpaceGroupService:ISpaceGroupService
     public async Task InitializeAsync()
     {
         await using var db = await _dbContextFactory.CreateAsync();
-        DataSource = _fusionCache.GetOrSet(CarparkCacheKey.GetAllCacheKey,
+        DataSource = _fusionCache.GetOrSet(SpaceGroupCacheKey.GetAllCacheKey,
             _ => db.SpaceGroups.ProjectTo<SpaceGroupDto>(_mapper.ConfigurationProvider)
                 .OrderBy(x => x.Name)
                 .ToList()) ?? new List<SpaceGroupDto>();
@@ -46,7 +47,7 @@ public class SpaceGroupService:ISpaceGroupService
     {
         _fusionCache.Remove(CarparkCacheKey.GetAllCacheKey);
         await using var db = await _dbContextFactory.CreateAsync();
-        DataSource = _fusionCache.GetOrSet(ChargeCacheKey.GetAllCacheKey,
+        DataSource = _fusionCache.GetOrSet(SpaceGroupCacheKey.GetAllCacheKey,
             _ => db.SpaceGroups.ProjectTo<SpaceGroupDto>(_mapper.ConfigurationProvider)
                 .OrderBy(x => x.Name)
                 .ToList()) ?? new List<SpaceGroupDto>();

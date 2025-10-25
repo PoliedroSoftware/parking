@@ -28,7 +28,7 @@ public class ExportMemberRentalsQuery : MemberRentalAdvancedFilter, ICacheableRe
       public IEnumerable<string>? Tags => MemberRentalCacheKey.Tags;
     public override string ToString()
     {
-        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}";
+        return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize},{CardId},{LicensePlate}";
     }
     public string CacheKey => MemberRentalCacheKey.GetExportCacheKey($"{this}");
 }
@@ -65,7 +65,8 @@ public class ExportMemberRentalsQueryHandler :
             var result = await _excelService.ExportAsync(data,
                 new Dictionary<string, Func<MemberRentalDto, object?>>()
                 {
-                                     {_localizer[_dto.GetMemberDescription(x=>x.MemberId)],item => item.MemberId}, 
+                                     {_localizer[_dto.GetMemberDescription(x=>x.MemberId)],item => item.MemberId},
+                                     {_localizer[_dto.GetMemberDescription(x=>x.Member)],item => item.Member?.Name},
                  {_localizer[_dto.GetMemberDescription(x=>x.LicensePlate)],item => item.LicensePlate}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.CardId)],item => item.CardId}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.StartDate)],item => item.StartDate}, 

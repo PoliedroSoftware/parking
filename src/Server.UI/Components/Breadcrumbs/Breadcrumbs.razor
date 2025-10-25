@@ -1,18 +1,21 @@
-@using CleanArchitecture.Blazor.Server.UI.Services.JsInterop
+﻿@using CleanArchitecture.Blazor.Server.UI.Services.JsInterop
 <div class="d-flex justify-content-between">
     <div class="d-flex align-center gap-2">
         <MudBreadcrumbs Items="@BreadcrumbItems"></MudBreadcrumbs>
     </div>
     <MudSpacer></MudSpacer>
-    <div class="d-flex align-center gap-1">
-
-        @if (OnSaveButtonClick.HasDelegate)
+    <div class="d-flex align-center gap-2">
+		@if (AllowdGoBack)
+		{
+			<MudButton Color="Color.Default" Variant="Variant.Filled" OnClick="@GoBack">@AppStrings.GoBack</MudButton>
+		}
+		@if (OnSaveButtonClick.HasDelegate)
         {
-            <MudLoadingButton Loading="@Saving"  OnClick="@Save">@AppStrings.Save</MudLoadingButton>
+			<MudLoadingButton Color="Color.Primary" Variant="Variant.Filled" Loading="@Saving" OnClick="@Save">@AppStrings.Save</MudLoadingButton>
         }
         @if (OnGoEditClick.HasDelegate)
         {
-            <MudButton OnClick="@GoEdit">@AppStrings.Edit</MudButton>
+			<MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@GoEdit">@AppStrings.Edit</MudButton>
         }
         @if (OnDeleteClick.HasDelegate || OnPrintClick.HasDelegate)
         {
@@ -45,6 +48,8 @@
     public EventCallback OnDeleteClick { get; set; }
     [Parameter]
     public EventCallback OnPrintClick { get; set; }
+	[Parameter]
+	public bool AllowdGoBack { get; set; }
 
     private async Task GoBack()
     {

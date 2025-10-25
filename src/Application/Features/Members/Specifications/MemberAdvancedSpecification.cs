@@ -29,6 +29,8 @@ public class MemberAdvancedSpecification : Specification<Member>
         var last30daysrange = today.GetDateRange(MemberListView.LAST_30_DAYS.ToString(),filter.CurrentUser.LocalTimeOffset);
 
         Query.Where(q => q.Name != null)
+             .Where(q => q.IsActive == filter.Active, filter.Active.HasValue)
+             .Where(q => q.SpaceGroup.Zone.CarparkId == filter.CarparkId, filter.CarparkId.HasValue)
              .Where(q=>q.CardId.Contains(filter.CardId), !string.IsNullOrEmpty(filter.CardId))
              .Where(q=>q.LicensePlate.Contains(filter.LicensePlate), !string.IsNullOrEmpty(filter.LicensePlate))
              .Where(filter.Keyword,!string.IsNullOrEmpty(filter.Keyword))

@@ -21,18 +21,18 @@ public class SpaceGroupDto
 {
     [Description("Id")]
     public int Id { get; set; }
-        [Description("Name")]
-    public string Name {get;set;} 
+    [Description("Name")]
+    public string Name { get; set; }
     [Description("Capacity")]
-    public int Capacity {get;set;} 
+    public int Capacity { get; set; }
     [Description("Zone id")]
-    public int? ZoneId {get;set;} 
+    public int? ZoneId { get; set; }
     [Description("Zone")]
-    public ZoneDto? Zone {get;set;} 
+    public ZoneDto? Zone { get; set; }
     [Description("Description")]
-    public string? Description {get;set;} 
+    public string? Description { get; set; }
     [Description("Members")]
-    public List<MemberDto>? Members {get;set;} 
+    public List<MemberDto>? Members { get; set; }
 
 
     private class Mapping : Profile
@@ -40,9 +40,9 @@ public class SpaceGroupDto
         public Mapping()
         {
             CreateMap<SpaceGroup, SpaceGroupDto>(MemberList.None)
-                .ForMember(x=>x.Members,y=>y.Ignore());
+                .ForMember(x => x.Members, y => y.Ignore());
             CreateMap<SpaceGroupDto, SpaceGroup>(MemberList.None)
-                .ForMember(z=>z.Members,y=>y.Ignore())
+                .ForMember(z => z.Members, y => y.Ignore())
                 .ForMember(dest => dest.Zone, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedById, opt => opt.Ignore())

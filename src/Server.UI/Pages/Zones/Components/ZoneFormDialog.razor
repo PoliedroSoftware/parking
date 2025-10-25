@@ -36,14 +36,14 @@
 				<MudItem xs="12" md="12">
 					<MudText Typo="Typo.body2">@L["Holiday Options"]</MudText>
 					<MudStack Row Spacing="2">
-						<MudCheckBox Label="@L["PH"]" Value="@(_model.HolidaySets!.Split(',')[0] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 0))"></MudCheckBox>
-						<MudCheckBox Label="@L["Mon"]" Value="@(_model.HolidaySets!.Split(',')[1] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 1))"></MudCheckBox>
-						<MudCheckBox Label="@L["Tue"]" Value="@(_model.HolidaySets!.Split(',')[2] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 2))"></MudCheckBox>
-						<MudCheckBox Label="@L["Wed"]" Value="@(_model.HolidaySets!.Split(',')[3] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 3))"></MudCheckBox>
-						<MudCheckBox Label="@L["Thu"]" Value="@(_model.HolidaySets!.Split(',')[4] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 4))"></MudCheckBox>
-						<MudCheckBox Label="@L["Fri"]" Value="@(_model.HolidaySets!.Split(',')[5] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 5))"></MudCheckBox>
-						<MudCheckBox Label="@L["Sat"]" Value="@(_model.HolidaySets!.Split(',')[6] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 6))"></MudCheckBox>
-						<MudCheckBox Label="@L["Sun"]" Value="@(_model.HolidaySets!.Split(',')[7] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 7))"></MudCheckBox>
+						<MudCheckBox Color="Color.Primary" Label="@L["PH"]" Value="@(_model.HolidaySets!.Split(',')[0] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 0))"></MudCheckBox>
+						<MudCheckBox Color="Color.Primary" Label="@L["Mon"]" Value="@(_model.HolidaySets!.Split(',')[1] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 1))"></MudCheckBox>
+						<MudCheckBox Color="Color.Primary" Label="@L["Tue"]" Value="@(_model.HolidaySets!.Split(',')[2] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 2))"></MudCheckBox>
+						<MudCheckBox Color="Color.Primary" Label="@L["Wed"]" Value="@(_model.HolidaySets!.Split(',')[3] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 3))"></MudCheckBox>
+							<MudCheckBox Color="Color.Primary" Label="@L["Thu"]" Value="@(_model.HolidaySets!.Split(',')[4] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 4))"></MudCheckBox>
+							<MudCheckBox Color="Color.Primary" Label="@L["Fri"]" Value="@(_model.HolidaySets!.Split(',')[5] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 5))"></MudCheckBox>
+							<MudCheckBox Color="Color.Primary" Label="@L["Sat"]" Value="@(_model.HolidaySets!.Split(',')[6] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 6))"></MudCheckBox>
+							<MudCheckBox Color="Color.Primary" Label="@L["Sun"]" Value="@(_model.HolidaySets!.Split(',')[7] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(_model, t, 7))"></MudCheckBox>
 					</MudStack>
 				</MudItem>
 				<MudItem xs="12">
@@ -147,7 +147,7 @@
 	</DialogContent>
 	<DialogActions>
 		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
-		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit" Color="Color.Primary" Variant="Variant.Filled">@AppStrings.Save</MudLoadingButton>
 	</DialogActions>
 </MudDialog>
 

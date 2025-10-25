@@ -23,8 +23,8 @@
 	</DialogContent>
 	<DialogActions>
 		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
-		<MudLoadingButton Loading="@_savingnew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
-		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+ 
+		<MudLoadingButton Color="Color.Primary" Variant="Variant.Filled" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
 	</DialogActions>
 </MudDialog>
 
@@ -58,30 +58,6 @@
 			_saving = false;
 		}
 	}
-	async Task OnSaveAndNew()
-	{
-		try
-		{
-			_savingnew = true;
-			await _holidayForm.Validate().ConfigureAwait(false);
-			if (!_holidayForm.IsValid)
-				return;
-			var result = await Mediator.Send(_model);
-			await result.MatchAsync(async data =>
-			{
-				Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-				await Task.Delay(300);
-				_model = new AddEditHolidayCommand() { };
-			}, errors =>
-			{
-				Snackbar.Add(errors, MudBlazor.Severity.Error);
-				return Task.CompletedTask;
-			});
-		}
-		finally
-		{
-			_savingnew = false;
-		}
-	}
+	 
 	void Cancel() => MudDialog.Cancel();
 }

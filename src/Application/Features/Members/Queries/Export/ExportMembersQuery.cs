@@ -65,11 +65,12 @@ public class ExportMembersQueryHandler :
             var result = await _excelService.ExportAsync(data,
                 new Dictionary<string, Func<MemberDto, object?>>()
                 {
-                                     {_localizer[_dto.GetMemberDescription(x=>x.LicensePlate)],item => item.LicensePlate}, 
+                    {_localizer[_dto.GetMemberDescription(x=>x.Id)],item => item.Id},
+                 {_localizer[_dto.GetMemberDescription(x=>x.LicensePlate)],item => item.LicensePlate}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.CardId)],item => item.CardId}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.StartDate)],item => item.StartDate}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.ExpiryDate)],item => item.ExpiryDate}, 
-                 {_localizer[_dto.GetMemberDescription(x=>x.SpaceGroupId)],item => item.SpaceGroupId}, 
+                 {_localizer[_dto.GetMemberDescription(x=>x.SpaceGroupId)],item => item.SpaceGroup?.Name}, 
                     {_localizer[_dto.GetMemberDescription(x=>x.SpaceType)],item => item.SpaceType?.ToString()}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.SpaceNo)],item => item.SpaceNo}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.IsActive)],item => item.IsActive}, 
@@ -79,7 +80,7 @@ public class ExportMembersQueryHandler :
                  {_localizer[_dto.GetMemberDescription(x=>x.Email)],item => item.Email}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.Address)],item => item.Address}, 
                  {_localizer[_dto.GetMemberDescription(x=>x.Notes)],item => item.Notes}, 
-                 {_localizer[_dto.GetMemberDescription(x=>x.TenantId)],item => item.TenantId}, 
+       
 
                 }
                 , _localizer[_dto.GetClassDescription()]);

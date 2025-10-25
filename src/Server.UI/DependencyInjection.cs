@@ -20,6 +20,7 @@ using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
 using QuestPDF;
 using QuestPDF.Infrastructure;
+using Color = MudBlazor.Color;
 
 
 
@@ -46,6 +47,7 @@ public static class DependencyInjection
             MudGlobal.InputDefaults.ShrinkLabel = true;
             //MudGlobal.InputDefaults.Variant = Variant.Outlined;
             //MudGlobal.ButtonDefaults.Variant = Variant.Filled;
+            //MudGlobal.ButtonDefaults.Color = Color.Primary;
             config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
             config.SnackbarConfiguration.NewestOnTop = false;
             config.SnackbarConfiguration.ShowCloseIcon = true;

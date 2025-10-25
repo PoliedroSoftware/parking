@@ -63,6 +63,12 @@ public class CreateMemberCommand : ICacheInvalidatorRequest<Result<int>>
     public List<MemberRentalDto>? MemberRentals { get; set; } = new List<MemberRentalDto>();
     [Description("Member Vehicles")]
     public List<VehicleDto>? MemberVehicles { get; set; } = new List<VehicleDto>();
+    [Description("Amount")]
+    public decimal? Amount { get; set; }
+    [Description("Deposit")]
+    public decimal? Deposit => SpaceGroup?.Zone?.MonthlySets.Deposit;
+    [Description("Amount Note")]
+    public string? AmountNote { get; set; }
     public string CacheKey => MemberCacheKey.GetAllCacheKey;
     public IEnumerable<string>? Tags => MemberCacheKey.Tags;
     private class Mapping : Profile
@@ -96,15 +102,33 @@ public class CreateMemberCommandHandler : IRequestHandler<CreateMemberCommand, R
         item.SpaceGroupId = request.SpaceGroup?.Id;
         item.MemberRentals=new List<MemberRental>();
         item.MemberVehicles = new List<MemberVehicle>();
-        foreach (var ren in request.MemberRentals??  Enumerable.Empty<MemberRentalDto>())
-        {
-            var renEntity = _mapper.Map<MemberRental>(ren);
-            item.MemberRentals.Add(renEntity);
-        }
+        //foreach (var ren in request.MemberRentals??  Enumerable.Empty<MemberRentalDto>())
+        //{
+        //    var renEntity = _mapper.Map<MemberRental>(ren);
+        //    item.MemberRentals.Add(renEntity);
+        //}
         foreach(var vehicle in request.MemberVehicles ?? Enumerable.Empty<VehicleDto>())
         {
             item.MemberVehicles.Add(new MemberVehicle() { VehicleId=vehicle.Id });
         }
+
+        var retalfee=new MemberRental()
+        {
+            MemberId=item.Id,
+            
+            LicensePlate =request.LicensePlate,
+            CardId=request.CardId,
+            StartDate=request.StartDate,
+            ExpiryDate=request.ExpiryDate,
+            RentalFee=request.Amount??0,
+            Deposit=request.SpaceGroup?.Zone?.MonthlySets.Deposit ?? 0,
+            AmountDue=0,
+            AmountPaid =request.Amount ?? 0 + request.SpaceGroup?.Zone?.MonthlySets.Deposit ?? 0,
+            PaymentTime=DateTime.Now,
+            PaymentMethodId=PaymentMethods.None,
+            Notes=request.AmountNote
+        };
+        item.MemberRentals=new List<MemberRental> { retalfee };
         // raise a create domain event
         item.AddDomainEvent(new MemberCreatedEvent(item));
         db.Members.Add(item);

@@ -27,10 +27,10 @@
                         <MudTextField Label="@L["Zone En Name"]" @bind-Value="zone.Name.En" T="string" Required="true" RequiredError="@L["zone en name is required!"]"></MudTextField>
                     </MudItem>
                     <MudItem xs="4">
-                        <MudCheckBox Label="@L["Is Main"]" @bind-Value="zone.IsMain" T="bool"></MudCheckBox>
+                        <MudCheckBox  Color="Color.Primary" Label="@L["Is Main"]" @bind-Value="zone.IsMain" T="bool"></MudCheckBox>
                     </MudItem>
                     <MudItem xs="4">
-                        <MudCheckBox Label="@L["Is Open Cashbox"]" @bind-Value="zone.IsOpenCashbox" T="bool"></MudCheckBox>
+                        <MudCheckBox  Color="Color.Primary" Label="@L["Is Open Cashbox"]" @bind-Value="zone.IsOpenCashbox" T="bool"></MudCheckBox>
                     </MudItem>
                     <MudItem xs="4">
                         <MudTextField Label="@L["Description"]" @bind-Value="zone.Description" T="string"></MudTextField>
@@ -38,14 +38,14 @@
                     <MudItem xs="12">
                         <MudText>@L["Holiday Options"]</MudText>
                         <MudStack Row Spacing="2">
-                            <MudCheckBox Label="@L["PH"]" Value="@(zone.HolidaySets!.Split(',')[0] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 0))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Mon"]" Value="@(zone.HolidaySets!.Split(',')[1] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 1))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Tue"]" Value="@(zone.HolidaySets!.Split(',')[2] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 2))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Wed"]" Value="@(zone.HolidaySets!.Split(',')[3] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 3))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Thu"]" Value="@(zone.HolidaySets!.Split(',')[4] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 4))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Fri"]" Value="@(zone.HolidaySets!.Split(',')[5] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 5))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Sat"]" Value="@(zone.HolidaySets!.Split(',')[6] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 6))"></MudCheckBox>
-                            <MudCheckBox Label="@L["Sun"]" Value="@(zone.HolidaySets!.Split(',')[7] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 7))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["PH"]" Value="@(zone.HolidaySets!.Split(',')[0] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 0))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Mon"]" Value="@(zone.HolidaySets!.Split(',')[1] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 1))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Tue"]" Value="@(zone.HolidaySets!.Split(',')[2] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 2))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Wed"]" Value="@(zone.HolidaySets!.Split(',')[3] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 3))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Thu"]" Value="@(zone.HolidaySets!.Split(',')[4] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 4))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Fri"]" Value="@(zone.HolidaySets!.Split(',')[5] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 5))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Sat"]" Value="@(zone.HolidaySets!.Split(',')[6] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 6))"></MudCheckBox>
+                            <MudCheckBox  Color="Color.Primary" Label="@L["Sun"]" Value="@(zone.HolidaySets!.Split(',')[7] == "1")" T="bool" ValueChanged="@((t) => HolidayValueChange(zone, t, 7))"></MudCheckBox>
                         </MudStack>
                     </MudItem>
 					<MudItem xs="12">
@@ -76,7 +76,7 @@
 										<MudNumericField Label="@L["Adjustment"]" @bind-Value="zone.HourlySets.Adjustment" For="@(() => zone.HourlySets.Adjustment)" Min="0" RequiredError="@L["capacity is required!"]"></MudNumericField>
 									</MudItem>
 									<MudItem xs="6">
-										<MudCheckBox Label="@L["Manual Full"]" @bind-Value="zone.HourlySets.ManualFull"></MudCheckBox>
+										<MudCheckBox  Color="Color.Primary" Label="@L["Manual Full"]" @bind-Value="zone.HourlySets.ManualFull"></MudCheckBox>
 									</MudItem>
 									<MudItem xs="6">
 										<MudNumericField Label="@L["Grace Period"]" @bind-Value="zone.HourlySets.GracePeriod" For="@(() => zone.HourlySets.GracePeriod)" Min="0"></MudNumericField>
@@ -173,19 +173,19 @@
                                                 <MudNumericField Label="@L["Occupied"]" @bind-Value="vehicle.Occupied" T="int"></MudNumericField>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Available"]" Value="@(vehicle.Available == 1)" T="bool" ReadOnly></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Available"]" Value="@(vehicle.Available == 1)" T="bool" ReadOnly></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Allow Entry When Full"]" @bind-Value="vehicle.AllowEntryWhenFull" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Allow Entry When Full"]" @bind-Value="vehicle.AllowEntryWhenFull" T="bool"></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Manual Full"]" @bind-Value="vehicle.ManualFull" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Manual Full"]" @bind-Value="vehicle.ManualFull" T="bool"></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Can Recognize Plate"]" @bind-Value="vehicle.CanRecognizePlate" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Can Recognize Plate"]" @bind-Value="vehicle.CanRecognizePlate" T="bool"></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Is Active"]" @bind-Value="vehicle.IsActive" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Is Active"]" @bind-Value="vehicle.IsActive" T="bool"></MudCheckBox>
                                             </MudItem>
                                         </MudGrid>
 
@@ -263,13 +263,13 @@
                                                 </MudSelect>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Is Upper"]" @bind-Value="item.IsUpper" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Is Upper"]" @bind-Value="item.IsUpper" T="bool"></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Is Left hand"]" @bind-Value="item.IsLefthand" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Is Left hand"]" @bind-Value="item.IsLefthand" T="bool"></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
-                                                <MudCheckBox Label="@L["Is Active"]" @bind-Value="item.IsActive" T="bool"></MudCheckBox>
+                                                <MudCheckBox  Color="Color.Primary" Label="@L["Is Active"]" @bind-Value="item.IsActive" T="bool"></MudCheckBox>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
                                                 <MudTextField Label="@L["Description"]" @bind-Value="item.Description" T="string"></MudTextField>

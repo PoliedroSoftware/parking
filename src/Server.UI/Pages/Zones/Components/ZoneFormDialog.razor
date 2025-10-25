@@ -100,7 +100,7 @@
 									</MudSelect>
 								</MudItem>
 								<MudItem xs="6">
-									<MudSelect T="LicensePlateVerifications" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-SelectedValues="_model.MonthlySets.PlateVerifications" Required="true" RequiredError="@L["plate verifications is required!"]">
+									<MudSelect T="Nullable<LicensePlateVerifications>" MultiSelection="true" Label="@L["Plate Verifications"]" @bind-Value="_model.MonthlySets.PlateVerifications" Required="true" RequiredError="@L["plate verifications is required!"]">
 										@foreach (var item in Enum.GetValues<LicensePlateVerifications>())
 										{
 											<MudSelectItem T="LicensePlateVerifications" Value="item">@item.GetDisplayTc()</MudSelectItem>
@@ -109,7 +109,7 @@
 
 								</MudItem>
 								<MudItem xs="6">
-									<MudSelect T="AntiPassbackControls" MultiSelection="true" Label="@L["Permit Types"]" @bind-SelectedValues="_model.MonthlySets.AntiPassbacks" Required="true" RequiredError="@L["anti passbacks is required!"]">
+									<MudSelect T="Nullable<AntiPassbackControls>" MultiSelection="true" Label="@L["Anti Passbacks"]" @bind-Value="_model.MonthlySets.AntiPassbacks" Required="true" RequiredError="@L["anti passbacks is required!"]">
 										@foreach (var item in Enum.GetValues<AntiPassbackControls>())
 										{
 											<MudSelectItem T="AntiPassbackControls" Value="item">@item.GetDisplayTc()</MudSelectItem>

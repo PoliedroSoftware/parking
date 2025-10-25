@@ -88,10 +88,10 @@ public class MonthlySets
     public IEnumerable<PermitTypes>? Permits { get; set; } = [PermitTypes.Smartcard, PermitTypes.LicensePlate];
 
     // 月租出入循環檢測 Anti-Passback Control,防止同一證件重複進出
-    public IEnumerable<AntiPassbackControls>? AntiPassbacks { get; set; } = [AntiPassbackControls.EntryExit];
+    public AntiPassbackControls? AntiPassbacks { get; set; } = AntiPassbackControls.EntryExit;
 
     // 月租出入車牌驗證 Monthly License Plate Verification Requirement
-    public IEnumerable<LicensePlateVerifications>? PlateVerifications { get; set; } = [LicensePlateVerifications.EntryExit];
+    public LicensePlateVerifications? PlateVerifications { get; set; } = LicensePlateVerifications.EntryExit;
 
     // 無效月租自動轉為時租服务 Monthly Conversion to Hourly when Monthly is not valid
     public IEnumerable<MonthlyConversions>? Conversions { get; set; } = [];

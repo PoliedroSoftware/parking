@@ -228,7 +228,6 @@ public class ApplicationDbContextInitializer
                     SpecialPeriod =
                     [
                         new ChargePeriod { StartTime = "07:30", EndTime = "09:30" }, // Morning Peak
-                        new ChargePeriod { StartTime = "17:00", EndTime = "19:30" }, // Evening Peak
                     ],
                     SpecialCharges =
                     [
@@ -385,6 +384,8 @@ public class ApplicationDbContextInitializer
                 Name = new MultiCodeName("MAIN", "Main Concourse", "主層出入口"),
                 IsMain = true,
                 Description = "Primary entry / exit area.",
+                HourlySets = new HourlySets(),
+                MonthlySets = new MonthlySets(),
                 Vehicles = [],
                 Gates = [],
                 SpaceGroups = []
@@ -392,12 +393,16 @@ public class ApplicationDbContextInitializer
             var basementZone = new Zone
             {
                 Name = new MultiCodeName("B1", "Basement B1", "地庫一層"),
+                HourlySets = new HourlySets(),
+                MonthlySets = new MonthlySets(),
                 IsMain = false,
                 Description = "General long stay parking.",
             };
             var vipZone = new Zone
             {
                 Name = new MultiCodeName("VIP", "VIP Level 2", "貴賓二層"),
+                HourlySets = new HourlySets(),
+                MonthlySets = new MonthlySets(),
                 IsMain = false,
                 Description = "Reserved spaces for premium members.",
             };

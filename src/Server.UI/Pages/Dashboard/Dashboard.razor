@@ -1,25 +1,389 @@
 ﻿@page "/"
 
-@inject IStringLocalizer<Dashboard> L
-<PageTitle>@Title</PageTitle>
+<PageTitle>Parking Operations Dashboard</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large">
-    
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-2">Parking Operations Dashboard</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">Real-time monitoring of parking operations and key metrics</MudText>
+
+    @* Core Metrics Cards *@
+    <MudGrid Spacing="3" Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="4">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Total Members</MudText>
+                            <MudText Typo="Typo.h4" Class="mt-2">@_dashboardData.TotalMembers</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Success">Active: @_dashboardData.ActiveMembers</MudText>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Large" Color="Color.Primary" />
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="4">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Occupied Spaces</MudText>
+                            <MudText Typo="Typo.h4" Class="mt-2">@_dashboardData.OccupiedSpaces</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Info">Total: @_dashboardData.TotalSpaces</MudText>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Size="Size.Large" Color="Color.Warning" />
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="4">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Available Spaces</MudText>
+                            <MudText Typo="Typo.h4" Class="mt-2">@_dashboardData.AvailableSpaces</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Success">Occupancy: @_dashboardData.OccupancyRate%</MudText>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.LocalParking" Size="Size.Large" Color="Color.Success" />
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="4">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Monthly Revenue</MudText>
+                            <MudText Typo="Typo.h4" Class="mt-2">$@_dashboardData.MonthlyRevenue.ToString("N0")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Success">+@_dashboardData.RevenueGrowth%</MudText>
+                        </div>
+                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Large" Color="Color.Tertiary" />
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @* Middle Section: Member Information + Parking Status *@
+    <MudGrid Spacing="3" Class="mb-6">
+        @* Left: Member List *@
+        <MudItem xs="12" md="7">
+            <MudCard Elevation="4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Member Information</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@_members" Hover="true" Dense="true" Striped="true" 
+                              FixedHeader="true" Height="400px">
+                        <HeaderContent>
+                            <MudTh>Member ID</MudTh>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Type</MudTh>
+                            <MudTh>Expiry Date</MudTh>
+                            <MudTh>Status</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Member ID">@context.MemberId</MudTd>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Type">@context.MembershipType</MudTd>
+                            <MudTd DataLabel="Expiry Date">@context.ExpiryDate.ToString("yyyy-MM-dd")</MudTd>
+                            <MudTd DataLabel="Status">
+                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">
+                                    @context.Status
+                                </MudChip>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager PageSizeOptions="new int[]{10, 25, 50}" />
+                        </PagerContent>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* Right: Real-time Parking Status *@
+        <MudItem xs="12" md="5">
+            <MudCard Elevation="4" Class="mb-3">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Space Occupancy Status</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <div class="d-flex justify-center mb-4">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Large" 
+                                           Value="@_dashboardData.OccupancyRate" 
+                                           Style="width: 150px; height: 150px;">
+                            <MudText Typo="Typo.h4">@_dashboardData.OccupancyRate%</MudText>
+                        </MudProgressCircular>
+                    </div>
+                    
+                    <MudDivider Class="mb-3" />
+                    
+                    <div class="mb-3">
+                        <MudText Typo="Typo.body2" Class="mb-1">Member Vehicles</MudText>
+                        <MudProgressLinear Color="Color.Primary" Size="Size.Large" 
+                                         Value="@GetMemberVehiclePercentage()" 
+                                         Class="mb-1" />
+                        <MudText Typo="Typo.caption">@_dashboardData.MemberVehicles vehicles</MudText>
+                    </div>
+                    
+                    <div>
+                        <MudText Typo="Typo.body2" Class="mb-1">Guest Vehicles</MudText>
+                        <MudProgressLinear Color="Color.Info" Size="Size.Large" 
+                                         Value="@GetNonMemberVehiclePercentage()" 
+                                         Class="mb-1" />
+                        <MudText Typo="Typo.caption">@_dashboardData.NonMemberVehicles vehicles</MudText>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+
+            <MudCard Elevation="4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Recent Payments</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@_payments.Take(5)" Hover="true" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Member ID</MudTh>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Amount</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Member ID">@context.MemberId</MudTd>
+                            <MudTd DataLabel="Date">@context.PaymentDate.ToString("MM-dd")</MudTd>
+                            <MudTd DataLabel="Amount">$@context.Amount.ToString("N0")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @* Bottom: Overtime Parking Records *@
+    <MudCard Elevation="4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" Class="mr-2" />
+                    Overtime Parking Records
+                </MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTable Items="@_overtimeRecords" Hover="true" Dense="true" Striped="true"
+                      SortLabel="Sort By" AllowUnsorted="false">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OvertimeParkingRecord, object>(x => x.PlateNumber)">Plate Number</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OvertimeParkingRecord, object>(x => x.EntryTime)">Entry Time</MudTableSortLabel></MudTh>
+                    <MudTh>Expected Exit</MudTh>
+                    <MudTh>Total Duration</MudTh>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<OvertimeParkingRecord, object>(x => x.OvertimeMinutes)">Overtime</MudTableSortLabel></MudTh>
+                    <MudTh>Charged</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Plate Number">
+                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.PlateNumber</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Entry Time">@context.EntryTime.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                    <MudTd DataLabel="Expected Exit">@context.ExpectedExitTime.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                    <MudTd DataLabel="Total Duration">@FormatDuration(context.TotalStayMinutes)</MudTd>
+                    <MudTd DataLabel="Overtime">
+						<MudChip T="string" Size="Size.Small" Color="@GetOvertimeColor(context.OvertimeMinutes)">
+                            @FormatDuration(context.OvertimeMinutes)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Charged">
+                        <MudIcon Icon="@(context.IsCharged ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Cancel)" 
+                                 Color="@(context.IsCharged ? Color.Success : Color.Error)" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[]{10, 25, 50}" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
 </MudContainer>
 
- 
-
-@code
-{
-  
-
-    public string Title { get; set; } = "Dashboard";
-
-
-     
+@code {
+    private DashboardData _dashboardData = new();
+    private List<MemberInfo> _members = new();
+    private List<MembershipPayment> _payments = new();
+    private List<OvertimeParkingRecord> _overtimeRecords = new();
 
     protected override void OnInitialized()
     {
-        Title = L["Dashboard"];
+        GenerateDummyData();
+    }
+
+    private void GenerateDummyData()
+    {
+        var random = new Random(42); // Fixed seed for reproducibility
+
+        // Generate parking lot overall data
+        _dashboardData.TotalSpaces = 350;
+        _dashboardData.OccupiedSpaces = random.Next(200, 320);
+        _dashboardData.AvailableSpaces = _dashboardData.TotalSpaces - _dashboardData.OccupiedSpaces;
+        _dashboardData.OccupancyRate = (int)((double)_dashboardData.OccupiedSpaces / _dashboardData.TotalSpaces * 100);
+        _dashboardData.MemberVehicles = random.Next(100, 180);
+        _dashboardData.NonMemberVehicles = _dashboardData.OccupiedSpaces - _dashboardData.MemberVehicles;
+        _dashboardData.MonthlyRevenue = random.Next(80000, 150000);
+        _dashboardData.RevenueGrowth = random.Next(5, 25);
+
+        // Generate member data
+        var memberTypes = new[] { "Monthly", "Quarterly", "Yearly", "Pay-per-use" };
+        var statuses = new[] { "Active", "Expiring Soon", "Expired" };
+        var firstNames = new[] { "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth" };
+        var lastNames = new[] { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez" };
+
+        for (int i = 1; i <= 50; i++)
+        {
+            var expiryDays = random.Next(-30, 180);
+            var expiryDate = DateTime.Now.AddDays(expiryDays);
+            var status = expiryDays < 0 ? "Expired" : expiryDays < 7 ? "Expiring Soon" : "Active";
+
+            _members.Add(new MemberInfo
+            {
+                MemberId = $"M{i:D5}",
+                Name = $"{firstNames[random.Next(firstNames.Length)]} {lastNames[random.Next(lastNames.Length)]}",
+                MembershipType = memberTypes[random.Next(memberTypes.Length)],
+                ExpiryDate = expiryDate,
+                Status = status
+            });
+        }
+
+        _dashboardData.TotalMembers = _members.Count;
+        _dashboardData.ActiveMembers = _members.Count(m => m.Status == "Active");
+        _dashboardData.ExpiredMembers = _members.Count(m => m.Status == "Expired");
+
+        // Generate payment records
+        var paymentMethods = new[] { "Credit Card", "Debit Card", "PayPal", "Cash" };
+        var amounts = new[] { 300, 500, 800, 1200, 2400, 3600 };
+
+        for (int i = 0; i < 30; i++)
+        {
+            _payments.Add(new MembershipPayment
+            {
+                MemberId = $"M{random.Next(1, 51):D5}",
+                PaymentDate = DateTime.Now.AddDays(-random.Next(0, 30)),
+                Amount = amounts[random.Next(amounts.Length)],
+                PaymentMethod = paymentMethods[random.Next(paymentMethods.Length)]
+            });
+        }
+
+        // Generate overtime parking records
+        var states = new[] { "CA", "NY", "TX", "FL", "IL", "PA", "OH", "GA", "NC", "MI", "NJ", "VA", "WA", "AZ", "MA" };
+        var letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+
+        for (int i = 0; i < 15; i++)
+        {
+            var entryTime = DateTime.Now.AddHours(-random.Next(2, 48));
+            var expectedStay = random.Next(60, 480);
+            var actualStay = expectedStay + random.Next(10, 300);
+
+            _overtimeRecords.Add(new OvertimeParkingRecord
+            {
+                PlateNumber = $"{states[random.Next(states.Length)]}-{letters[random.Next(letters.Length)]}{letters[random.Next(letters.Length)]}{letters[random.Next(letters.Length)]}{random.Next(100, 999)}",
+                EntryTime = entryTime,
+                ExpectedExitTime = entryTime.AddMinutes(expectedStay),
+                TotalStayMinutes = actualStay,
+                OvertimeMinutes = actualStay - expectedStay,
+                IsCharged = random.Next(0, 2) == 1
+            });
+        }
+
+        _overtimeRecords = _overtimeRecords.OrderByDescending(x => x.OvertimeMinutes).ToList();
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Active" => Color.Success,
+            "Expiring Soon" => Color.Warning,
+            "Expired" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private Color GetOvertimeColor(int minutes)
+    {
+        if (minutes > 180) return Color.Error;
+        if (minutes > 60) return Color.Warning;
+        return Color.Info;
+    }
+
+    private double GetMemberVehiclePercentage()
+    {
+        if (_dashboardData.OccupiedSpaces == 0) return 0;
+        return (double)_dashboardData.MemberVehicles / _dashboardData.OccupiedSpaces * 100;
+    }
+
+    private double GetNonMemberVehiclePercentage()
+    {
+        if (_dashboardData.OccupiedSpaces == 0) return 0;
+        return (double)_dashboardData.NonMemberVehicles / _dashboardData.OccupiedSpaces * 100;
+    }
+
+    private string FormatDuration(int minutes)
+    {
+        var hours = minutes / 60;
+        var mins = minutes % 60;
+        if (hours > 0)
+            return $"{hours}h {mins}m";
+        return $"{mins}m";
+    }
+
+    // Data Models
+    public class DashboardData
+    {
+        public int TotalMembers { get; set; }
+        public int ActiveMembers { get; set; }
+        public int ExpiredMembers { get; set; }
+        public int TotalSpaces { get; set; }
+        public int OccupiedSpaces { get; set; }
+        public int AvailableSpaces { get; set; }
+        public int OccupancyRate { get; set; }
+        public int MemberVehicles { get; set; }
+        public int NonMemberVehicles { get; set; }
+        public int MonthlyRevenue { get; set; }
+        public int RevenueGrowth { get; set; }
+    }
+
+    public class MemberInfo
+    {
+        public string MemberId { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string MembershipType { get; set; } = string.Empty;
+        public DateTime ExpiryDate { get; set; }
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class MembershipPayment
+    {
+        public string MemberId { get; set; } = string.Empty;
+        public DateTime PaymentDate { get; set; }
+        public int Amount { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+    }
+
+    public class OvertimeParkingRecord
+    {
+        public string PlateNumber { get; set; } = string.Empty;
+        public DateTime EntryTime { get; set; }
+        public DateTime ExpectedExitTime { get; set; }
+        public int TotalStayMinutes { get; set; }
+        public int OvertimeMinutes { get; set; }
+        public bool IsCharged { get; set; }
     }
 }

@@ -13,4 +13,5 @@ public class RiskSummaryStatisticsDto
     public double AverageRiskScore { get; set; }
     public int TotalRiskAnalyses { get; set; }
     public DateTime? LastAnalysisTime { get; set; }
+    public Dictionary<string, int> DailyLoginCountsLast30Days { get; set; } = new();
 }

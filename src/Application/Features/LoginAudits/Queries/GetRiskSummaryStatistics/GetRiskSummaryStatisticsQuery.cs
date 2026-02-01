@@ -30,6 +30,15 @@ public class GetRiskSummaryStatisticsQueryHandler : IRequestHandler<GetRiskSumma
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+        var cutoff = DateTime.UtcNow.Date.AddDays(-29);
+        var dailyLoginCounts = await db.LoginAudits
+            .AsNoTracking()
+            .Where(x => x.LoginTimeUtc >= cutoff)
+            .GroupBy(x => x.LoginTimeUtc.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Day)
+            .ToListAsync(cancellationToken);
+
         var statistics = new RiskSummaryStatisticsDto
         {
             TotalUsers = summaries.Count,
@@ -39,7 +48,9 @@ public class GetRiskSummaryStatisticsQueryHandler : IRequestHandler<GetRiskSumma
             CriticalRiskUsers = summaries.Count(x => x.RiskLevel == SecurityRiskLevel.Critical),
             AverageRiskScore = summaries.Any() ? summaries.Average(x => x.RiskScore) : 0,
             TotalRiskAnalyses = summaries.Count,
-            LastAnalysisTime = summaries.Any() ? summaries.Max(x => x.LastModifiedAt ?? x.CreatedAt) : null
+            LastAnalysisTime = summaries.Any() ? summaries.Max(x => x.LastModifiedAt ?? x.CreatedAt) : null,
+            DailyLoginCountsLast30Days = dailyLoginCounts
+                .ToDictionary(x => x.Day.ToString("MM-dd"), x => x.Count)
         };
 
         return statistics;

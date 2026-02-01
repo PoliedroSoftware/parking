@@ -1,4 +1,4 @@
-@using CleanArchitecture.Blazor.Application.Features.LoginAudits.DTOs
+﻿@using CleanArchitecture.Blazor.Application.Features.LoginAudits.DTOs
 @using CleanArchitecture.Blazor.Application.Features.LoginAudits.Queries.GetUserLoginRiskSummary
 @using CleanArchitecture.Blazor.Domain.Enums
 @inject ISender Mediator
@@ -19,7 +19,7 @@
                              Color="@GetRiskColor()" 
                              Class="mr-3" />
                     <div>
-                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+                        <MudText Typo="Typo.subtitle1">
                             @L["Security Risk Level"]: @L[_riskSummary.RiskLevel.ToString()]
                         </MudText>
                         <MudText Typo="Typo.body2" Class="text--secondary font-weight-medium">

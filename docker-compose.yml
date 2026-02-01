@@ -14,6 +14,7 @@ services:
       - ASPNETCORE_HTTPS_PORTS=${ASPNETCORE_HTTPS_PORTS}
       - AppConfigurationSettings__ApplicationUrl=${APP_URL}
       - AppConfigurationSettings__AppName=${APP_NAME}
+      - AppConfigurationSettings__Company=${APP_COMPANY}
       - DatabaseSettings__DBProvider=${DB_PROVIDER}
       - DatabaseSettings__ConnectionString=${DB_CONNECTION_STRING}
       - AI__GeminiApiKey=${GEMINI_API_KEY}

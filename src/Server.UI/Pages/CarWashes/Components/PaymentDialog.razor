@@ -1,0 +1,29 @@
+@using CleanArchitecture.Blazor.Application.Features.CarWashes.DTOs
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">@_dto.LicensePlate - $ @_dto.Price.ToString("N0")</MudText>
+            <MudEnumSelect TEnum="PaymentMethods" Label="Metodo de Pago" @bind-Value="_paymentMethod"></MudEnumSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Cobrar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public CarWashDto CarWashDto { get; set; } = default!;
+    private CarWashDto _dto = default!;
+    private PaymentMethods _paymentMethod = PaymentMethods.Cash;
+
+    protected override void OnInitialized()
+    {
+        _dto = CarWashDto;
+    }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(_paymentMethod));
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,128 @@
+@page "/pages/gastos"
+
+@using CleanArchitecture.Blazor.Domain.Entities
+
+@inject IApplicationDbContextFactory DbFactory
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Gastos</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h3" Style="font-weight:700;">Gastos del Parqueadero</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Registre los gastos operativos del dia</MudText>
+
+    <MudCard Elevation="3" Class="mb-6">
+        <MudCardContent>
+            <MudForm Model="@_newExpense">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" md="3">
+                        <MudDatePicker Label="Fecha" Date="_newExpense.Date" DateChanged="@(d => _newExpense.Date = d ?? DateTime.Today)" ShowToolbar="false"></MudDatePicker>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudTextField Label="Descripcion" @bind-Value="_newExpense.Description" Required="true"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudSelect T="string" Label="Categoria" @bind-Value="_newExpense.Category" Required="true">
+                            <MudSelectItem Value="@("Nomina")">Nomina</MudSelectItem>
+                            <MudSelectItem Value="@("Servicios")">Servicios</MudSelectItem>
+                            <MudSelectItem Value="@("Mantenimiento")">Mantenimiento</MudSelectItem>
+                            <MudSelectItem Value="@("Insumos")">Insumos Lavado</MudSelectItem>
+                            <MudSelectItem Value="@("Papeleria")">Papeleria</MudSelectItem>
+                            <MudSelectItem Value="@("Vigilancia")">Vigilancia</MudSelectItem>
+                            <MudSelectItem Value="@("Aseo")">Aseo</MudSelectItem>
+                            <MudSelectItem Value="@("Otros")">Otros</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudNumericField Label="Valor $" @bind-Value="_newExpense.Amount" Min="0"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveExpense"
+                                   StartIcon="@Icons.Material.Filled.Save" FullWidth="true">Guardar</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent><MudText Typo="Typo.h6">Gastos del Mes</MudText></CardHeaderContent>
+            <CardHeaderActions>
+                <MudText Typo="Typo.h5" Color="Color.Error">Total: $ @_totalMes.ToString("N0")</MudText>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_expenses.Any())
+            {
+                <MudTable Items="@_expenses" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="400px">
+                    <HeaderContent>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Categoria</MudTh>
+                        <MudTh>Descripcion</MudTh>
+                        <MudTh Style="text-align:right;">Valor</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Date.ToString("dd/MM")</MudTd>
+                        <MudTd><MudChip T="string" Size="Size.Small">@context.Category</MudChip></MudTd>
+                        <MudTd>@context.Description</MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Amount.ToString("N0")</MudTd>
+                        <MudTd>
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                           OnClick="@(() => DeleteExpense(context))"></MudIconButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private Expense _newExpense = new() { Date = DateTime.Today };
+    private List<Expense> _expenses = new();
+    private int _totalMes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExpenses();
+    }
+
+    private async Task LoadExpenses()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var firstDay = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        _expenses = await db.Expenses.Where(e => e.Date >= firstDay).OrderByDescending(e => e.Date).ToListAsync();
+        _totalMes = _expenses.Sum(e => (int)e.Amount);
+    }
+
+    private async Task SaveExpense()
+    {
+        if (string.IsNullOrWhiteSpace(_newExpense.Description) || string.IsNullOrWhiteSpace(_newExpense.Category)) return;
+        await using var db = await DbFactory.CreateAsync();
+        db.Expenses.Add(new Expense
+        {
+            Date = _newExpense.Date,
+            Description = _newExpense.Description,
+            Category = _newExpense.Category,
+            Amount = _newExpense.Amount
+        });
+        await db.SaveChangesAsync(CancellationToken.None);
+        _newExpense = new Expense { Date = DateTime.Today };
+        Snackbar.Add("Gasto registrado", Severity.Success);
+        await LoadExpenses();
+        StateHasChanged();
+    }
+
+    private async Task DeleteExpense(Expense exp)
+    {
+        await using var db = await DbFactory.CreateAsync();
+        db.Expenses.Remove(exp);
+        await db.SaveChangesAsync(CancellationToken.None);
+        Snackbar.Add("Gasto eliminado", Severity.Info);
+        await LoadExpenses();
+        StateHasChanged();
+    }
+}

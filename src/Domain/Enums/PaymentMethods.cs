@@ -1,43 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 
 namespace CleanArchitecture.Blazor.Domain.Enums;
 
 public enum PaymentMethods
 {
-    [DisplayEn("None")]
-    [DisplayTc("未知")]
+    [Description("Ninguno")]
     None = 0,
 
-    [DisplayEn("Octopus")]
-    [DisplayTc("八達通")]
-    Octopus = 1,
+    [Description("Efectivo")]
+    Cash = 1,
 
-    [DisplayEn("CreditCard")]
-    [DisplayTc("信用卡")]
+    [Description("Tarjeta Debito/Credito")]
     CreditCard = 2,
 
-    [DisplayEn("Cash")]
-    [DisplayTc("現金")]
-    LicensePlate = 4,
+    [Description("Transferencia")]
+    Transferencia = 4,
 
-    [DisplayEn("Cheque")]
-    [DisplayTc("支票")]
-    MagneticTicket = 8,
+    [Description("Nequi")]
+    Nequi = 8,
 
-    [DisplayEn("FPS")]
-    [DisplayTc("轉數快")]
-    FPS = 1 << 4,
+    [Description("Daviplata")]
+    Daviplata = 16,
 
-    [DisplayEn("AliPay")]
-    [DisplayTc("支付寶")]
-    AliPay = 1 << 5,
+    [Description("A Mensualidad")]
+    ChargeToMonthly = 32,
 
-    [DisplayEn("WeChat Pay")]
-    [DisplayTc("微信")]
-    WeChatPay = 1 << 6,
+    [Description("Billetera Digital")]
+    DigitalWallet = 64,
 }

@@ -1,4 +1,4 @@
-﻿@page "/identity/users"
+@page "/identity/users"
 
 @using CleanArchitecture.Blazor.Application.Features.Identity.Notifications.UserActivation
 @using CleanArchitecture.Blazor.Application.Common.Interfaces.MultiTenant
@@ -53,7 +53,7 @@
                 <MudIcon Icon="@Icons.Material.Filled.SwitchAccount" Size="Size.Large" />
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.subtitle2" Class="mb-2">@_title</MudText>
-                    <MudSelect T="string" Style="min-width:120px" ValueChanged="TenantListViewChanged" Value="@_selectedTenantId" Dense="true" Label="@Localizer["List View"]">
+                    <MudSelect T="string" Style="min-width:100px;flex:1 1 auto" ValueChanged="TenantListViewChanged" Value="@_selectedTenantId" Dense="true" Label="@Localizer["List View"]">
                         <MudSelectItem T="string" Value="@string.Empty">@Localizer["ALL"]</MudSelectItem>
                         @foreach (var tenant in TenantService.DataSource)
                         {

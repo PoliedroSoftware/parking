@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <!-- 
+      Microsoft ResX Schema 
+      
+      Version 2.0
+      
+      The primary goals of this format is to allow a simple XML format 
+      that is mostly human readable. The generation and parsing of the 
+      various data types are done through the TypeConverter classes 
+      associated with the data types.
+      
+      Example:
+      
+      ... ado.net/XML headers & schema ...
+      <resheader name="resmimetype">text/microsoft-resx</resheader>
+      <resheader name="version">2.0</resheader>
+      <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+      <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+      <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+      <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+      <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+          <value>[base64 mime encoded serialized .NET Framework object]</value>
+      </data>
+      <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+          <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+          <comment>This is a comment</comment>
+      </data>
+                  
+      There are any number of "resheader" rows that contain simple 
+      name/value pairs.
+      
+      Each data row contains a name, and value. The row also contains a 
+      type or mimetype. Type corresponds to a .NET class that support 
+      text/value conversion through the TypeConverter architecture. 
+      Classes that don't support this are serialized and stored with the 
+      mimetype set.
+      
+      The mimetype is used for serialized objects, and tells the 
+      ResXResourceReader how to depersist the object. This is currently not 
+      extensible. For a given mimetype the value must be set accordingly:
+      
+      Note - application/x-microsoft.net.object.binary.base64 is the format 
+      that the ResXResourceWriter will generate, however the reader can 
+      read any of the formats listed below.
+      
+      mimetype: application/x-microsoft.net.object.binary.base64
+      value   : The object must be serialized with 
+              : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+              : and then encoded with base64 encoding.
+      
+      mimetype: application/x-microsoft.net.object.soap.base64
+      value   : The object must be serialized with 
+              : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+              : and then encoded with base64 encoding.
+  
+      mimetype: application/x-microsoft.net.object.bytearray.base64
+      value   : The object must be serialized into a byte array 
+              : using a System.ComponentModel.TypeConverter
+              : and then encoded with base64 encoding.
+      -->
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"
+                id="root"
+                xmlns="">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string"/>
+                            <xsd:attribute name="type" type="xsd:string"/>
+                            <xsd:attribute name="mimetype" type="xsd:string"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string"/>
+                            <xsd:attribute name="name" type="xsd:string"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="List View" xml:space="preserve">
+        <value>Vista de Lista</value>
+    </data>
+    <data name="Carparks" xml:space="preserve">
+        <value>Parqueaderos</value>
+    </data>
+    <data name="New Carpark" xml:space="preserve">
+        <value>Nuevo Parqueadero</value>
+    </data>
+    <data name="Create Carpark" xml:space="preserve">
+        <value>Crear Parqueadero</value>
+    </data>
+    <data name="Edit Carpark" xml:space="preserve">
+        <value>Editar Parqueadero</value>
+    </data>
+    <data name="Home" xml:space="preserve">
+        <value>Inicio</value>
+    </data>
+    <data name="Code" xml:space="preserve">
+        <value>Código</value>
+    </data>
+    <data name="code is required!" xml:space="preserve">
+        <value>¡el código es obligatorio!</value>
+    </data>
+    <data name="Name" xml:space="preserve">
+        <value>Nombre</value>
+    </data>
+    <data name="En Name" xml:space="preserve">
+        <value>Nombre (EN)</value>
+    </data>
+    <data name="en is required!" xml:space="preserve">
+        <value>¡el EN es obligatorio!</value>
+    </data>
+    <data name="tc is required!" xml:space="preserve">
+        <value>¡el TC es obligatorio!</value>
+    </data>
+    <data name="Company Name" xml:space="preserve">
+        <value>Nombre de Empresa</value>
+    </data>
+    <data name="Company En Name" xml:space="preserve">
+        <value>Nombre de Empresa (EN)</value>
+    </data>
+    <data name="company name is required!" xml:space="preserve">
+        <value>¡el nombre de empresa es obligatorio!</value>
+    </data>
+    <data name="Address" xml:space="preserve">
+        <value>Dirección</value>
+    </data>
+    <data name="En Address" xml:space="preserve">
+        <value>Dirección (EN)</value>
+    </data>
+    <data name="address name is required!" xml:space="preserve">
+        <value>¡la dirección es obligatoria!</value>
+    </data>
+    <data name="Contact person" xml:space="preserve">
+        <value>Persona de Contacto</value>
+    </data>
+    <data name="contact person is required!" xml:space="preserve">
+        <value>¡la persona de contacto es obligatoria!</value>
+    </data>
+    <data name="Phone number" xml:space="preserve">
+        <value>Teléfono de Contacto</value>
+    </data>
+    <data name="phone number is required!" xml:space="preserve">
+        <value>¡el teléfono es obligatorio!</value>
+    </data>
+    <data name="Fax" xml:space="preserve">
+        <value>Fax</value>
+    </data>
+    <data name="fax is required!" xml:space="preserve">
+        <value>¡el fax es obligatorio!</value>
+    </data>
+    <data name="Email" xml:space="preserve">
+        <value>Correo de Contacto</value>
+    </data>
+    <data name="email is required!" xml:space="preserve">
+        <value>¡el correo es obligatorio!</value>
+    </data>
+    <data name="App key" xml:space="preserve">
+        <value>Clave de App</value>
+    </data>
+    <data name="app key is required!" xml:space="preserve">
+        <value>¡la clave de app es obligatoria!</value>
+    </data>
+    <data name="Machine code" xml:space="preserve">
+        <value>Código de Máquina</value>
+    </data>
+    <data name="machine code is required!" xml:space="preserve">
+        <value>¡el código de máquina es obligatorio!</value>
+    </data>
+    <data name="Registration code" xml:space="preserve">
+        <value>Código de Registro</value>
+    </data>
+    <data name="registration code is required!" xml:space="preserve">
+        <value>¡el código de registro es obligatorio!</value>
+    </data>
+    <data name="Description" xml:space="preserve">
+        <value>Descripción</value>
+    </data>
+    <data name="Identified" xml:space="preserve">
+        <value>Identificado</value>
+    </data>
+    <data name="identified is required!" xml:space="preserve">
+        <value>¡el identificador es obligatorio!</value>
+    </data>
+    <data name="Tenant id" xml:space="preserve">
+        <value>ID de Empresa</value>
+    </data>
+    <data name="tenant id is required!" xml:space="preserve">
+        <value>¡el ID de empresa es obligatorio!</value>
+    </data>
+    <data name="Tenant" xml:space="preserve">
+        <value>Empresa</value>
+    </data>
+    <data name="Zones" xml:space="preserve">
+        <value>Zonas</value>
+    </data>
+    <data name="Filter by carpark" xml:space="preserve">
+        <value>Filtrar por parqueadero</value>
+    </data>
+    <data name="Zone Code" xml:space="preserve">
+        <value>Código de Zona</value>
+    </data>
+    <data name="zone code is required!" xml:space="preserve">
+        <value>¡el código de zona es obligatorio!</value>
+    </data>
+    <data name="Zone Name" xml:space="preserve">
+        <value>Nombre de Zona</value>
+    </data>
+    <data name="zone name is required!" xml:space="preserve">
+        <value>¡el nombre de zona es obligatorio!</value>
+    </data>
+    <data name="Zone En Name" xml:space="preserve">
+        <value>Nombre de Zona (EN)</value>
+    </data>
+    <data name="zone en name is required!" xml:space="preserve">
+        <value>¡el nombre EN de zona es obligatorio!</value>
+    </data>
+    <data name="Is Main" xml:space="preserve">
+        <value>Zona Principal</value>
+    </data>
+    <data name="Is Open Cashbox" xml:space="preserve">
+        <value>Caja Abierta</value>
+    </data>
+    <data name="Holiday Options" xml:space="preserve">
+        <value>Opciones de Festivos</value>
+    </data>
+    <data name="PH" xml:space="preserve">
+        <value>PH</value>
+    </data>
+    <data name="Mon" xml:space="preserve">
+        <value>Lun</value>
+    </data>
+    <data name="Tue" xml:space="preserve">
+        <value>Mar</value>
+    </data>
+    <data name="Wed" xml:space="preserve">
+        <value>Mié</value>
+    </data>
+    <data name="Thu" xml:space="preserve">
+        <value>Jue</value>
+    </data>
+    <data name="Fri" xml:space="preserve">
+        <value>Vie</value>
+    </data>
+    <data name="Sat" xml:space="preserve">
+        <value>Sáb</value>
+    </data>
+    <data name="Sun" xml:space="preserve">
+        <value>Dom</value>
+    </data>
+    <data name="Hourly Sets" xml:space="preserve">
+        <value>Configuración Horaria</value>
+    </data>
+    <data name="Permit Types" xml:space="preserve">
+        <value>Permisos</value>
+    </data>
+    <data name="permit type is required!" xml:space="preserve">
+        <value>¡el permiso es obligatorio!</value>
+    </data>
+    <data name="Plate Verifications" xml:space="preserve">
+        <value>Verificación de Placas</value>
+    </data>
+    <data name="plate verifications is required!" xml:space="preserve">
+        <value>¡la verificación de placas es obligatoria!</value>
+    </data>
+    <data name="Capacity" xml:space="preserve">
+        <value>Capacidad</value>
+    </data>
+    <data name="capacity is required!" xml:space="preserve">
+        <value>¡la capacidad es obligatoria!</value>
+    </data>
+    <data name="Adjustment" xml:space="preserve">
+        <value>Ajuste</value>
+    </data>
+    <data name="Manual Full" xml:space="preserve">
+        <value>Lleno Manual</value>
+    </data>
+    <data name="Grace Period" xml:space="preserve">
+        <value>Periodo de Gracia</value>
+    </data>
+    <data name="Exit Buffer" xml:space="preserve">
+        <value>Buffer de Salida</value>
+    </data>
+    <data name="Lost Ticket Fee" xml:space="preserve">
+        <value>Multa por Ticket Perdido</value>
+    </data>
+    <data name="Monthly Sets" xml:space="preserve">
+        <value>Configuración Mensual</value>
+    </data>
+    <data name="Anti Passbacks" xml:space="preserve">
+        <value>Anti-Passback</value>
+    </data>
+    <data name="anti passbacks is required!" xml:space="preserve">
+        <value>¡anti-passback es obligatorio!</value>
+    </data>
+    <data name="conversions is required!" xml:space="preserve">
+        <value>¡las conversiones son obligatorias!</value>
+    </data>
+    <data name="Deposit" xml:space="preserve">
+        <value>Depósito</value>
+    </data>
+    <data name="deposit is required!" xml:space="preserve">
+        <value>¡el depósito es obligatorio!</value>
+    </data>
+    <data name="Vehicles Allowed in the Zone" xml:space="preserve">
+        <value>Vehículos Permitidos en la Zona</value>
+    </data>
+    <data name="Vehicle Name" xml:space="preserve">
+        <value>Nombre del Vehículo</value>
+    </data>
+    <data name="vehicle name is required!" xml:space="preserve">
+        <value>¡el nombre del vehículo es obligatorio!</value>
+    </data>
+    <data name="Service Categorie" xml:space="preserve">
+        <value>Categoría de Servicio</value>
+    </data>
+    <data name="service is required!" xml:space="preserve">
+        <value>¡el servicio es obligatorio!</value>
+    </data>
+    <data name="Vehicle Types" xml:space="preserve">
+        <value>Tipo de Vehículo</value>
+    </data>
+    <data name="vehicle type is required!" xml:space="preserve">
+        <value>¡el tipo de vehículo es obligatorio!</value>
+    </data>
+    <data name="Charge" xml:space="preserve">
+        <value>Tarifa</value>
+    </data>
+    <data name="charge is required!" xml:space="preserve">
+        <value>¡la tarifa es obligatoria!</value>
+    </data>
+    <data name="Occupied" xml:space="preserve">
+        <value>Ocupados</value>
+    </data>
+    <data name="Available" xml:space="preserve">
+        <value>Disponibles</value>
+    </data>
+    <data name="Allow Entry When Full" xml:space="preserve">
+        <value>Permitir Entrada Cuando Lleno</value>
+    </data>
+    <data name="Can Recognize Plate" xml:space="preserve">
+        <value>Reconoce Placa</value>
+    </data>
+    <data name="Is Active" xml:space="preserve">
+        <value>Activo</value>
+    </data>
+    <data name="Remove" xml:space="preserve">
+        <value>Eliminar</value>
+    </data>
+    <data name="Space Group in the Zone" xml:space="preserve">
+        <value>Grupo de Cupos en la Zona</value>
+    </data>
+    <data name="Gate in the Zone" xml:space="preserve">
+        <value>Barreras en la Zona</value>
+    </data>
+    <data name="Gate Name" xml:space="preserve">
+        <value>Nombre de Barrera</value>
+    </data>
+    <data name="gate name is required!" xml:space="preserve">
+        <value>¡el nombre de barrera es obligatorio!</value>
+    </data>
+    <data name="Gate Types" xml:space="preserve">
+        <value>Tipo de Barrera</value>
+    </data>
+    <data name="gate type is required!" xml:space="preserve">
+        <value>¡el tipo de barrera es obligatorio!</value>
+    </data>
+    <data name="Lane No" xml:space="preserve">
+        <value>Carril No.</value>
+    </data>
+    <data name="LaneNo is required!" xml:space="preserve">
+        <value>¡el carril es obligatorio!</value>
+    </data>
+    <data name="Hourly Permit Types" xml:space="preserve">
+        <value>Permisos Horarios</value>
+    </data>
+    <data name="Monthly Permit Types" xml:space="preserve">
+        <value>Permisos Mensuales</value>
+    </data>
+    <data name="Is Upper" xml:space="preserve">
+        <value>Vehículos Altos</value>
+    </data>
+    <data name="Is Left hand" xml:space="preserve">
+        <value>Volante Izquierdo</value>
+    </data>
+    <data name="Add" xml:space="preserve">
+        <value>Agregar</value>
+    </data>
+    <data name="Id" xml:space="preserve">
+        <value>Id</value>
+    </data>
+</root>

@@ -7,90 +7,107 @@
         : null;
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet"/>
+    <link rel="icon" type="image/png" href="logo_poliedro.png?v=2" />
+    <link rel="shortcut icon" type="image/png" href="logo_poliedro.png?v=2" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Poliedro" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" rel="stylesheet"/>
     <link href="@Assets["css/app.css"]" rel="stylesheet"/>
     <HeadOutlet @rendermode="RenderModeForPage"/>
     <ImportMap />
     <meta name="xsrf-token" content="@(tokens?.RequestToken)" />
     <!-- Enhanced SEO Meta Tags -->
-    <meta name="description" content="Blazor Parking – Intelligent cloud-based parking management platform built on Blazor Server & .NET 9. Real-time occupancy, license plate recognition, dynamic pricing, subscriptions, EV charging integration, multi-tenant operations, and advanced analytics." />
-    <meta name="keywords" content="Blazor Parking, Smart Parking, Parking Management System, License Plate Recognition, LPR, Dynamic Pricing, EV Charging, Multi-tenant, Real-time Occupancy, Parking Analytics, Blazor Server, .NET 9" />
-    <meta name="author" content="Blazor Parking Team" />
+    <meta name="description" content="Poliedro Software – Plataforma inteligente de gestion de parqueaderos construida con Blazor Server & .NET 9. Ocupacion en tiempo real, reconocimiento de placas, tarifas dinamicas, suscripciones, multi-empresa y analitica avanzada." />
+    <meta name="keywords" content="Poliedro Software, Parqueadero Inteligente, Gestion de Parqueaderos, Reconocimiento de Placas, Tarifas Dinamicas, Multi-empresa, Ocupacion en Tiempo Real, Blazor Server, .NET 9" />
+    <meta name="author" content="Poliedro Software" />
     <meta name="robots" content="index, follow" />
-    <meta name="application-name" content="Blazor Parking" />
+    <meta name="application-name" content="Poliedro Software" />
     <meta name="generator" content="Blazor Server (.NET 10)" />
     <meta name="theme-color" content="#1976d2" />
     
     <!-- Open Graph Tags -->
-    <meta property="og:title" content="Blazor Parking – Smart Parking Management Platform" />
-    <meta property="og:description" content="Blazor Parking delivers intelligent, real-time parking operations: occupancy monitoring, LPR, subscriptions, dynamic tariffs, EV charging & analytics – powered by Blazor Server & .NET 9." />
+    <meta property="og:title" content="Poliedro Software – Gestion Inteligente de Parqueaderos" />
+    <meta property="og:description" content="Poliedro Software ofrece gestion inteligente de parqueaderos en tiempo real: ocupacion, LPR, suscripciones, tarifas dinamicas y analitica – impulsado por Blazor Server & .NET 9." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://blazorparking.blazorserver.com" />
-    <meta property="og:site_name" content="Blazor Parking" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:image" content="https://architecture.blazorserver.com/img/blazorstudio.png" />
-    <meta property="og:image:alt" content="Blazor Parking Smart Parking Dashboard" />
+    <meta property="og:url" content="https://poliedrosoftware.com" />
+    <meta property="og:site_name" content="Poliedro Software" />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:image" content="https://poliedrosoftware.com/img/logo.png" />
+    <meta property="og:image:alt" content="Poliedro Software – Panel de Parqueadero" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Blazor Parking – Smart Parking Management" />
-    <meta name="twitter:description" content="Real-time smart parking: occupancy, LPR, subscriptions, dynamic pricing, EV charging, analytics – Blazor Parking on Blazor Server." />
-    <meta name="twitter:image" content="https://architecture.blazorserver.com/img/blazorstudio.png" />
-    <meta name="twitter:image:alt" content="Blazor Parking Smart Parking Dashboard" />
+    <meta name="twitter:title" content="Poliedro Software – Gestion de Parqueaderos" />
+    <meta name="twitter:description" content="Gestion inteligente de parqueaderos: ocupacion en tiempo real, LPR, suscripciones, tarifas dinamicas, analitica – Poliedro Software." />
+    <meta name="twitter:image" content="https://poliedrosoftware.com/img/logo.png" />
+    <meta name="twitter:image:alt" content="Poliedro Software – Panel de Parqueadero" />
     
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
     {
         "@@context": "https://schema.org",
         "@@type": "WebApplication",
-        "name": "Blazor Parking",
-        "description": "Blazor Parking is an intelligent cloud-based parking management platform providing real-time occupancy, license plate recognition, dynamic pricing, subscriptions, EV charging integration, and advanced analytics.",
-        "url": "https://Blazorparking.app",
+        "name": "Poliedro Software",
+        "description": "Poliedro Software es una plataforma inteligente de gestion de parqueaderos con ocupacion en tiempo real, reconocimiento de placas, tarifas dinamicas, suscripciones, integracion multi-empresa y analitica avanzada.",
+        "url": "https://poliedrosoftware.com",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web Browser",
         "offers": {
             "@@type": "Offer",
             "price": "0",
-            "priceCurrency": "USD"
+            "priceCurrency": "COP"
         },
         "featureList": [
-            "Real-time Occupancy & Telemetry",
-            "License Plate Recognition (LPR)",
-            "Dynamic & Subscription Pricing",
-            "Multi-tenant Management",
-            "Role & Permission Based Access Control",
-            "EV Charging Integration",
-            "Advanced Reporting & Analytics",
-            "API & Event-driven Extensibility"
+            "Ocupacion en Tiempo Real",
+            "Reconocimiento de Placas (LPR)",
+            "Tarifas Dinamicas y Suscripciones",
+            "Gestion Multi-empresa",
+            "Control de Acceso por Roles y Permisos",
+            "Lavado de Vehiculos",
+            "Reportes y Analitica Avanzada",
+            "Tickets POS 80mm con Codigo de Barras"
         ]
     }
     </script>
     
-    <title>Blazor Parking – Smart Parking Management Platform</title>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-W1TQBGC3QH"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-W1TQBGC3QH');
-    </script>
+    <title>Poliedro Software – Gestion Inteligente de Parqueaderos</title>
 </head>
 
 <body>
+    <div id="reconnect-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;">
+        <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Sin conexion</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);" class="reconnect-status">Reconectando...</div>
+    </div>
+    <style>
+        @@keyframes spin { to { transform: rotate(360deg); } }
+    </style>
     <Routes @rendermode="RenderModeForPage"/>
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="js/ticket.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+            });
+        }
+    </script>
+    <script src="js/boot.js"></script>
 </body>
 
 </html>

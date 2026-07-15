@@ -1,0 +1,78 @@
+@page "/tables/parking-rates"
+@using CleanArchitecture.Blazor.Domain.Entities
+
+@inject IApplicationDbContextFactory DbFactory
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Tarifas de Parqueo</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h3" Style="font-weight:700;">Tarifas de Parqueo - Colombia</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Configure el valor por hora para cada tipo de vehiculo</MudText>
+
+    <MudCard Elevation="3">
+        <MudCardContent>
+            <MudTable Items="@_rates" Dense="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Tipo de Vehiculo</MudTh>
+                    <MudTh Style="text-align:right;">Valor por Hora</MudTh>
+                    <MudTh Style="text-align:right;">Valor Dia Completo</MudTh>
+                    <MudTh Style="text-align:right;">Valor Noche</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd><strong>@context.VehicleName</strong></MudTd>
+                    <MudTd>
+                        <MudNumericField T="decimal" @bind-Value="context.HourlyRate" Min="0" Style="min-width:80px;max-width:100%;" Dense="true"></MudNumericField>
+                    </MudTd>
+                    <MudTd>
+                        <MudNumericField T="decimal" @bind-Value="context.DayRate" Min="0" Style="min-width:80px;max-width:100%;" Dense="true"></MudNumericField>
+                    </MudTd>
+                    <MudTd>
+                        <MudNumericField T="decimal" @bind-Value="context.NightRate" Min="0" Style="min-width:80px;max-width:100%;" Dense="true"></MudNumericField>
+                    </MudTd>
+                    <MudTd>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => SaveRate(context))">Guardar</MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <MudAlert Severity="Severity.Info" Class="mt-4">
+        <strong>Precios sugeridos Colombia 2025:</strong> Carro $3.500/hora, Moto $2.000/hora, Dia completo ~$25.000, Noche ~$12.000
+    </MudAlert>
+</MudContainer>
+
+@code {
+    private List<RateRow> _rates = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var existing = await db.Charges.ToListAsync();
+
+        _rates = new List<RateRow>
+        {
+            new() { VehicleType = "Carro", HourlyRate = 3500, DayRate = 25000, NightRate = 12000 },
+            new() { VehicleType = "Moto", HourlyRate = 2000, DayRate = 15000, NightRate = 8000 },
+            new() { VehicleType = "Camioneta", HourlyRate = 4000, DayRate = 30000, NightRate = 15000 },
+            new() { VehicleType = "Taxi", HourlyRate = 3000, DayRate = 20000, NightRate = 10000 },
+        };
+    }
+
+    private async Task SaveRate(RateRow rate)
+    {
+        Snackbar.Add($"Tarifa {rate.VehicleName} actualizada: ${rate.HourlyRate:N0}/h, Dia: ${rate.DayRate:N0}, Noche: ${rate.NightRate:N0}", Severity.Success);
+    }
+
+    public class RateRow
+    {
+        public string VehicleType { get; set; } = "";
+        public string VehicleName => VehicleType;
+        public decimal HourlyRate { get; set; }
+        public decimal DayRate { get; set; }
+        public decimal NightRate { get; set; }
+    }
+}

@@ -1,4 +1,4 @@
-﻿@page "/pages/members"
+@page "/pages/members"
 
 @using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Carparks.Services
@@ -37,7 +37,7 @@
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
 					<MudStack Row Spacing="2" AlignItems="AlignItems.Center">
-						<MudEnumSelect Style="min-width:120px" TEnum="MemberListView" ValueChanged="OnListViewChanged" Value="_membersQuery.ListView" Dense="true" Label="@L["List View"]">
+						<MudEnumSelect Style="min-width:100px;flex:1 1 auto" TEnum="MemberListView" ValueChanged="OnListViewChanged" Value="_membersQuery.ListView" Dense="true" Label="@L["List View"]">
 						</MudEnumSelect>
 						<MudSelect T="CarparkDto" Label="@L["Filter by carpark"]" ValueChanged="OncarparkFilterChanged" Clearable>
 							@foreach (var carpark in CarparkService.DataSource)
@@ -125,43 +125,32 @@
 				}
 			</CellTemplate>
 		</TemplateColumn>
-		<PropertyColumn Property="x => x.Name" Title="@L[_memberDto.GetMemberDescription(x => x.Name)]">
-			<CellTemplate>
-				<div class="d-flex flex-column">
-					<MudText Typo="Typo.body1">@context.Item.Name</MudText>
-				</div>
-			</CellTemplate>
-		</PropertyColumn>
-		<PropertyColumn Property="x => x.LicensePlate" Title="@L[_memberDto.GetMemberDescription(x => x.LicensePlate)]" />
-		<PropertyColumn Property="x => x.CardId" Title="@L[_memberDto.GetMemberDescription(x => x.CardId)]" />
-		<PropertyColumn Property="x => x.StartDate" Title="@L[_memberDto.GetMemberDescription(x => x.StartDate)]" Format="d" />
-		<PropertyColumn Property="x => x.ExpiryDate" Title="@L[_memberDto.GetMemberDescription(x => x.ExpiryDate)]" Format="d" />
-		<PropertyColumn Property="x => x.SpaceType" Title="@L[_memberDto.GetMemberDescription(x => x.SpaceType)]">
-			<CellTemplate>
-				<MudChip T="string" Value="@context.Item.SpaceType?.GetDescription()" />
-			</CellTemplate>
-		</PropertyColumn>
-		<PropertyColumn Property="x => x.SpaceNo" Title="@L[_memberDto.GetMemberDescription(x => x.SpaceNo)]" />
-		<PropertyColumn Property="x => x.IsActive" Title="@L[_memberDto.GetMemberDescription(x => x.IsActive)]">
-			<CellTemplate>
-				@if (context.Item.IsActive)
-				{
-					<MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
-				}
-				else
-				{
-					<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" />
-				}
-			</CellTemplate>
-		</PropertyColumn>
-		<PropertyColumn Property="x => x.PhoneNumber" Title="@L[_memberDto.GetMemberDescription(x => x.PhoneNumber)]" />
-		<PropertyColumn Property="x => x.MobileNumber" Title="@L[_memberDto.GetMemberDescription(x => x.MobileNumber)]" />
-		<PropertyColumn Property="x => x.Email" Title="@L[_memberDto.GetMemberDescription(x => x.Email)]" />
-		<PropertyColumn Property="x => x.Address" Title="@L[_memberDto.GetMemberDescription(x => x.Address)]" />
-		<PropertyColumn Property="x => x.Notes" Title="@L[_memberDto.GetMemberDescription(x => x.Notes)]" />
+        <PropertyColumn Property="x => x.Name" Title="@L[_memberDto.GetMemberDescription(x => x.Name)]">
+            <CellTemplate>
+                <div class="d-flex flex-column">
+                    <MudText Typo="Typo.body1">@context.Item.Name</MudText>
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.LicensePlate" Title="@L[_memberDto.GetMemberDescription(x => x.LicensePlate)]" />
+        <PropertyColumn Property="x => x.PhoneNumber" Title="@L[_memberDto.GetMemberDescription(x => x.PhoneNumber)]" />
+        <PropertyColumn Property="x => x.StartDate" Title="@L[_memberDto.GetMemberDescription(x => x.StartDate)]" Format="d" />
+        <PropertyColumn Property="x => x.ExpiryDate" Title="@L[_memberDto.GetMemberDescription(x => x.ExpiryDate)]" Format="d" />
+        <PropertyColumn Property="x => x.IsActive" Title="@L[_memberDto.GetMemberDescription(x => x.IsActive)]">
+            <CellTemplate>
+                @if (context.Item.IsActive)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" />
+                }
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.Notes" Title="@L[_memberDto.GetMemberDescription(x => x.Notes)]" />
 
-
-	</Columns>
+    </Columns>
 	<NoRecordsContent>
 		<MudText>@AppStrings.NoRecords</MudText>
 	</NoRecordsContent>

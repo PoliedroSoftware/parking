@@ -1,47 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 
 namespace CleanArchitecture.Blazor.Domain.Enums;
 
 public enum VehicleTypes
 {
-    [DisplayEn("None")]
-    [DisplayTc("未知")]
+    [Description("Ninguno")]
     None = 0b_0000_0000,
 
-    [DisplayEn("PrivateCar")]   // Cars/Vans
-    [DisplayTc("私家車")]
-    PrivateCar = 1 << 0,        // 0b_0000_0001
+    [Description("Carro")]
+    PrivateCar = 1 << 0,
 
-    [DisplayEn("MotorCycle")]
-    [DisplayTc("電單車")]
-    MotorCycle = 1 << 1,        // 0b_0000_0010
+    [Description("Moto")]
+    MotorCycle = 1 << 1,
 
-    [DisplayEn("LightGoods")]
-    [DisplayTc("貨車")]
-    LightGoods = 1 << 2,        // 0b_0000_0100
+    [Description("Camioneta")]
+    LightGoods = 1 << 2,
 
-    [DisplayEn("HeavyGoods")]
-    [DisplayTc("大貨車")]
-    HeavyGoods = 1 << 3,        // 0b_0000_1000
+    [Description("Camion")]
+    HeavyGoods = 1 << 3,
 
-    [DisplayEn("Coaches")]
-    [DisplayTc("旅游巴士")]
-    Coaches = 1 << 4,           // 0b_0001_0000  Coaches/Buses
+    [Description("Bus")]
+    Coaches = 1 << 4,
 
-    [DisplayEn("Container")]
-    [DisplayTc("貨櫃車")]
-    Containers = 1 << 5,        // 0b_0010_0000
+    [Description("Taxi")]
+    Containers = 1 << 5,
 
-    [DisplayEn("LightBuses")]
-    [DisplayTc("小巴")]
-    LightBuses = 1 << 6,        // 0b_0100_0000
-
-    [DisplayEn("Non-Private")]
-    [DisplayTc("非私家車")]
-    NonPrivateCar = 1 << 7,     // 0b_1000_0000 Non-Private Car
+    [Description("Buseta")]
+    LightBuses = 1 << 6,
 }

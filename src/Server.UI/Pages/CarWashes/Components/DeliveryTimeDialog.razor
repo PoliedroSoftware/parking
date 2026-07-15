@@ -1,0 +1,34 @@
+@using CleanArchitecture.Blazor.Application.Features.CarWashes.DTOs
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">@_dto.LicensePlate - Cola #@_dto.QueueNumber</MudText>
+            <MudTimePicker Label="Hora de Entrega" @bind-Time="_time" AmPm="true" TimeFormat="hh:mm tt" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public CarWashDto CarWashDto { get; set; } = default!;
+    private CarWashDto _dto = default!;
+    private TimeSpan? _time;
+
+    protected override void OnInitialized()
+    {
+        _dto = CarWashDto;
+        _time = _dto.EstimatedDelivery?.TimeOfDay;
+    }
+
+    void Submit()
+    {
+        var deliveryTime = _time.HasValue ? DateTime.Today.Add(_time.Value) : (DateTime?)null;
+        MudDialog.Close(DialogResult.Ok(deliveryTime));
+    }
+    void Cancel() => MudDialog.Cancel();
+}

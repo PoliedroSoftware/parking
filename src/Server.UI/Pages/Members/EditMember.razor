@@ -118,7 +118,7 @@
 						<MudItem xs="12">
 					
 							<MudText Typo="Typo.subtitle2" Class="my-2">Retal Fee</MudText>
-							<MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="my-2">
+							<MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="my-2" Style="flex-wrap:wrap;">
 								<MudNumericField Label="@L["Amount"]" @bind-Value="_model.Amount" Min="0.00m"></MudNumericField>
 								<MudNumericField Label="@L["Deposit"]" Value="_model.Deposit" Min="0.00m" ReadOnly></MudNumericField>
 								<MudTextField Label="@L["Amount Note"]" @bind-Value="_model.AmountNote"></MudTextField>

@@ -28,6 +28,13 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<MemberRental> MemberRentals { get; set; }
     public DbSet<MemberVehicle> MemberVehicles { get; set; }
 
+    public DbSet<CarWash> CarWashes { get; set; }
+    public DbSet<CarWashAdditional> CarWashAdditionals { get; set; }
+    public DbSet<CarWashOperator> CarWashOperators { get; set; }
+    public DbSet<WashServicePrice> WashServicePrices { get; set; }
+    public DbSet<WashAdditional> WashAdditionals { get; set; }
+    public DbSet<Expense> Expenses { get; set; }
+
     public DbSet<Holiday> Holidays { get; set; }
     public DbSet<Tenant> Tenants { get; set; }
     public DbSet<TenantUser> TenantUsers { get; set; }

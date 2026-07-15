@@ -17,12 +17,9 @@
    
     
         <MudSpacer/>
-         
-        <LanguageSelector/>
-        
-
+        @* LanguageSelector hidden - Spanish only *@
     <MudDivider Class="mx-3 my-5" DividerType="DividerType.Middle" Vertical="true" FlexItem="true"></MudDivider>
-    <MudText Color="@Color.Primary" Typo="Typo.h5">
+    <MudText Color="@Color.Primary" Typo="Typo.h5" Style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
         @L[ApplicationSettings.Company]
     </MudText>
 </MudAppBar>

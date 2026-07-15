@@ -1,0 +1,246 @@
+@page "/pages/carwashes/create"
+@using CleanArchitecture.Blazor.Application.Features.CarWashes.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.CarWashes.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+
+@inherits MudComponentBase
+@inject IValidationService Validator
+@inject IStringLocalizer<CarWashes> L
+@inject IApplicationDbContextFactory DbFactory
+@attribute [Authorize(Policy = Permissions.CarWashes.Create)]
+
+<PageTitle>@Title</PageTitle>
+<Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems" AllowdGoBack="true"></Breadcrumbs>
+<MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
+    <MudCard Class="pa-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">@Title</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm Model="@_model" @ref="@_carWashForm" Validation="@(Validator.ValidateValue(_model))">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" md="4">
+                        <MudAutocomplete T="string" Label="Placa" @bind-Value="_model.LicensePlate" Required="true"
+                                         RequiredError="La placa es requerida" SearchFunc="SearchPlates"
+                                         OnBlur="OnPlateBlur" CoerceText="false" CoerceValue="false"
+                                         AdornmentIcon="@Icons.Material.Filled.Search" Adornment="Adornment.End">
+                        </MudAutocomplete>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudEnumSelect TEnum="Nullable<VehicleTypes>" Label="Tipo de Vehiculo"
+                                       Value="_model.VehicleType" Required="true"
+                                       ValueChanged="OnVehicleTypeChanged"></MudEnumSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudSelect T="WashServiceType" Label="Tipo de Lavado"
+                                   Value="_model.WashServiceType ?? WashServiceType.None" Required="true"
+                                   ValueChanged="OnWashServiceSelected">
+                            @foreach (var p in _availablePrices.Where(p => p.VehicleType == (_model.VehicleType ?? VehicleTypes.PrivateCar) && p.IsActive)
+                                                               .GroupBy(p => p.ServiceType).Select(g => g.First()))
+                            {
+                                <MudSelectItem Value="p.ServiceType">@p.ServiceType.GetDescription() - $ @p.BasePrice.ToString("N0")</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Adicionales</MudText>
+                        <MudPaper Class="pa-2" Style="max-height:180px;overflow-y:auto;" Elevation="0" Variant="Variant.Outlined">
+                            @foreach (var ad in _availableAdditionals)
+                            {
+                                <MudCheckBox T="bool" Label="@($"{ad.Name} (+ $ {ad.Price:N0})")"
+                                             Value="@(_selectedAdditionals.Contains(ad.Name))"
+                                             ValueChanged="@(v => ToggleAdditional(ad.Name, v))"
+                                             Color="Color.Primary" Dense="true" />
+                            }
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Operarios</MudText>
+                        <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="mb-2" Style="flex-wrap:wrap;">
+                            <MudAutocomplete T="string" Placeholder="Nombre operario" @bind-Value="_newOperatorName"
+                                             SearchFunc="SearchOperators" CoerceText="false" CoerceValue="false"
+                                             Style="flex:1;min-width:140px;"></MudAutocomplete>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                       OnClick="AddOperator" StartIcon="@Icons.Material.Filled.Add">Agregar</MudButton>
+                        </MudStack>
+                        @if (_operators.Any())
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">
+                                Comision dividida: $ @((_model.CommissionTotal / _operators.Count).ToString("N0")) c/u
+                            </MudText>
+                            <MudTable Items="@_operators" Dense="true" Elevation="0">
+                                <HeaderContent>
+                                    <MudTh>Operario</MudTh>
+                                    <MudTh Style="text-align:right;">Comision</MudTh>
+                                    <MudTh></MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.OperatorName</MudTd>
+                                    <MudTd Style="text-align:right;">$ @context.Commission.ToString("N0")</MudTd>
+                                    <MudTd>
+                                        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                       OnClick="@(() => { _operators.Remove(context); RecalculateTotal(); })"></MudIconButton>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudNumericField Label="Precio Base" @bind-Value="_basePrice" Min="0"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField Label="Adicionales" Value="_additionalsTotal" ReadOnly="true"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField Label="Recargo Fin Sem." @bind-Value="_model.WeekendSurcharge" Min="0"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="Comision Total" @bind-Value="_commissionText" Immediate="true" OnBlur="OnCommissionBlur"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTimePicker Label="Hora Entrega" @bind-Time="_estimatedDeliveryTime" AmPm="true"
+                                       TimeFormat="hh:mm tt" Clearable="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudNumericField Label="Precio Total" Value="@(_basePrice + _additionalsTotal + _model.WeekendSurcharge)" ReadOnly="true"
+                                         Style="font-weight:700;font-size:18px;"></MudNumericField>
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudCheckBox Label="Cobrar a Mensualidad" @bind-Value="_model.ChargeToMonthly" Color="Color.Primary"></MudCheckBox>
+                        @if (_model.ChargeToMonthly && _memberFound != null)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">@_memberFound.Name</MudChip>
+                        }
+                        else if (_model.ChargeToMonthly && _memberSearched)
+                        {
+                            <MudChip T="string" Color="Color.Error" Size="Size.Small">No encontrado</MudChip>
+                        }
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudEnumSelect TEnum="Nullable<CarWashStatus>" Label="Estado" @bind-Value="_model.Status"></MudEnumSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="Notas" @bind-Value="_model.Notes" Lines="2"></MudTextField>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="d-flex justify-end gap-2">
+            <MudLoadingButton Color="Color.Secondary" Variant="Variant.Filled" Loading="@_savingNew" OnClick="OnSaveAndNew">@AppStrings.SaveAndNew</MudLoadingButton>
+            <MudLoadingButton Color="Color.Primary" Variant="Variant.Filled" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    [CascadingParameter] private UserProfile? UserProfile { get; set; }
+    public string? Title { get; private set; }
+    MudForm _carWashForm = new();
+    private bool _saving;
+    private bool _savingNew;
+    private decimal _basePrice;
+    private decimal _additionalsTotal;
+    private string _newOperatorName = string.Empty;
+    private string _commissionText = "0";
+    private TimeSpan? _estimatedDeliveryTime;
+    private HashSet<string> _selectedAdditionals = new();
+    private List<CarWashOperatorDto> _operators = new();
+    private List<WashAdditional> _availableAdditionals = new();
+    private List<WashServicePrice> _availablePrices = new();
+    private MemberDto? _memberFound;
+    private bool _memberSearched;
+    private List<BreadcrumbItem>? _breadcrumbItems;
+    private AddEditCarWashCommand _model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Title = "Nuevo Lavado";
+        _breadcrumbItems = new List<BreadcrumbItem>
+        {
+            new(L["Home"], href: "/"), new("Lavado", href: "/pages/carwashes"),
+            new("Nuevo Lavado", href: null, disabled: true)
+        };
+
+        await using var db = await DbFactory.CreateAsync();
+        _availableAdditionals = await db.WashAdditionals.Where(a => a.IsActive).ToListAsync();
+        _availablePrices = await db.WashServicePrices.Where(p => p.IsActive).ToListAsync();
+
+        var today = DateTime.Today;
+        var maxQ = await db.CarWashes.Where(c => c.StartTime.HasValue && c.StartTime.Value.Year == today.Year && c.StartTime.Value.Month == today.Month && c.StartTime.Value.Day == today.Day).MaxAsync(c => (int?)c.QueueNumber) ?? 0;
+        _model.QueueNumber = maxQ + 1;
+    }
+
+    private async Task<IEnumerable<string>> SearchPlates(string search, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(search) || search.Length < 2) return Array.Empty<string>();
+        await using var db = await DbFactory.CreateAsync(ct);
+        var m = await db.Members.Where(x => x.LicensePlate != null && x.LicensePlate.Contains(search)).Select(x => x.LicensePlate).Distinct().Take(5).ToListAsync(ct);
+        var w = await db.CarWashes.Where(x => x.LicensePlate != null && x.LicensePlate.Contains(search)).Select(x => x.LicensePlate).Distinct().Take(5).ToListAsync(ct);
+        return m.Union(w).Distinct().Take(8);
+    }
+
+    private async Task<IEnumerable<string>> SearchOperators(string search, CancellationToken ct)
+    {
+        await using var db = await DbFactory.CreateAsync(ct);
+        if (string.IsNullOrWhiteSpace(search)) return await db.CarWashOperators.Select(o => o.OperatorName).Distinct().Take(10).ToListAsync(ct);
+        return await db.CarWashOperators.Where(o => o.OperatorName.Contains(search)).Select(o => o.OperatorName).Distinct().Take(10).ToListAsync(ct);
+    }
+
+    private async Task OnPlateBlur() { if (_model.ChargeToMonthly && !string.IsNullOrWhiteSpace(_model.LicensePlate)) await SearchMember(); }
+    private async Task SearchMember() { await using var db = await DbFactory.CreateAsync(); var m = await db.Members.Where(x => x.LicensePlate == _model.LicensePlate && x.IsActive).FirstOrDefaultAsync(); if (m != null) { _memberFound = new MemberDto { Id = m.Id, Name = m.Name, LicensePlate = m.LicensePlate }; _model.MemberId = m.Id; } else _memberFound = null; }
+    private void OnVehicleTypeChanged(VehicleTypes? v) { _model.VehicleType = v; RecalculateBasePrice(); StateHasChanged(); }
+    private void OnWashServiceSelected(WashServiceType t) { _model.WashServiceType = t; RecalculateBasePrice(); }
+    private void RecalculateBasePrice() { if (_model.VehicleType != null && _model.WashServiceType != null) { var m = _availablePrices.FirstOrDefault(p => p.ServiceType == _model.WashServiceType && p.VehicleType == _model.VehicleType); if (m != null) _basePrice = m.BasePrice; } RecalculateTotal(); }
+    private void ToggleAdditional(string n, bool a) { if (a) _selectedAdditionals.Add(n); else _selectedAdditionals.Remove(n); RecalculateTotal(); }
+    private void AddOperator() { if (string.IsNullOrWhiteSpace(_newOperatorName)) return; _operators.Add(new CarWashOperatorDto { OperatorName = _newOperatorName.Trim(), Commission = 0 }); _newOperatorName = string.Empty; OnCommissionBlur(); }
+    private void OnCommissionBlur() { if (decimal.TryParse(_commissionText, out var v)) { _model.CommissionTotal = v; DistributeCommission(); } RecalculateTotal(); }
+    private void DistributeCommission() { if (_operators.Any()) { var e = _model.CommissionTotal / _operators.Count; for (int i = 0; i < _operators.Count; i++) _operators[i].Commission = e; } }
+    private void RecalculateTotal() { _additionalsTotal = _availableAdditionals.Where(a => _selectedAdditionals.Contains(a.Name)).Sum(a => a.Price); _model.Price = _basePrice + _additionalsTotal + _model.WeekendSurcharge; }
+
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            await _carWashForm.Validate();
+            if (!_carWashForm.IsValid) return;
+            _model.EstimatedDelivery = _estimatedDeliveryTime.HasValue ? DateTime.Today.Add(_estimatedDeliveryTime.Value) : null;
+            _model.Additionals = _selectedAdditionals.Select(n => new CarWashAdditionalDto { AdditionalName = n, Price = _availableAdditionals.FirstOrDefault(a => a.Name == n)?.Price ?? 0 }).ToList();
+            _model.Operators = _operators;
+            var r = await Mediator.Send(_model);
+            r.Match(d => { Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info); Navigation.NavigateTo("/pages/carwashes"); }, e => Snackbar.Add(e, MudBlazor.Severity.Error));
+        }
+        finally { _saving = false; }
+    }
+
+    async Task OnSaveAndNew()
+    {
+        try
+        {
+            _savingNew = true;
+            await _carWashForm.Validate();
+            if (!_carWashForm.IsValid) return;
+            _model.EstimatedDelivery = _estimatedDeliveryTime.HasValue ? DateTime.Today.Add(_estimatedDeliveryTime.Value) : null;
+            _model.Additionals = _selectedAdditionals.Select(n => new CarWashAdditionalDto { AdditionalName = n, Price = _availableAdditionals.FirstOrDefault(a => a.Name == n)?.Price ?? 0 }).ToList();
+            _model.Operators = _operators;
+            var r = await Mediator.Send(_model);
+            await r.MatchAsync(async d =>
+            {
+                Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                await Task.Delay(300);
+                _model = new AddEditCarWashCommand(); _operators.Clear(); _selectedAdditionals.Clear(); _basePrice = 0; _additionalsTotal = 0;
+                _commissionText = "0"; _estimatedDeliveryTime = null; _memberFound = null; _memberSearched = false;
+                var today = DateTime.Today;
+                await using var db = await DbFactory.CreateAsync();
+                var maxQ = await db.CarWashes.Where(c => c.StartTime.HasValue && c.StartTime.Value.Year == today.Year && c.StartTime.Value.Month == today.Month && c.StartTime.Value.Day == today.Day).MaxAsync(c => (int?)c.QueueNumber) ?? 0;
+                _model.QueueNumber = maxQ + 1;
+            }, e => { Snackbar.Add(e, MudBlazor.Severity.Error); return Task.CompletedTask; });
+        }
+        finally { _savingNew = false; }
+    }
+}

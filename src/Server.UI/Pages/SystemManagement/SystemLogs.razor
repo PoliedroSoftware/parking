@@ -28,7 +28,7 @@
                 <MudIcon Icon="@Icons.Material.Filled.BarChart" Size="Size.Large" />
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
-                    <MudEnumSelect Style="min-width:120px" TEnum="SystemLogListView" ValueChanged="OnChangedListView" Value="_systemLogsQuery.ListView" Dense="true" Label="@L["List View"]">
+                    <MudEnumSelect Style="min-width:100px;flex:1 1 auto" TEnum="SystemLogListView" ValueChanged="OnChangedListView" Value="_systemLogsQuery.ListView" Dense="true" Label="@L["List View"]">
                     </MudEnumSelect>
                 </MudStack>
             </MudStack>
@@ -50,8 +50,8 @@
                     }
                 </MudToolBar>
                 <MudStack Row Spacing="1">
-                    <MudEnumSelect TEnum="LogLevel?" Placeholder="@L["Search by level"]" Value="@_systemLogsQuery.Level" Clearable="true" ValueChanged="OnChangedLevel" Style="min-width:120px" FullWidth="true"> </MudEnumSelect>
-                    <MudTextField T="string" Style="min-width:120px" ValueChanged="@(OnSearch)" Value="@_systemLogsQuery.Keyword" Placeholder="Search" Adornment="Adornment.End"
+                    <MudEnumSelect TEnum="LogLevel?" Placeholder="@L["Search by level"]" Value="@_systemLogsQuery.Level" Clearable="true" ValueChanged="OnChangedLevel" Style="min-width:100px;flex:1 1 auto" FullWidth="true"> </MudEnumSelect>
+                    <MudTextField T="string" Style="min-width:100px;flex:1 1 auto" ValueChanged="@(OnSearch)" Value="@_systemLogsQuery.Keyword" Placeholder="Search" Adornment="Adornment.End"
                     AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium">
                     </MudTextField>
                 </MudStack>

@@ -87,11 +87,18 @@ public static class DependencyInjection
             .AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
         if (configuration.GetValue<bool>(USE_IN_MEMORY_DATABASE_KEY))
+        {
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseInMemoryDatabase(IN_MEMORY_DATABASE_NAME);
                 options.EnableSensitiveDataLogging();
             });
+            services.AddDbContextFactory<ApplicationDbContext>(options =>
+            {
+                options.UseInMemoryDatabase(IN_MEMORY_DATABASE_NAME);
+                options.EnableSensitiveDataLogging();
+            }, ServiceLifetime.Scoped);
+        }
         else
             services.AddDbContextFactory<ApplicationDbContext>((p, m) =>
             {

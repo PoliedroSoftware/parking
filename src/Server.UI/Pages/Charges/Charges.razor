@@ -1,4 +1,4 @@
-﻿@page "/pages/charges"
+@page "/pages/charges"
 
 @using CleanArchitecture.Blazor.Application.Features.Charges.Caching
 @using CleanArchitecture.Blazor.Application.Features.Charges.DTOs
@@ -34,7 +34,7 @@
 				<MudIcon Icon="@Icons.Material.Filled.Window" Size="Size.Large" />
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
-					<MudEnumSelect Style="min-width:120px" TEnum="ChargeListView" ValueChanged="OnListViewChanged" Value="_chargesQuery.ListView" Dense="true" Label="@L["List View"]">
+					<MudEnumSelect Style="min-width:100px;flex:1 1 auto" TEnum="ChargeListView" ValueChanged="OnListViewChanged" Value="_chargesQuery.ListView" Dense="true" Label="@L["List View"]">
 					</MudEnumSelect>
 				</MudStack>
 			</MudStack>

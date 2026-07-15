@@ -6,89 +6,67 @@
 
 @inherits MudComponentBase
 @inject IValidationService Validator
-@inject IStringLocalizer<SpaceGroups> L
 @inject ICarparkService CarparkService
 @inject IZoneService ZoneService
 <MudDialog>
-	<DialogContent>
-		<MudForm Model="@_model" @ref="@_spacegroupForm" Validation="@(Validator.ValidateValue(_model))">
-			<MudGrid>
-				<MudItem xs="12">
-					<MudSelect T="CarparkDto" Label="@L["Select carpark"]" Value="_carpark" ValueChanged="OnCarparkChanged" ToStringFunc="@(x => $"{x?.Name.Code} - {x?.Name.Tc}")">
-
-						@foreach (var carpark in CarparkService.DataSource)
-						{
-							<MudSelectItem T="CarparkDto" Value="carpark">@($"{carpark.Name.Code} - {carpark.Name.Tc}") </MudSelectItem>
-						}
-					</MudSelect>
-				</MudItem>
-				<MudItem xs="12">
-					<MudSelect T="ZoneDto" Label="@L["Zone"]" @bind-Value="_model.Zone" ToStringFunc="@(x => $"{x?.Name.Code} - {x?.Name.Tc}")">
-
-						@foreach (var zone in ZoneService.DataSource.Where(x => x.CarparkId == _carpark?.Id))
-						{
-							<MudSelectItem T="ZoneDto" Value="zone">@($"{zone.Name.Code} - {zone.Name.Tc}") </MudSelectItem>
-						}
-					</MudSelect>
-				</MudItem>
-				<MudItem xs="12">
-					<MudTextField Label="@L[_model.GetMemberDescription(x => x.Name)]" @bind-Value="_model.Name" For="@(() => _model.Name)" Required="true" RequiredError="@L["name is required!"]"></MudTextField>
-				</MudItem>
-				<MudItem xs="12">
-					<MudNumericField Label="@L[_model.GetMemberDescription(x => x.Capacity)]" @bind-Value="_model.Capacity" For="@(() => _model.Capacity)" Min="0" Required="false" RequiredError="@L["capacity is required!"]"></MudNumericField>
-				</MudItem>
-
-				<MudItem xs="12">
-					<MudTextField Label="@L[_model.GetMemberDescription(x => x.Description)]" For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
-				</MudItem>
-
-			</MudGrid>
-		</MudForm>
-	</DialogContent>
-	<DialogActions>
-		<MudButton OnClick="Cancel">@AppStrings.Cancel</MudButton>
-
-		<MudLoadingButton Loading="@_saving" OnClick="OnSubmit" Color="Color.Primary" Variant="Variant.Filled">@AppStrings.Save</MudLoadingButton>
-	</DialogActions>
+    <DialogContent>
+        <MudForm Model="@_model">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudSelect T="CarparkDto" Label="Parqueadero" Value="_carpark" ValueChanged="OnCarparkChanged"
+                               ToStringFunc="@(x => x?.Name.Code ?? "")">
+                        @foreach (var c in CarparkService.DataSource)
+                        {
+                            <MudSelectItem T="CarparkDto" Value="c">@c.Name.Code</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="ZoneDto" Label="Zona" @bind-Value="_model.Zone" ToStringFunc="@(x => x?.Name.Code ?? "")">
+                        @foreach (var z in ZoneService.DataSource.Where(x => x.CarparkId == _carpark?.Id))
+                        {
+                            <MudSelectItem T="ZoneDto" Value="z">@z.Name.Code</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Nombre Grupo" @bind-Value="_model.Name" Required="true"></MudTextField>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudNumericField Label="Capacidad" @bind-Value="_model.Capacity" Min="0"></MudNumericField>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Descripcion" @bind-Value="_model.Description"></MudTextField>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudLoadingButton Loading="@_saving" OnClick="OnSubmit" Color="Color.Primary" Variant="Variant.Filled">Guardar</MudLoadingButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
-	MudForm _spacegroupForm = new();
-	private bool _saving = false;
-	private bool _savingnew = false;
-	[CascadingParameter]
-	IMudDialogInstance MudDialog { get; set; } = default!;
-	[Parameter]
-	public CarparkDto? _carpark { get; set; }
-	[EditorRequired][Parameter] public AddEditSpaceGroupCommand _model { get; set; } = null!;
-	void OnCarparkChanged(CarparkDto? carpark)
-	{
-		_carpark = carpark;
-		_model.Zone = null;
-	}
-	async Task OnSubmit()
-	{
-		try
-		{
-			_saving = true;
-			await _spacegroupForm.Validate().ConfigureAwait(false);
-			if (!_spacegroupForm.IsValid)
-				return;
-			var result = await Mediator.Send(_model);
-			result.Match(data =>
-			{
-				MudDialog.Close(DialogResult.Ok(true));
-				Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-			}, errors =>
-			{
-				Snackbar.Add(errors, MudBlazor.Severity.Error);
-			});
-		}
-		finally
-		{
-			_saving = false;
-		}
-	}
+    MudForm _spacegroupForm = new();
+    private bool _saving;
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CarparkDto? _carpark { get; set; }
+    [EditorRequired] [Parameter] public AddEditSpaceGroupCommand _model { get; set; } = null!;
 
-	void Cancel() => MudDialog.Cancel();
+    void OnCarparkChanged(CarparkDto? c) { _carpark = c; _model.Zone = null; }
+
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            var result = await Mediator.Send(_model);
+            result.Match(data => { MudDialog.Close(DialogResult.Ok(true)); Snackbar.Add("Grupo guardado", Severity.Success); },
+                          errors => Snackbar.Add(errors, Severity.Error));
+        }
+        finally { _saving = false; }
+    }
+
+    void Cancel() => MudDialog.Cancel();
 }

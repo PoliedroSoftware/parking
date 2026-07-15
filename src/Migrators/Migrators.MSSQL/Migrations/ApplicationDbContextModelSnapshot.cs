@@ -18,7 +18,7 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -72,6 +72,177 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("AuditTrails");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWash", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("ChargeToMonthly")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("CommissionTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EstimatedDelivery")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("LicensePlate")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("MemberId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("QueueNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenantId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("VehicleType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WashServiceType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WeekendSurcharge")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("ZoneId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ZoneId");
+
+                    b.ToTable("CarWashes");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWashAdditional", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdditionalName")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CarWashId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CarWashId");
+
+                    b.ToTable("CarWashAdditionals");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWashOperator", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CarWashId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Commission")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("OperatorName")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CarWashId");
+
+                    b.ToTable("CarWashOperators");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Carpark", b =>
@@ -234,6 +405,62 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Charges");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Expense", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenantId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Expenses");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Gate", b =>
@@ -810,6 +1037,96 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.ToTable("Vehicles");
                 });
 
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.WashAdditional", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WashAdditionals");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.WashServicePrice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ServiceType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VehicleType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WashServicePrices");
+                });
+
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Zone", b =>
                 {
                     b.Property<int>("Id")
@@ -1333,6 +1650,49 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWash", b =>
+                {
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId");
+
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId");
+
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Zone", "Zone")
+                        .WithMany()
+                        .HasForeignKey("ZoneId");
+
+                    b.Navigation("Member");
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("Zone");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWashAdditional", b =>
+                {
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.CarWash", "CarWash")
+                        .WithMany("Additionals")
+                        .HasForeignKey("CarWashId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CarWash");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWashOperator", b =>
+                {
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.CarWash", "CarWash")
+                        .WithMany("Operators")
+                        .HasForeignKey("CarWashId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CarWash");
+                });
+
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Carpark", b =>
                 {
                     b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Tenant", "Tenant")
@@ -1349,6 +1709,15 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Expense", b =>
+                {
+                    b.HasOne("CleanArchitecture.Blazor.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId");
 
                     b.Navigation("Tenant");
                 });
@@ -1556,6 +1925,13 @@ namespace CleanArchitecture.Blazor.Migrators.MSSQL.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.CarWash", b =>
+                {
+                    b.Navigation("Additionals");
+
+                    b.Navigation("Operators");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Blazor.Domain.Entities.Carpark", b =>

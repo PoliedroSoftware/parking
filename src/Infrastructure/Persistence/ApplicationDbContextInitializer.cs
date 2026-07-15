@@ -105,33 +105,36 @@ public class ApplicationDbContextInitializer
         var adminRoleName = Roles.Admin;
         var userRoleName = Roles.Basic;
 
-        if (await _roleManager.RoleExistsAsync(adminRoleName)) return;
-
-        _logger.LogInformation("Seeding roles...");
-        var administratorRole = new ApplicationRole(adminRoleName)
+        var adminRole = await _roleManager.FindByNameAsync(adminRoleName);
+        if (adminRole == null)
         {
-            Description = "Admin Group",
-            CreatedAt= DateTime.UtcNow,
-        };
-        var userRole = new ApplicationRole(userRoleName)
-        {
-            Description = "Basic Group",
-            CreatedAt = DateTime.UtcNow,
-        };
+            _logger.LogInformation("Seeding roles...");
+            adminRole = new ApplicationRole(adminRoleName)
+            {
+                Description = "Admin Group",
+                CreatedAt = DateTime.UtcNow,
+            };
+            await _roleManager.CreateAsync(adminRole);
 
-        await _roleManager.CreateAsync(administratorRole);
-        await _roleManager.CreateAsync(userRole);
+            var userRole = new ApplicationRole(userRoleName)
+            {
+                Description = "Basic Group",
+                CreatedAt = DateTime.UtcNow,
+            };
+            await _roleManager.CreateAsync(userRole);
+        }
 
         var permissions = GetAllPermissions();
+        var existingClaims = await _roleManager.GetClaimsAsync(adminRole);
+        var existingClaimValues = existingClaims.Where(c => c.Type == ApplicationClaimTypes.Permission).Select(c => c.Value).ToHashSet();
 
         foreach (var permission in permissions)
         {
-            var claim = new Claim(ApplicationClaimTypes.Permission, permission);
-            await _roleManager.AddClaimAsync(administratorRole, claim);
-
-            if (permission.StartsWith("Permissions.Products"))
+            if (!existingClaimValues.Contains(permission))
             {
-                await _roleManager.AddClaimAsync(userRole, claim);
+                var claim = new Claim(ApplicationClaimTypes.Permission, permission);
+                await _roleManager.AddClaimAsync(adminRole, claim);
+                _logger.LogInformation("Added new permission to admin role: {Permission}", permission);
             }
         }
     }
@@ -186,7 +189,7 @@ public class ApplicationDbContextInitializer
     private async Task SeedDataAsync()
     {
         var tenant = await _context.Tenants.FirstAsync();
-        // 1. 基础字典数据 (仅首次种子)
+        // 1. Datos basicos de diccionario (solo primera inicializacion)
         if (!await _context.PicklistSets.AnyAsync())
         {
             _logger.LogInformation("Seeding picklist sets...");
@@ -208,13 +211,13 @@ public class ApplicationDbContextInitializer
             await _context.SaveChangesAsync();
         }
 
-        // 2. 收費方案 (Charges)
+        // 2. Planes de tarifa (Charges)
         if (!await _context.Charges.AnyAsync())
         {
             _logger.LogInformation("Seeding charges (rate plans)...");
             var standardRate = new Charge
             {
-                Name = "Standard Hourly Rate",
+                Name = "Tarifa Horaria Estandar",
                 EffectiveDate = DateTime.UtcNow.Date.AddYears(1),
                 Description = "Standard hourly parking rate with peak / night preferences",
                 BeforeContent = new RateContent
@@ -287,7 +290,7 @@ public class ApplicationDbContextInitializer
 
             var evFriendlyRate = new Charge
             {
-                Name = "EV Friendly Rate",
+                Name = "Tarifa Electrica",
                 EffectiveDate = DateTime.UtcNow.Date.AddDays(90),
                 Description = "Discounted evening rate for EV vehicles",
                 BeforeContent = new RateContent
@@ -360,7 +363,7 @@ public class ApplicationDbContextInitializer
             await _context.SaveChangesAsync();
         }
 
-        // 3. 停車場 / 區域 / 車類 / 車位組 / 閘機
+        // 3. Parqueadero / Zonas / Vehiculos / Grupos de Espacio / Puertas
         if (!await _context.Carparks.AnyAsync())
         {
             _logger.LogInformation("Seeding carpark, zones, vehicles, space groups and gates...");
@@ -369,19 +372,19 @@ public class ApplicationDbContextInitializer
 
             var carpark = new Carpark
             {
-                Name = new MultiCodeName("CP", "Central Plaza Carpark", "中環廣場停車場"),
-                Address = new MultiName("1 Finance Street, Central", "中環金融街1號"),
-                CompanyName = new MultiName("Central Plaza Management Ltd", "中環廣場物業管理有限公司"),
-                ContactPerson = "Alex Chan",
-                PhoneNumber = "+852 2888 1234",
-                Email = "info@centralplaza.example",
-                Description = "A demonstration carpark with multi zones (main, basement, VIP)."
+                Name = new MultiCodeName("CP", "Parqueadero Principal", "Sede Principal"),
+                Address = new MultiName("Calle 72 #10-34, Bogota", "Calle 72 #10-34, Bogota"),
+                CompanyName = new MultiName("Parqueaderos Colombia SAS", "Parqueaderos Colombia SAS"),
+                ContactPerson = "Andres Martinez",
+                PhoneNumber = "+57 601 744 1234",
+                Email = "info@parqueaderocolombia.co",
+                Description = "Parqueadero de demostracion con multiples zonas (principal, sotano, VIP)."
             };
 
             // Zones
             var mainZone = new Zone
             {
-                Name = new MultiCodeName("MAIN", "Main Concourse", "主層出入口"),
+                Name = new MultiCodeName("MAIN", "Zona Principal", "Zona Principal"),
                 IsMain = true,
                 Description = "Primary entry / exit area.",
                 HourlySets = new HourlySets(),
@@ -392,7 +395,7 @@ public class ApplicationDbContextInitializer
             };
             var basementZone = new Zone
             {
-                Name = new MultiCodeName("B1", "Basement B1", "地庫一層"),
+                Name = new MultiCodeName("B1", "Sotano B1", "Sotano B1"),
                 HourlySets = new HourlySets(),
                 MonthlySets = new MonthlySets(),
                 IsMain = false,
@@ -400,7 +403,7 @@ public class ApplicationDbContextInitializer
             };
             var vipZone = new Zone
             {
-                Name = new MultiCodeName("VIP", "VIP Level 2", "貴賓二層"),
+                Name = new MultiCodeName("VIP", "VIP Nivel 2", "VIP Nivel 2"),
                 HourlySets = new HourlySets(),
                 MonthlySets = new MonthlySets(),
                 IsMain = false,
@@ -412,42 +415,42 @@ public class ApplicationDbContextInitializer
             // Vehicles (Hourly & Monthly types)
             mainZone.Vehicles =
             [
-                new Vehicle { Name = "Private Car Hourly", ServiceCategoryId = ServiceCategories.Hourly,  VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 180, AllowEntryWhenFull = true,  Charge = firstCharge, Zone = mainZone },
-                new Vehicle { Name = "Motorcycle Hourly",  ServiceCategoryId = ServiceCategories.Hourly,  VehicleTypeId = VehicleTypes.MotorCycle, Capacity = 40,  AllowEntryWhenFull = false, Charge = firstCharge, Zone = mainZone },
-                new Vehicle { Name = "Private Car Monthly",ServiceCategoryId = ServiceCategories.Monthly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 120, AllowEntryWhenFull = false, Zone = mainZone },
-                new Vehicle { Name = "EV Private Car Hourly", ServiceCategoryId = ServiceCategories.Hourly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 30, Charge = evRate, AllowEntryWhenFull = true, Zone = mainZone }
+                new Vehicle { Name = "Carro Por Hora", ServiceCategoryId = ServiceCategories.Hourly,  VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 180, AllowEntryWhenFull = true,  Charge = firstCharge, Zone = mainZone },
+                new Vehicle { Name = "Moto Por Hora",  ServiceCategoryId = ServiceCategories.Hourly,  VehicleTypeId = VehicleTypes.MotorCycle, Capacity = 40,  AllowEntryWhenFull = false, Charge = firstCharge, Zone = mainZone },
+                new Vehicle { Name = "Carro Mensual",ServiceCategoryId = ServiceCategories.Monthly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 120, AllowEntryWhenFull = false, Zone = mainZone },
+                new Vehicle { Name = "Carro Electrico Por Hora", ServiceCategoryId = ServiceCategories.Hourly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 30, Charge = evRate, AllowEntryWhenFull = true, Zone = mainZone }
             ];
             basementZone.Vehicles =
             [
-                new Vehicle { Name = "Basement Hourly", ServiceCategoryId = ServiceCategories.Hourly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 200, Charge = firstCharge, Zone = basementZone },
-                new Vehicle { Name = "Basement Monthly", ServiceCategoryId = ServiceCategories.Monthly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 150, Zone = basementZone }
+                new Vehicle { Name = "Sotano Por Hora", ServiceCategoryId = ServiceCategories.Hourly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 200, Charge = firstCharge, Zone = basementZone },
+                new Vehicle { Name = "Sotano Mensual", ServiceCategoryId = ServiceCategories.Monthly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 150, Zone = basementZone }
             ];
             vipZone.Vehicles =
             [
-                new Vehicle { Name = "VIP Monthly", ServiceCategoryId = ServiceCategories.Monthly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 40, Zone = vipZone }
+                new Vehicle { Name = "VIP Mensual", ServiceCategoryId = ServiceCategories.Monthly, VehicleTypeId = VehicleTypes.PrivateCar, Capacity = 40, Zone = vipZone }
             ];
 
             // Space Groups (Monthly Space Groupings)
             basementZone.SpaceGroups =
             [
-                new SpaceGroup { Name = "B1-East-Reserved", Capacity = 30, Description = "Reserved monthly spaces east wing." },
-                new SpaceGroup { Name = "B1-West-Floating", Capacity = 70, Description = "Floating monthly allocation west wing." }
+                new SpaceGroup { Name = "B1-Oriente-Fijo", Capacity = 30, Description = "Reserved monthly spaces east wing." },
+                new SpaceGroup { Name = "B1-Occidente-Flotante", Capacity = 70, Description = "Floating monthly allocation west wing." }
             ];
             vipZone.SpaceGroups =
             [
-                new SpaceGroup { Name = "VIP-Gold", Capacity = 20, Description = "Gold tier reserved spaces." },
-                new SpaceGroup { Name = "VIP-Platinum", Capacity = 10, Description = "Platinum exclusive spaces." }
+                new SpaceGroup { Name = "VIP-Oro", Capacity = 20, Description = "Gold tier reserved spaces." },
+                new SpaceGroup { Name = "VIP-Platino", Capacity = 10, Description = "Platinum exclusive spaces." }
             ];
 
             // Gates (Entry / Exit)
             mainZone.Gates =
             [
-                new Gate { Name = "Main Entry A", GateType = GateType.Entry, LaneNo = 1, Description = "Primary vehicle entry." },
-                new Gate { Name = "Main Exit A",  GateType = GateType.Exit,  LaneNo = 1, Description = "Primary vehicle exit." },
-                new Gate { Name = "Main Entry B", GateType = GateType.Entry, LaneNo = 2, Description = "Secondary entry lane." }
+                new Gate { Name = "Entrada Principal A", GateType = GateType.Entry, LaneNo = 1, Description = "Primary vehicle entry." },
+                new Gate { Name = "Salida Principal A",  GateType = GateType.Exit,  LaneNo = 1, Description = "Primary vehicle exit." },
+                new Gate { Name = "Entrada Principal B", GateType = GateType.Entry, LaneNo = 2, Description = "Secondary entry lane." }
             ];
-            basementZone.Gates = [ new Gate { Name = "B1 Ramp", GateType = GateType.EntryExit, LaneNo = 3, Description = "Ramp connecting to main." } ];
-            vipZone.Gates = [ new Gate { Name = "VIP Gate", GateType = GateType.EntryExit, LaneNo = 4, Description = "Restricted access gate." } ];
+            basementZone.Gates = [ new Gate { Name = "Rampa B1", GateType = GateType.EntryExit, LaneNo = 3, Description = "Ramp connecting to main." } ];
+            vipZone.Gates = [ new Gate { Name = "Puerta VIP", GateType = GateType.EntryExit, LaneNo = 4, Description = "Restricted access gate." } ];
             carpark.TenantId = tenant.Id;
             await _context.Carparks.AddAsync(carpark);
             await _context.SaveChangesAsync();
@@ -460,7 +463,7 @@ public class ApplicationDbContextInitializer
             var now = DateTime.UtcNow.Date;
             var oneYearLater = now.AddYears(1).AddDays(-1);
 
-            // 获取可用 SpaceGroup & 月租 Vehicle
+            // Obtener SpaceGroup y Vehiculos Mensuales disponibles
             var monthlyVehicles = await _context.Vehicles.Where(v => v.ServiceCategoryId == ServiceCategories.Monthly).ToListAsync();
             var firstGroup = await _context.SpaceGroups.OrderBy(x => x.Id).FirstOrDefaultAsync();
             var vipPlatinum = await _context.SpaceGroups.FirstOrDefaultAsync(x => x.Name == "VIP-Platinum");
@@ -475,11 +478,11 @@ public class ApplicationDbContextInitializer
                 SpaceGroupId = firstGroup?.Id,
                 SpaceType = SpaceTypes.Regular,
                 SpaceNo = "B1-E-021",
-                Name = "Jason Lee",
-                PhoneNumber = "+852 6111 1111",
-                MobileNumber = "+852 6111 1111",
-                Email = "jason.lee@example",
-                Address = "Flat A, 10/F, Central Plaza",
+                Name = "Carlos Perez",
+                PhoneNumber = "+57 311 111 1111",
+                MobileNumber = "+57 311 111 1111",
+                Email = "carlos.perez@email.co",
+                Address = "Carrera 7 #72-10, Apto 501, Bogota",
                 Notes = "Prefers east wing spot.",
                 MemberVehicles = monthlyVehicles.Take(1).Select(v => new MemberVehicle { VehicleId = v.Id }).ToList()
             };
@@ -493,11 +496,11 @@ public class ApplicationDbContextInitializer
                 SpaceGroupId = vipPlatinum?.Id,
                 SpaceType = SpaceTypes.Reserved,
                 SpaceNo = "VIP-P-05",
-                Name = "Emily Wong",
-                PhoneNumber = "+852 6222 2222",
-                MobileNumber = "+852 6222 2222",
-                Email = "emily.wong@example",
-                Address = "Flat B, 8/F, Central Plaza",
+                Name = "Maria Gomez",
+                PhoneNumber = "+57 322 222 2222",
+                MobileNumber = "+57 322 222 2222",
+                Email = "maria.gomez@email.co",
+                Address = "Calle 80 #8-45, Apto 302, Bogota",
                 Notes = "EV driver, VIP platinum.",
                 MemberVehicles = monthlyVehicles.Skip(1).Take(1).Select(v => new MemberVehicle { VehicleId = v.Id }).ToList()
             };
@@ -511,11 +514,11 @@ public class ApplicationDbContextInitializer
                 SpaceGroupId = firstGroup?.Id,
                 SpaceType = SpaceTypes.Floating,
                 SpaceNo = "",
-                Name = "Ricky Ho",
-                PhoneNumber = "+852 6333 3333",
-                MobileNumber = "+852 6333 3333",
-                Email = "ricky.ho@example",
-                Address = "Flat C, 12/F, Central Plaza",
+                Name = "Juan Rodriguez",
+                PhoneNumber = "+57 333 333 3333",
+                MobileNumber = "+57 333 333 3333",
+                Email = "juan.rodriguez@email.co",
+                Address = "Avenida Caracas #57-22, Bogota",
                 Notes = "Floating allocation.",
                 MemberVehicles = monthlyVehicles.Take(1).Select(v => new MemberVehicle { VehicleId = v.Id }).ToList()
             };
@@ -537,7 +540,7 @@ public class ApplicationDbContextInitializer
                     Deposit = 150m,
                     AmountDue = 2650m,
                     AmountPaid = 2650m,
-                    PaymentMethodId = PaymentMethods.Octopus,
+                    PaymentMethodId = PaymentMethods.Cash,
                     Notes = "Initial monthly payment."
                 },
                 new MemberRental
@@ -565,7 +568,7 @@ public class ApplicationDbContextInitializer
                     Deposit = 150m,
                     AmountDue = 2450m,
                     AmountPaid = 2450m,
-                    PaymentMethodId = PaymentMethods.Octopus,
+                    PaymentMethodId = PaymentMethods.Cash,
                     Notes = "Floating monthly fee."
                 }
             };
@@ -573,24 +576,67 @@ public class ApplicationDbContextInitializer
             await _context.SaveChangesAsync();
         }
 
-        // 5. Holidays (示例假期，如已存在不重复添加)
+        // 5. Dias Festivos (ejemplo, no duplicar si ya existen)
         if (!await _context.Holidays.AnyAsync())
         {
             _logger.LogInformation("Seeding holidays...");
             var year = DateTime.UtcNow.Year;
             var holidays = new List<Holiday>
             {
-                new Holiday { Date = new DateTime(year, 1, 1),  Name_En = "New Year's Day",               Name_Tc = "元旦" },
-                new Holiday { Date = new DateTime(year, 2, 1),  Name_En = "Lunar New Year (Day 1)",       Name_Tc = "農曆新年初一" },
-                new Holiday { Date = new DateTime(year, 2, 2),  Name_En = "Lunar New Year (Day 2)",       Name_Tc = "農曆新年初二" },
-                new Holiday { Date = new DateTime(year, 4, 5),  Name_En = "Ching Ming Festival",          Name_Tc = "清明節" },
-                new Holiday { Date = new DateTime(year, 5, 1),  Name_En = "Labour Day",                   Name_Tc = "勞動節" },
-                new Holiday { Date = new DateTime(year, 7, 1),  Name_En = "HKSAR Establishment Day",      Name_Tc = "香港特區成立紀念日" },
-                new Holiday { Date = new DateTime(year, 10, 1), Name_En = "National Day",                Name_Tc = "國慶節" },
-                new Holiday { Date = new DateTime(year, 12, 25),Name_En = "Christmas Day",               Name_Tc = "聖誕節" },
-                new Holiday { Date = new DateTime(year, 12, 26),Name_En = "Boxing Day",                  Name_Tc = "節禮日" },
+                new Holiday { Date = new DateTime(year, 1, 1),  Name_En = "New Year's Day",               Name_Tc = "Ano Nuevo" },
+                new Holiday { Date = new DateTime(year, 4, 17), Name_En = "Maundy Thursday",             Name_Tc = "Jueves Santo" },
+                new Holiday { Date = new DateTime(year, 4, 18), Name_En = "Good Friday",                 Name_Tc = "Viernes Santo" },
+                new Holiday { Date = new DateTime(year, 5, 1),  Name_En = "Labour Day",                   Name_Tc = "Dia del Trabajo" },
+                new Holiday { Date = new DateTime(year, 7, 20), Name_En = "Independence Day",             Name_Tc = "Dia de la Independencia" },
+                new Holiday { Date = new DateTime(year, 8, 7),  Name_En = "Battle of Boyaca",             Name_Tc = "Batalla de Boyaca" },
+                new Holiday { Date = new DateTime(year, 10, 13),Name_En = "Day of the Race",              Name_Tc = "Dia de la Raza" },
+                new Holiday { Date = new DateTime(year, 11, 3), Name_En = "All Saints' Day",              Name_Tc = "Todos los Santos" },
+                new Holiday { Date = new DateTime(year, 12, 25),Name_En = "Christmas Day",                Name_Tc = "Navidad" },
+                new Holiday { Date = new DateTime(year, 12, 31),Name_En = "New Year's Eve",               Name_Tc = "Fin de Ano" },
             };
             await _context.Holidays.AddRangeAsync(holidays);
+            await _context.SaveChangesAsync();
+        }
+
+        // 6. Wash Additionals (seed always if empty)
+        if (!await _context.WashAdditionals.AnyAsync())
+        {
+            _logger.LogInformation("Seeding wash additionals...");
+            var additionals = new List<WashAdditional>
+            {
+                new() { Name = "Lavado de Motor", Price = 15000, Description = "Lavado completo del motor con desengrasante" },
+                new() { Name = "Cera Liquida", Price = 10000, Description = "Aplicacion de cera liquida para brillo" },
+                new() { Name = "Aspirado Interior", Price = 8000, Description = "Aspirado completo de tapetes y sillas" },
+                new() { Name = "Desinfeccion Ozono", Price = 20000, Description = "Tratamiento con ozono para eliminar olores" },
+                new() { Name = "Lavado de Chasis", Price = 12000, Description = "Lavado a presion del chasis y bajos" },
+                new() { Name = "Polichado", Price = 25000, Description = "Polichado y abrillantado de pintura" },
+            };
+            await _context.WashAdditionals.AddRangeAsync(additionals);
+            await _context.SaveChangesAsync();
+        }
+
+        // 7. Wash Service Prices
+        if (!await _context.WashServicePrices.AnyAsync())
+        {
+            _logger.LogInformation("Seeding wash service prices...");
+            var prices = new List<WashServicePrice>
+            {
+                new() { Name = "Basico Carro", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.PrivateCar, BasePrice = 25000 },
+                new() { Name = "Basico Moto", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.MotorCycle, BasePrice = 12000 },
+                new() { Name = "Basico Camioneta", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.LightGoods, BasePrice = 30000 },
+                new() { Name = "Premium Carro", ServiceType = WashServiceType.Premium, VehicleType = VehicleTypes.PrivateCar, BasePrice = 45000 },
+                new() { Name = "Premium Moto", ServiceType = WashServiceType.Premium, VehicleType = VehicleTypes.MotorCycle, BasePrice = 20000 },
+                new() { Name = "Premium Camioneta", ServiceType = WashServiceType.Premium, VehicleType = VehicleTypes.LightGoods, BasePrice = 55000 },
+                new() { Name = "Full Detail Carro", ServiceType = WashServiceType.FullDetail, VehicleType = VehicleTypes.PrivateCar, BasePrice = 80000 },
+                new() { Name = "Full Detail Camioneta", ServiceType = WashServiceType.FullDetail, VehicleType = VehicleTypes.LightGoods, BasePrice = 95000 },
+                new() { Name = "Carroceria Carro", ServiceType = WashServiceType.BodyOnly, VehicleType = VehicleTypes.PrivateCar, BasePrice = 18000 },
+                new() { Name = "Tapiceria Carro", ServiceType = WashServiceType.Upholstery, VehicleType = VehicleTypes.PrivateCar, BasePrice = 35000 },
+                new() { Name = "Tapiceria Camioneta", ServiceType = WashServiceType.Upholstery, VehicleType = VehicleTypes.LightGoods, BasePrice = 45000 },
+                new() { Name = "Basico Taxi", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.Containers, BasePrice = 20000 },
+                new() { Name = "Basico Camion", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.HeavyGoods, BasePrice = 40000 },
+                new() { Name = "Basico Bus", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.Coaches, BasePrice = 50000 },
+            };
+            await _context.WashServicePrices.AddRangeAsync(prices);
             await _context.SaveChangesAsync();
         }
     }

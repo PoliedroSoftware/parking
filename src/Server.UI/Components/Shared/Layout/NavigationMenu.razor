@@ -3,6 +3,7 @@
 @inject IMenuService MenuService
 @inject LayoutService LayoutService
 @inject IStringLocalizer<NavigationMenu> L
+@implements IDisposable
 
 <MudDrawer Breakpoint="Breakpoint.Md"
            Class="side-menu"
@@ -123,6 +124,24 @@ else
     [EditorRequired] [Parameter] public string[] Roles { get; set; } = Array.Empty<string>();
     
     [Parameter] public EventCallback<MouseEventArgs> OnSettingClick { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (DrawerOpen)
+        {
+            await DrawerOpenChanged.InvokeAsync(false);
+        }
+    }
 
     private bool Expanded(MenuSectionItemModel menu)
     {

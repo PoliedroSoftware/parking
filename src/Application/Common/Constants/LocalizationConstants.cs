@@ -10,26 +10,11 @@ public static class LocalizationConstants
     /// Default language code. Set to English (en-US). 
     /// Change to "zh-CN" for Chinese or other codes from SupportedLanguages.
     /// </summary>
-    public const string DefaultLanguageCode = "en-US";
+    public const string DefaultLanguageCode = "es-CO";
 
     public static readonly LanguageCode[] SupportedLanguages =
     {
-        new()
-        {
-            Code = "en-US",
-            DisplayName = "English (United States)"
-        },
-        new()
-        {
-            Code = "zh-TW",
-            DisplayName = "中文（繁體，台灣）"
-        },
-        new()
-        {
-            Code = "zh-CN",
-            DisplayName = "中文（简体，中国）"
-        },
- 
+        new() { Code = "es-CO", DisplayName = "Espanol (Colombia)" },
     };
 }
 

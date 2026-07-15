@@ -22,6 +22,13 @@ public interface IApplicationDbContext : IAsyncDisposable
     DbSet<MemberRental> MemberRentals { get; set; }
     DbSet<MemberVehicle> MemberVehicles { get; set; }
 
+    DbSet<CarWash> CarWashes { get; set; }
+    DbSet<CarWashAdditional> CarWashAdditionals { get; set; }
+    DbSet<CarWashOperator> CarWashOperators { get; set; }
+    DbSet<WashServicePrice> WashServicePrices { get; set; }
+    DbSet<WashAdditional> WashAdditionals { get; set; }
+    DbSet<Expense> Expenses { get; set; }
+
     DbSet<Holiday> Holidays { get; set; }
 
     DbSet<SystemLog> SystemLogs { get; set; }

@@ -1,0 +1,474 @@
+@page "/pages/tickets"
+
+@using CleanArchitecture.Blazor.Server.UI.Services
+@using CleanArchitecture.Blazor.Domain.Enums
+@using System.Collections.Concurrent
+
+@inject IStringLocalizer<Tickets> L
+@inject TicketService TicketService
+@inject TicketPdfService TicketPdfService
+@inject ParkingSessionService ParkingService
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject BlazorDownloadFileService BlazorDownloadFileService
+@attribute [Authorize]
+
+<PageTitle>@Title</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+            <MudText Typo="Typo.h3" Style="font-weight:700;">@L["Parqueo"]</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Ingrese la placa para entrada o salida"]</MudText>
+        </div>
+        <MudChip T="string" Color="Color.Primary" Variant="Variant.Text" Style="font-size:16px;">
+            @L["Activos"]: @ParkingService.ActiveSessionCount
+        </MudChip>
+    </div>
+
+    @* PLATE INPUT *@
+    <MudPaper Elevation="3" Class="pa-6" Style="background: linear-gradient(135deg, #f5f0e8 0%, #e8e0d0 100%); max-width:700px; margin: 0 auto 16px auto; text-align:center;">
+        <MudText Typo="Typo.subtitle2" Class="mb-3" Color="Color.Secondary">@L["INGRESE EL NUMERO DE PLACA"]</MudText>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+            <MudTextField T="string" @bind-Value="_licensePlate" Immediate="true"
+                          Style="max-width:420px;width:100%;"
+                          Variant="Variant.Outlined"
+                          Placeholder="ABC-123"
+                          AutoFocus="true"
+                          Class="plate-input"
+                          OnKeyUp="OnPlateKeyUp" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                       OnClick="ProcessPlate" StartIcon="@Icons.Material.Filled.PlayArrow"
+                       Disabled="@(string.IsNullOrWhiteSpace(_licensePlate))"
+                       Style="min-width:200px;height:56px;font-size:18px;font-weight:700;">
+                @L["PROCESAR"]
+            </MudButton>
+        </div>
+    </MudPaper>
+
+    @* FEEDBACK *@
+    @if (_lastMessage != null)
+    {
+        <MudAlert Severity="@_lastSeverity" Variant="Variant.Filled" Class="mb-3" Style="max-width:700px;margin:0 auto 12px auto;font-size:18px;">
+            @_lastMessage
+        </MudAlert>
+    }
+
+    @* ACTIVE PARKING SESSIONS *@
+    @if (ParkingService.ActiveSessions.Any())
+    {
+        <MudCard Elevation="3" Class="mt-4">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Color="Color.Warning">
+                        <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Class="mr-2" />
+                        Parqueos Activos
+                    </MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <div class="mud-data-grid-responsive">
+                <MudTable Items="@_activeViewModels" Hover="true" Dense="true" FixedHeader="true" Height="280px">
+                    <HeaderContent>
+                        <MudTh>Placa</MudTh>
+                        <MudTh>Entrada</MudTh>
+                        <MudTh>Tiempo Transcurrido</MudTh>
+                        <MudTh Style="text-align:right;">A Pagar</MudTh>
+                        <MudTh Style="text-align:center;">Accion</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><strong style="font-size:16px;">@context.LicensePlate</strong></MudTd>
+                        <MudTd>@context.EntryTime.ToString("HH:mm")</MudTd>
+                        <MudTd>@FormatDuration(DateTime.Now - context.EntryTime)</MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;font-size:15px;">$ @context.EstimatedAmount.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:center;">
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                                       OnClick="@(() => CheckoutFromList(context))" StartIcon="@Icons.Material.Filled.Logout">
+                                DAR SALIDA
+                            </MudButton>
+                        </MudTd>
+                        <MudTd></MudTd>
+                    </RowTemplate>
+                </MudTable>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    }
+
+    @* MOVIMIENTOS DEL DIA *@
+    <MudCard Elevation="3" Class="mt-6">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Movimientos del Dia - @DateTime.Today.ToString("dd/MM/yyyy")</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           OnClick="RefreshMovements" StartIcon="@Icons.Material.Filled.Refresh">
+                    Actualizar
+                </MudButton>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_movements.Any())
+            {
+                <div class="mud-data-grid-responsive">
+                <MudTable Items="@_movements" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="350px">
+                    <HeaderContent>
+                        <MudTh>Entrada</MudTh>
+                        <MudTh>Salida</MudTh>
+                        <MudTh>Estado</MudTh>
+                        <MudTh>Placa</MudTh>
+                        <MudTh>Cliente</MudTh>
+                        <MudTh>Duracion</MudTh>
+                        <MudTh Style="text-align:right;">Valor</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Time.ToString("HH:mm")</MudTd>
+                        <MudTd>@(context.ExitTime?.ToString("HH:mm") ?? "--")</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context)">
+                                @GetStatusLabel(context)
+                            </MudChip>
+                        </MudTd>
+                        <MudTd><strong>@context.LicensePlate</strong></MudTd>
+                        <MudTd>@(string.IsNullOrEmpty(context.CustomerName) ? "Consumidor Final" : context.CustomerName)</MudTd>
+                        <MudTd>@context.FormattedDuration</MudTd>
+                        <MudTd Style="text-align:right;font-weight:600;">
+                            @if (context.Amount > 0)
+                            {
+                                <span>$ @context.Amount.ToString("N0")</span>
+                            }
+                            else
+                            {
+                                <span style="color:#999;">-</span>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.Status == "Activo")
+                            {
+                                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                                           OnClick="@(() => CheckoutByPlate(context.LicensePlate))" StartIcon="@Icons.Material.Filled.Logout">
+                                    SALIDA
+                                </MudButton>
+                            }
+                            else if (context.Amount > 0)
+                            {
+                                <MudStack Row Spacing="1">
+                                    <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                   Icon="@Icons.Material.Filled.Print"
+                                                   Color="Color.Info"
+                                                   OnClick="@(() => ReprintTicket(context))" />
+                                    <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                   Icon="@Icons.Material.Filled.PictureAsPdf"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => DownloadPdf(context))" />
+                                </MudStack>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTd colspan="6" Style="text-align:right;font-weight:700;">TOTAL DEL DIA</MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;font-size:16px;">$ @_movements.Sum(m => m.Amount).ToString("N0")</MudTd>
+                        <MudTd></MudTd>
+                    </FooterContent>
+                </MudTable>
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="text-align:center;padding:20px;">
+                    Sin movimientos registrados hoy
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+<style>
+    .plate-input input {
+        font-size: 34px !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+        letter-spacing: 5px !important;
+        text-transform: uppercase !important;
+        height: 70px !important;
+        font-family: 'Courier New', monospace !important;
+    }
+    .plate-input .mud-input-label {
+        font-size: 18px !important;
+    }
+</style>
+
+@code {
+    public string? Title { get; private set; }
+    private string _licensePlate = string.Empty;
+    private string? _lastMessage;
+    private Severity _lastSeverity = Severity.Info;
+    private List<MovementRecord> _movements = new();
+    private List<ActiveParkingViewModel> _activeViewModels = new();
+    private Timer? _refreshTimer;
+
+    protected override void OnInitialized()
+    {
+        Title = L["Parqueo"];
+        LoadTodayMovements();
+        RefreshActiveViewModels();
+        _refreshTimer = new Timer(async _ =>
+        {
+            RefreshActiveViewModels();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+
+    private void LoadTodayMovements()
+    {
+        _movements = MovementTracker.GetTodayMovements().ToList();
+    }
+
+    private void RefreshMovements()
+    {
+        LoadTodayMovements();
+        StateHasChanged();
+    }
+
+    private void RefreshActiveViewModels()
+    {
+        _activeViewModels = ParkingService.ActiveSessions.Select(s => new ActiveParkingViewModel
+        {
+            LicensePlate = s.LicensePlate,
+            EntryTime = s.EntryTime,
+            TicketNumber = s.TicketNumber,
+            EstimatedAmount = CalculateAmount(DateTime.Now - s.EntryTime)
+        }).OrderBy(s => s.EntryTime).ToList();
+    }
+
+    private int CalculateAmount(TimeSpan duration)
+    {
+        var hours = Math.Ceiling(duration.TotalHours);
+        return Math.Max(2000, (int)(hours * 3500));
+    }
+
+    private async Task OnPlateKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_licensePlate))
+        {
+            await ProcessPlate();
+        }
+    }
+
+    private async Task ProcessPlate()
+    {
+        var plate = _licensePlate.Trim().ToUpper();
+        if (string.IsNullOrEmpty(plate)) return;
+
+        if (ParkingService.IsParked(plate))
+        {
+            await DoCheckout(plate, "");
+        }
+        else
+        {
+            await DoEntry(plate);
+        }
+    }
+
+    private async Task DoEntry(string plate)
+    {
+        var entryTime = DateTime.Now;
+        var ticketNo = TicketService.GenerateTicketNumber();
+
+        ParkingService.RegisterEntry(new ParkingSession
+        {
+            LicensePlate = plate,
+            EntryTime = entryTime,
+            VehicleType = "Carro",
+            TicketNumber = ticketNo
+        });
+
+        MovementTracker.AddMovement(new MovementRecord
+        {
+            Time = entryTime,
+            Type = "Entrada",
+            LicensePlate = plate,
+            Status = "Activo",
+            Amount = 0
+        });
+
+        await JSRuntime.InvokeVoidAsync("openTicketWindow",
+            TicketService.GenerateTicketHtml(new TicketData
+            {
+                Type = TicketType.Entry,
+                LicensePlate = plate,
+                DateTime = entryTime,
+                TicketNumber = ticketNo,
+                OperatorName = "Operador"
+            }));
+
+        _lastMessage = $"ENTRADA: {plate} - {entryTime:HH:mm:ss}";
+        _lastSeverity = Severity.Info;
+        Snackbar.Add($"Entrada: {plate}", Severity.Success);
+
+        _licensePlate = string.Empty;
+        LoadTodayMovements();
+        RefreshActiveViewModels();
+        StateHasChanged();
+    }
+
+    private async Task DoCheckout(string plate, string customerName)
+    {
+        var session = ParkingService.GetSession(plate);
+        if (session == null) return;
+
+        var duration = DateTime.Now - session.EntryTime;
+        var amount = CalculateAmount(duration);
+        var customer = string.IsNullOrWhiteSpace(customerName) ? "Consumidor Final" : customerName.Trim();
+        var formattedDuration = FormatDuration(duration);
+
+        ParkingService.Checkout(plate);
+        MovementTracker.UpdateExit(plate, customer, amount, formattedDuration);
+
+        await JSRuntime.InvokeVoidAsync("openTicketWindow",
+            TicketService.GenerateTicketHtml(new TicketData
+            {
+                Type = TicketType.Exit,
+                LicensePlate = plate,
+                DateTime = DateTime.Now,
+                EntryTime = session.EntryTime,
+                TicketNumber = session.TicketNumber,
+                Amount = amount,
+                Duration = duration,
+                CustomerName = customer == "Consumidor Final" ? null : customer,
+                OperatorName = "Operador"
+            }));
+
+        _lastMessage = $"SALIDA: {plate} - {formattedDuration} - $ {amount:N0}";
+        _lastSeverity = Severity.Success;
+        Snackbar.Add($"Salida: {plate} - $ {amount:N0}", Severity.Success);
+
+        _licensePlate = string.Empty;
+        LoadTodayMovements();
+        RefreshActiveViewModels();
+        StateHasChanged();
+    }
+
+    private async Task CheckoutFromList(ActiveParkingViewModel vm)
+    {
+        if (ParkingService.IsParked(vm.LicensePlate))
+        {
+            await DoCheckout(vm.LicensePlate, "");
+        }
+    }
+
+    private async Task CheckoutByPlate(string plate)
+    {
+        if (ParkingService.IsParked(plate))
+        {
+            await DoCheckout(plate, "");
+        }
+    }
+
+    private async Task ReprintTicket(MovementRecord m)
+    {
+        var type = m.Type == "Lavado" ? TicketType.Wash
+                 : m.Type == "Mensualidad" ? TicketType.Monthly
+                 : TicketType.Exit;
+
+        var duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
+            ? ParseDuration(m.FormattedDuration)
+            : null;
+
+        await JSRuntime.InvokeVoidAsync("openTicketWindow",
+            TicketService.GenerateTicketHtml(new TicketData
+            {
+                Type = type,
+                LicensePlate = m.LicensePlate,
+                DateTime = m.ExitTime ?? m.Time,
+                EntryTime = m.Time,
+                TicketNumber = m.Id,
+                Amount = m.Amount,
+                Duration = duration,
+                CustomerName = m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
+                OperatorName = "Operador"
+            }));
+        Snackbar.Add("Ticket reimpreso", Severity.Info);
+    }
+
+    private async Task DownloadPdf(MovementRecord m)
+    {
+        var type = m.Type == "Lavado" ? TicketType.Wash
+                 : m.Type == "Mensualidad" ? TicketType.Monthly
+                 : TicketType.Exit;
+
+        var duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
+            ? ParseDuration(m.FormattedDuration) : null;
+
+        var pdf = TicketPdfService.GenerateTicketPdf(new TicketData
+        {
+            Type = type, LicensePlate = m.LicensePlate,
+            DateTime = m.ExitTime ?? m.Time, EntryTime = m.Time,
+            TicketNumber = m.Id, Amount = m.Amount, Duration = duration,
+            CustomerName = m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
+            OperatorName = "Operador"
+        });
+        await BlazorDownloadFileService.DownloadFileAsync($"Ticket_{m.LicensePlate}_{m.Id}.pdf", pdf, "application/pdf");
+        Snackbar.Add("PDF descargado", Severity.Success);
+    }
+
+    private static TimeSpan? ParseDuration(string formatted)
+    {
+        try
+        {
+            if (formatted.Contains('h'))
+            {
+                var parts = formatted.Split('h', 'm');
+                var hours = int.Parse(parts[0].Trim());
+                var mins = parts.Length > 1 && parts[1].Trim().Length > 0 ? int.Parse(parts[1].Trim()) : 0;
+                return new TimeSpan(hours, mins, 0);
+            }
+            if (formatted.EndsWith("min"))
+            {
+                var mins = int.Parse(formatted.Replace("min", "").Trim());
+                return new TimeSpan(0, mins, 0);
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private static string FormatDuration(TimeSpan? duration)
+    {
+        if (duration == null) return "--";
+        var d = duration.Value;
+        if (d.TotalHours >= 1)
+            return $"{(int)d.TotalHours}h {d.Minutes}m";
+        return $"{d.Minutes} min";
+    }
+
+    private Color GetStatusColor(MovementRecord m)
+    {
+        if (m.Type == "Lavado") return Color.Warning;
+        if (m.Type == "Mensualidad") return Color.Primary;
+        return m.Status == "Activo" ? Color.Info : Color.Success;
+    }
+
+    private string GetStatusLabel(MovementRecord m)
+    {
+        if (m.Type == "Lavado") return "LAVADO";
+        if (m.Type == "Mensualidad") return "MENSUAL";
+        return m.Status == "Activo" ? "ACTIVO" : "COMPLETADO";
+    }
+
+    public class ActiveParkingViewModel
+    {
+        public string LicensePlate { get; set; } = string.Empty;
+        public DateTime EntryTime { get; set; }
+        public string TicketNumber { get; set; } = string.Empty;
+        public int EstimatedAmount { get; set; }
+    }
+}

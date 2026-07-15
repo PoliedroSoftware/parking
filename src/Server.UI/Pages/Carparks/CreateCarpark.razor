@@ -1,142 +1,77 @@
 ﻿@page "/pages/carparks/create"
 @using CleanArchitecture.Blazor.Application.Features.Carparks.Commands.Create
-@using CleanArchitecture.Blazor.Application.Features.Charges.DTOs
-@using CleanArchitecture.Blazor.Application.Features.Gates.DTOs
-@using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs
-@using CleanArchitecture.Blazor.Application.Features.Zones.DTOs
-@using CleanArchitecture.Blazor.Server.UI.Pages.Carparks.Components
 
 @inherits MudComponentBase
 @inject IValidationService Validator
-@inject IStringLocalizer<Carparks> L
 @attribute [Authorize(Policy = Permissions.Carparks.Create)]
 
-<PageTitle>@Title</PageTitle>
+<PageTitle>Nuevo Parqueadero</PageTitle>
 <Breadcrumbs OnSaveButtonClick="OnSubmit" Saving="_saving" BreadcrumbItems="_breadcrumbItems" AllowdGoBack="true"></Breadcrumbs>
-<MudContainer Class="mt-3" MaxWidth="MaxWidth.Large">
-	<MudCard Class="pa-2">
-		<MudCardHeader>
-			<CardHeaderContent>
-				<MudText Typo="Typo.h6">@Title</MudText>
-			</CardHeaderContent>
-		</MudCardHeader>
-		<MudCardContent>
-			<MudForm Model="@_model" @ref="@_carparkForm" Validation="@(Validator.ValidateValue(_model))">
-				<MudGrid Spacing="2">
-					<MudItem xs="12" md="4">
-						<MudTextField Label="@L["Code"]" @bind-Value="_model.Name.Code" T="string" Required="true" RequiredError="@L["code is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="4">
-						<MudTextField Label="@L["Name"]" @bind-Value="_model.Name.Tc" T="string" Required="true" RequiredError="@L["tc is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="4">
-						<MudTextField Label="@L["En Name"]" @bind-Value="_model.Name.En" T="string" Required="true" RequiredError="@L["en is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L["Company Name"]" @bind-Value="_model.CompanyName.Tc" T="string" Required="true" RequiredError="@L["company name is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L["Company En Name"]" @bind-Value="_model.CompanyName.En" T="string" Required="true" RequiredError="@L["company name is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L["Address"]" @bind-Value="_model.Address.Tc" T="string" Required="true" RequiredError="@L["address name is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L["En Address"]" @bind-Value="_model.Address.En" T="string" Required="true" RequiredError="@L["address name is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="4">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.AppKey)]" @bind-Value="_model.AppKey" For="@(() => _model.AppKey)" Required="true" RequiredError="@L["app key is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="4">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.MachineCode)]" @bind-Value="_model.MachineCode" For="@(() => _model.MachineCode)" Required="false" RequiredError="@L["machine code is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="4">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.RegistrationCode)]" @bind-Value="_model.RegistrationCode" For="@(() => _model.RegistrationCode)" Required="false" RequiredError="@L["registration code is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.ContactPerson)]" @bind-Value="_model.ContactPerson" For="@(() => _model.ContactPerson)" Required="false" RequiredError="@L["contact person is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.PhoneNumber)]" @bind-Value="_model.PhoneNumber" For="@(() => _model.PhoneNumber)" Required="false" RequiredError="@L["phone number is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Fax)]" @bind-Value="_model.Fax" For="@(() => _model.Fax)" Required="false" RequiredError="@L["fax is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Email)]" @bind-Value="_model.Email" For="@(() => _model.Email)" Required="false" RequiredError="@L["email is required!"]"></MudTextField>
-					</MudItem>
-					<MudItem xs="12" md="6">
-						<MudTextField Label="@L[_model.GetMemberDescription(x => x.Description)]" For="@(() => _model.Description)" @bind-Value="_model.Description"></MudTextField>
-					</MudItem>
-					<MudItem xs="12">
-					<MudStack Row Spacing="2" AlignItems="AlignItems.Center">
-						<MudText Typo="Typo.subtitle2" Class="mt-2">@L["Zones"]</MudText>
-					</MudStack>
-					<CarparkZonesEditor Zones="@_model.Zones" ValidateParent="@ValidateParentForm" />
-					</MudItem>
-
-
-				</MudGrid>
-			</MudForm>
-		</MudCardContent>
-		<MudCardActions Class="d-flex justify-end gap-2">
-			<MudLoadingButton Color="Color.Primary" Variant="Variant.Filled" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
-		</MudCardActions>
-	</MudCard>
+<MudContainer Class="mt-3" MaxWidth="MaxWidth.Medium">
+    <MudCard Class="pa-2">
+        <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Nuevo Parqueadero</MudText></CardHeaderContent></MudCardHeader>
+        <MudCardContent>
+            <MudForm Model="@_model" @ref="@_form">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="Codigo" @bind-Value="_model.Name.Code" ReadOnly="true" Variant="Variant.Outlined"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="8">
+                        <MudTextField Label="Nombre" @bind-Value="_model.Name.Tc" Required="true" Variant="Variant.Outlined"
+                                      RequiredError="El nombre es obligatorio"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Direccion" @bind-Value="_model.Address.Tc" Variant="Variant.Outlined"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="Persona Contacto" @bind-Value="_model.ContactPerson" Variant="Variant.Outlined"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudTextField Label="Telefono" @bind-Value="_model.PhoneNumber" Variant="Variant.Outlined"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudNumericField Label="Cap. Carros" @bind-Value="_carCapacity" Min="0" Variant="Variant.Outlined"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudNumericField Label="Cap. Motos" @bind-Value="_motoCapacity" Min="0" Variant="Variant.Outlined"></MudNumericField>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="d-flex justify-end gap-2">
+            <MudLoadingButton Color="Color.Primary" Variant="Variant.Filled" Loading="@_saving" OnClick="OnSubmit">Guardar</MudLoadingButton>
+        </MudCardActions>
+    </MudCard>
 </MudContainer>
 
-
 @code {
-	public string? Title { get; private set; }
-	MudForm _carparkForm = new();
-	private bool _saving = false;
-	private List<BreadcrumbItem>? _breadcrumbItems;
-	private CreateCarparkCommand _model = new() { Zones = 
-		new List<ZoneDto>() { 
-			new ZoneDto() { Name = new MultiCodeName("Z-1", "", ""), IsMain = true, 
-			Vehicles = new List<VehicleDto>() { new VehicleDto() { Name = "Z-1-V-1" } }, 
-			Gates = new List<GateDto>() { new GateDto() { Name = "Z-1-G-1", IsActive = true } } }, 
-		} 
-	};
-	protected override Task OnInitializedAsync()
-	{
-		Title = L["New Carpark"];
-		_breadcrumbItems = new List<BreadcrumbItem>
-		{
-			new BreadcrumbItem(L["Home"], href: "/"),
-			new BreadcrumbItem(L["Carparks"], href: "/pages/carparks"),
-			new BreadcrumbItem(L["Create Carpark"], href:null, disabled:true)
-		};
-		return Task.CompletedTask;
-	}
-	private async Task<bool> ValidateParentForm()
-	{
-		await _carparkForm.Validate();
-		return _carparkForm.IsValid;
-	}
-	async Task OnSubmit()
-	{
-		try
-		{
-			_saving = true;
-			await _carparkForm.Validate().ConfigureAwait(false);
-			if (!_carparkForm.IsValid)
-				return;
-			var result = await Mediator.Send(_model);
-			result.Match(
-				data =>
-				{
-					Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-					Navigation.NavigateTo($"/pages/Carparks");
-				},
-				errors =>
-				{
-					Snackbar.Add(errors, MudBlazor.Severity.Error);
-				});
-		}
-		finally
-		{
-			_saving = false;
-		}
-	}
+    MudForm _form = new();
+    private bool _saving;
+    private int _carCapacity;
+    private int _motoCapacity;
+    private List<BreadcrumbItem>? _breadcrumbItems;
+    private CreateCarparkCommand _model = new() { Name = new("", "", ""), Address = new("", ""), CompanyName = new("", "") };
+
+    protected override Task OnInitializedAsync()
+    {
+        _model.Name.Code = $"PK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(100, 999)}";
+        _breadcrumbItems = new() { new("Inicio", "/"), new("Parqueaderos", "/pages/carparks"), new("Nuevo", null, true) };
+        return Task.CompletedTask;
+    }
+
+    async Task OnSubmit()
+    {
+        try
+        {
+            _saving = true;
+            _model.Name.En = _model.Name.Tc;
+            _model.Address.En = _model.Address.Tc;
+            _model.CompanyName = new(_model.Name.Tc, _model.Name.Tc);
+            _model.Description = $"Carros: {_carCapacity}, Motos: {_motoCapacity}";
+            var result = await Mediator.Send(_model);
+            result.Match(data => { Snackbar.Add("Parqueadero creado", Severity.Success); Navigation.NavigateTo("/pages/carparks"); },
+                          errors => Snackbar.Add(errors, Severity.Error));
+        }
+        finally { _saving = false; }
+    }
 }

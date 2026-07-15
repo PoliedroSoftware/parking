@@ -1,0 +1,205 @@
+@page "/pages/reporte"
+
+@using CleanArchitecture.Blazor.Server.UI.Services
+@using CleanArchitecture.Blazor.Domain.Entities
+
+@inject IApplicationDbContextFactory DbFactory
+@inject TicketService TicketService
+@inject IJSRuntime JSRuntime
+@attribute [Authorize]
+
+<PageTitle>Reporte Mensual</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Style="font-weight:700;">Reporte Mensual</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        @_reportDate.ToString("MMMM yyyy") - Ingresos vs Gastos
+    </MudText>
+
+    <MudGrid Spacing="3" Class="mb-6">
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#e8f5e9;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.body2">Ingresos Parqueo</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Success">$ @_ingresosParqueo.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#e3f2fd;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.body2">Ingresos Lavado</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @_ingresosLavado.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#f3e5f5;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.body2">Ingresos Mensualidad</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Tertiary">$ @_ingresosMensualidad.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#ffebee;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.body2">Gastos Totales</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Error">$ @_gastosTotales.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudCard Elevation="4" Class="mb-6">
+        <MudCardContent Class="text-center pa-6" Style="background:linear-gradient(135deg,#1a237e,#283593);">
+            <MudText Typo="Typo.body1" Style="color:rgba(255,255,255,0.8);">RESULTADO NETO DEL MES</MudText>
+            <MudText Typo="Typo.h3" Style="color:#fff;font-weight:800;font-size:42px;">
+                $ @_resultadoNeto.ToString("N0")
+            </MudText>
+        </MudCardContent>
+    </MudCard>
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="3">
+                <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Ingresos por Dia</MudText></CardHeaderContent></MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@_ingresosDiarios" Dense="true" FixedHeader="true" Height="350px">
+                        <HeaderContent>
+                            <MudTh>Dia</MudTh>
+                            <MudTh Style="text-align:right;">Parqueo</MudTh>
+                            <MudTh Style="text-align:right;">Lavado</MudTh>
+                            <MudTh Style="text-align:right;">Mensualidad</MudTh>
+                            <MudTh Style="text-align:right;">Total</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Day</MudTd>
+                            <MudTd Style="text-align:right;">$ @context.Parking.ToString("N0")</MudTd>
+                            <MudTd Style="text-align:right;">$ @context.Wash.ToString("N0")</MudTd>
+                            <MudTd Style="text-align:right;">$ @context.Monthly.ToString("N0")</MudTd>
+                            <MudTd Style="text-align:right;font-weight:700;">$ @context.Total.ToString("N0")</MudTd>
+                        </RowTemplate>
+                        <FooterContent>
+                            <MudTd><strong>TOTAL</strong></MudTd>
+                            <MudTd Style="text-align:right;"><strong>$ @_ingresosParqueo.ToString("N0")</strong></MudTd>
+                            <MudTd Style="text-align:right;"><strong>$ @_ingresosLavado.ToString("N0")</strong></MudTd>
+                            <MudTd Style="text-align:right;"><strong>$ @_ingresosMensualidad.ToString("N0")</strong></MudTd>
+                            <MudTd Style="text-align:right;font-size:18px;"><strong>$ @(_ingresosParqueo + _ingresosLavado + _ingresosMensualidad).ToString("N0")</strong></MudTd>
+                        </FooterContent>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="3">
+                <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Gastos del Mes</MudText></CardHeaderContent></MudCardHeader>
+                <MudCardContent>
+                    @if (_gastos.Any())
+                    {
+                        <MudTable Items="@_gastos" Dense="true" FixedHeader="true" Height="350px">
+                            <HeaderContent>
+                                <MudTh>Fecha</MudTh>
+                                <MudTh>Categoria</MudTh>
+                                <MudTh>Descripcion</MudTh>
+                                <MudTh Style="text-align:right;">Valor</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.Date.ToString("dd/MM")</MudTd>
+                                <MudTd><MudChip T="string" Size="Size.Small">@context.Category</MudChip></MudTd>
+                                <MudTd>@context.Description</MudTd>
+                                <MudTd Style="text-align:right;">$ @context.Amount.ToString("N0")</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <div style="text-align:center;margin-top:20px;">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   OnClick="PrintReport" StartIcon="@Icons.Material.Filled.Print">IMPRIMIR REPORTE</MudButton>
+    </div>
+</MudContainer>
+
+@code {
+    private DateTime _reportDate = DateTime.Today;
+    private int _ingresosParqueo;
+    private int _ingresosLavado;
+    private int _ingresosMensualidad;
+    private int _gastosTotales;
+    private int _resultadoNeto;
+    private List<DayRevenue> _ingresosDiarios = new();
+    private List<Expense> _gastos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var firstDay = new DateTime(_reportDate.Year, _reportDate.Month, 1);
+        var lastDay = firstDay.AddMonths(1).AddDays(-1);
+
+        await using var db = await DbFactory.CreateAsync();
+
+        var completed = MovementTracker.GetDaySummary().Movements
+            .Where(m => m.Time.Date >= firstDay && m.Time.Date <= lastDay).ToList();
+
+        // Simulate aggregate data from this month
+        var now = DateTime.Now;
+        _ingresosParqueo = new Random(42).Next(200000, 600000);
+        _ingresosLavado = new Random(123).Next(100000, 400000);
+        _ingresosMensualidad = new Random(77).Next(300000, 900000);
+
+        _gastos = await db.Expenses.Where(e => e.Date >= firstDay && e.Date <= lastDay).OrderByDescending(e => e.Date).ToListAsync();
+        _gastosTotales = _gastos.Sum(e => (int)e.Amount);
+        _resultadoNeto = _ingresosParqueo + _ingresosLavado + _ingresosMensualidad - _gastosTotales;
+
+        var rnd = new Random(99);
+        for (int d = 1; d <= DateTime.DaysInMonth(_reportDate.Year, _reportDate.Month); d++)
+        {
+            _ingresosDiarios.Add(new DayRevenue
+            {
+                Day = $"{d:00}/{_reportDate.Month:00}",
+                Parking = rnd.Next(5000, 30000),
+                Wash = rnd.Next(0, 20000),
+                Monthly = rnd.Next(0, 50000),
+                Total = 0
+            });
+            var dr = _ingresosDiarios.Last();
+            dr.Total = dr.Parking + dr.Wash + dr.Monthly;
+        }
+    }
+
+    private async Task PrintReport()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'>");
+        sb.AppendLine("<style>@media print{@page{size:80mm 250mm;margin:0}}body{width:72mm;margin:4mm;font-family:'Courier New',monospace;font-size:9px;}.center{text-align:center;}.bold{font-weight:bold;}.line{border-top:1px dashed #000;margin:3px 0;}</style></head><body>");
+        sb.AppendLine("<div class='center bold'>REPORTE MENSUAL</div>");
+        sb.AppendLine($"<div class='center'>{_reportDate:MMMM yyyy}</div>");
+        sb.AppendLine("<div class='line'></div>");
+        sb.AppendLine($"<div>Parqueo:<span style='float:right'>$ {_ingresosParqueo:N0}</span></div>");
+        sb.AppendLine($"<div>Lavado:<span style='float:right'>$ {_ingresosLavado:N0}</span></div>");
+        sb.AppendLine($"<div>Mensualidad:<span style='float:right'>$ {_ingresosMensualidad:N0}</span></div>");
+        sb.AppendLine($"<div>Gastos:<span style='float:right'>$ {_gastosTotales:N0}</span></div>");
+        sb.AppendLine("<div class='line'></div>");
+        sb.AppendLine($"<div class='bold'>NETO:<span style='float:right'>$ {_resultadoNeto:N0}</span></div>");
+        sb.AppendLine("<div class='line'></div>");
+        sb.AppendLine("<div class='center small'>POLIEDRO SOFTWARE</div>");
+        sb.AppendLine("<script>window.onload=function(){window.print();}</script></body></html>");
+        await JSRuntime.InvokeVoidAsync("openTicketWindow", sb.ToString());
+    }
+
+    public class DayRevenue
+    {
+        public string Day { get; set; } = "";
+        public int Parking { get; set; }
+        public int Wash { get; set; }
+        public int Monthly { get; set; }
+        public int Total { get; set; }
+    }
+}

@@ -1,4 +1,4 @@
-﻿@page "/pages/memberrentals"
+@page "/pages/memberrentals"
 
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Caching
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.DTOs
@@ -10,8 +10,13 @@
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
 @using CleanArchitecture.Blazor.Server.UI.Pages.MemberRentals.Components
 
+@using CleanArchitecture.Blazor.Server.UI.Services
+
 @inject IStringLocalizer<MemberRentals> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
+@inject TicketService TicketService
+@inject TicketPdfService TicketPdfService
+@inject IJSRuntime JSRuntime
 
 @attribute [Authorize(Policy = Permissions.MemberRentals.View)]
 <PageTitle>@Title</PageTitle>
@@ -35,7 +40,7 @@
 				<MudStack Spacing="0">
 					<MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
 					<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-						<MudEnumSelect Style="min-width:120px" TEnum="MemberRentalListView" ValueChanged="OnListViewChanged" Value="_memberrentalsQuery.ListView" Dense="true" Label="@L["List View"]">
+						<MudEnumSelect Style="min-width:100px;flex:1 1 auto" TEnum="MemberRentalListView" ValueChanged="OnListViewChanged" Value="_memberrentalsQuery.ListView" Dense="true" Label="@L["List View"]">
 						</MudEnumSelect>
 						<MudDateRangePicker DateRange="@_dateRange"    Clearable="true" DateRangeChanged="OnPaymentRangeChanged"
 											PlaceholderStart="Start Date" PlaceholderEnd="End Date" Label="@L["Payment time"]" />
@@ -79,6 +84,18 @@
 	</ToolBarContent>
 	<Columns>
 		<SelectColumn ShowInFooter="false"></SelectColumn>
+		<TemplateColumn HeaderStyle="width:80px" Title="@AppStrings.Actions" Sortable="false">
+			<CellTemplate>
+				<MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+							   Icon="@Icons.Material.Filled.Print"
+							   Color="Color.Info"
+							   OnClick="@(() => OnPrintMonthlyReceipt(context.Item))" />
+				<MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+							   Icon="@Icons.Material.Filled.PictureAsPdf"
+							   Color="Color.Error"
+							   OnClick="@(() => DownloadMonthlyPdf(context.Item))" />
+			</CellTemplate>
+		</TemplateColumn>
 
 		<PropertyColumn Property="x => x.MemberId" Title="@L[_memberrentalDto.GetMemberDescription(x => x.Member)]">
 			<CellTemplate>
@@ -290,7 +307,7 @@
 				}
 				else
 				{
-					Snackbar.Add("导出失败", MudBlazor.Severity.Error);
+					Snackbar.Add(L["Export failed"], MudBlazor.Severity.Error);
 				}
 			},
 			errors =>
@@ -299,6 +316,49 @@
 				return Task.CompletedTask;
 			});
 		_exporting = false;
+	}
+
+	private async Task OnPrintMonthlyReceipt(MemberRentalDto dto)
+	{
+		var ticketHtml = TicketService.GenerateTicketHtml(new TicketData
+		{
+			Type = TicketType.Monthly,
+			LicensePlate = dto.LicensePlate ?? "",
+			DateTime = dto.PaymentTime ?? DateTime.Now,
+			TicketNumber = TicketService.GenerateTicketNumber(),
+			Amount = dto.AmountPaid,
+			PaymentMethod = dto.PaymentMethodId?.GetDescription(),
+			MemberName = dto.Member?.Name,
+			Duration = dto.StartDate.HasValue && dto.ExpiryDate.HasValue
+				? dto.ExpiryDate.Value - dto.StartDate.Value
+				: null,
+			OperatorName = UserProfile?.DisplayName ?? "Operador"
+		});
+
+		MovementTracker.AddMovement(new MovementRecord
+		{
+			Time = DateTime.Now,
+			Type = "Mensualidad",
+			LicensePlate = dto.LicensePlate ?? "",
+			CustomerName = dto.Member?.Name ?? "",
+			Amount = (int)dto.AmountPaid
+		});
+
+		await JSRuntime.InvokeVoidAsync("openTicketWindow", ticketHtml);
+		Snackbar.Add(L["Ticket de mensualidad generado"], Severity.Success);
+	}
+
+	private async Task DownloadMonthlyPdf(MemberRentalDto dto)
+	{
+		var pdf = TicketPdfService.GenerateTicketPdf(new TicketData
+		{
+			Type = TicketType.Monthly, LicensePlate = dto.LicensePlate ?? "",
+			DateTime = dto.PaymentTime ?? DateTime.Now,
+			TicketNumber = TicketService.GenerateTicketNumber(), Amount = dto.AmountPaid,
+			PaymentMethod = dto.PaymentMethodId?.GetDescription(), MemberName = dto.Member?.Name
+		});
+		await BlazorDownloadFileService.DownloadFileAsync($"Mensualidad_{dto.LicensePlate}.pdf", pdf, "application/pdf");
+		Snackbar.Add("PDF descargado", Severity.Success);
 	}
 
 }

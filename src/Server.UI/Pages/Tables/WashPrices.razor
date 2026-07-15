@@ -1,0 +1,74 @@
+@page "/tables/wash-prices"
+@using CleanArchitecture.Blazor.Domain.Entities
+
+@inject IApplicationDbContextFactory DbFactory
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Tarifas de Lavado</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h3" Style="font-weight:700;">Tarifas de Lavado</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Precios por tipo de vehiculo</MudText>
+
+    <MudCard Elevation="3" Class="mb-4">
+        <MudCardContent>
+            @foreach (var group in _prices.GroupBy(p => p.ServiceType))
+            {
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mt-4 mb-2" Style="font-weight:700;">@group.Key.GetDescription()</MudText>
+                <MudTable Items="@group.ToList()" Dense="true" Hover="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Vehiculo</MudTh>
+                        <MudTh Style="text-align:right;">Precio</MudTh>
+                        <MudTh>Activo</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.VehicleType.GetDescription()</MudTd>
+                        <MudTd>
+                            <MudNumericField T="decimal" @bind-Value="context.BasePrice" Min="0" Style="min-width:80px;max-width:100%;" Dense="true"></MudNumericField>
+                        </MudTd>
+                        <MudTd>
+                            <MudCheckBox @bind-Value="context.IsActive" Dense="true"></MudCheckBox>
+                        </MudTd>
+                        <MudTd>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => SavePrice(context))">Guardar</MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <MudAlert Severity="Severity.Info" Class="mt-4">
+        <strong>Adicionales:</strong> Lavado de Motor $15.000 | Cera $10.000 | Aspirado $8.000 | Ozono $20.000 | Chasis $12.000 | Polichado $25.000
+    </MudAlert>
+</MudContainer>
+
+@code {
+    private List<WashServicePrice> _prices = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPrices();
+    }
+
+    private async Task LoadPrices()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        _prices = await db.WashServicePrices.OrderBy(p => p.ServiceType).ThenBy(p => p.VehicleType).ToListAsync();
+    }
+
+    private async Task SavePrice(WashServicePrice price)
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var existing = await db.WashServicePrices.FindAsync(price.Id);
+        if (existing != null)
+        {
+            existing.BasePrice = price.BasePrice;
+            existing.IsActive = price.IsActive;
+            await db.SaveChangesAsync(CancellationToken.None);
+            Snackbar.Add($"Tarifa actualizada: {existing.Name} - ${existing.BasePrice:N0}", Severity.Success);
+        }
+    }
+}

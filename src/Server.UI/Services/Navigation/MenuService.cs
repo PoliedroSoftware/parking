@@ -9,178 +9,88 @@ public class MenuService : IMenuService
     {
         new MenuSectionModel
         {
-            Title = "Application",
+            Title = "Principal",
             SectionItems = new List<MenuSectionItemModel>
             {
-                new() { Title = "Home", Icon = Icons.Material.Filled.Home, Href = "/" },
+                new() { Title = "Inicio", Icon = Icons.Material.Filled.Home, Href = "/" },
                 new()
                 {
-                    Title = "Park",
+                    Title = "Parqueadero",
                     Icon = Icons.Material.Filled.LocalParking,
                     PageStatus = PageStatus.Completed,
                     IsParent = true,
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
-                        new()
-                        {
-                            Title = "Carpark",
-                            Href = "/pages/carparks",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Zone",
-                            Href = "/pages/zones",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Vehicles",
-                            Href = "/pages/vehicles",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Gates",
-                            Href = "/pages/gates",
-                            PageStatus = PageStatus.Completed
-                        },
-                        
-                         
-                        
+                        new() { Title = "Parqueo", Href = "/pages/tickets", PageStatus = PageStatus.Completed },
+                        new() { Title = "Tarifas Parqueo", Href = "/tables/parking-rates", PageStatus = PageStatus.Completed },
                     }
                 },
                 new()
                 {
-                    Title = "Management",
-                    Icon = Icons.Material.Filled.Groups,
+                    Title = "Lavadero",
+                    Icon = Icons.Material.Filled.LocalCarWash,
                     PageStatus = PageStatus.Completed,
                     IsParent = true,
                     MenuItems = new List<MenuSectionSubItemModel>
-                    { new()
-                        {
-                            Title = "SpaceGroup",
-                            Href = "/pages/spacegroups",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Member",
-                            Href = "/pages/members",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Charges",
-                            Href = "/pages/Charges",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Holiday",
-                            Href = "/pages/Holidays",
-                            PageStatus = PageStatus.Completed
-                        },
+                    {
+                        new() { Title = "Lavados", Href = "/pages/carwashes", PageStatus = PageStatus.Completed },
+                        new() { Title = "Tarifas Lavado", Href = "/tables/wash-prices", PageStatus = PageStatus.Completed },
                     }
                 },
                 new()
                 {
-                    Title = "Reports",
-                    Icon = Icons.Material.Filled.InsertChartOutlined,
+                    Title = "Mensualidades",
+                    Icon = Icons.Material.Filled.CardMembership,
                     PageStatus = PageStatus.Completed,
                     IsParent = true,
                     MenuItems = new List<MenuSectionSubItemModel>
-                    { new()
-                        {
-                            Title = "Member Rentals Report",
-                            Href = "/pages/memberrentals",
-                            PageStatus = PageStatus.Completed
-                        },
-                         
+                    {
+                        new() { Title = "Mensualidades", Href = "/pages/members", PageStatus = PageStatus.Completed },
+                        new() { Title = "Pagos", Href = "/pages/memberrentals", PageStatus = PageStatus.Completed },
                     }
-                }
-
-
+                },
+                new()
+                {
+                    Title = "REPORTES",
+                    Icon = Icons.Material.Filled.Assessment,
+                    PageStatus = PageStatus.Completed,
+                    IsParent = true,
+                    MenuItems = new List<MenuSectionSubItemModel>
+                    {
+                        new() { Title = "Reporte Mensual", Href = "/pages/reporte", PageStatus = PageStatus.Completed },
+                        new() { Title = "Arqueo de Caja", Href = "/pages/arqueo", PageStatus = PageStatus.Completed },
+                        new() { Title = "Gastos", Href = "/pages/gastos", PageStatus = PageStatus.Completed },
+                    }
+                },
+                new()
+                {
+                    Title = "GASTOS",
+                    Icon = Icons.Material.Filled.MoneyOff,
+                    PageStatus = PageStatus.Completed,
+                    IsParent = true,
+                    MenuItems = new List<MenuSectionSubItemModel>
+                    {
+                        new() { Title = "Registrar Gasto", Href = "/pages/gastos", PageStatus = PageStatus.Completed },
+                    }
+                },
             }
         },
         new MenuSectionModel
         {
-            Title = "MANAGEMENT",
+            Title = "",
             Roles = new[] { Roles.Admin },
             SectionItems = new List<MenuSectionItemModel>
             {
                 new()
                 {
+                    Title = "Ajustes",
+                    Icon = Icons.Material.Filled.Settings,
                     IsParent = true,
-                    Title = "Authorization",
-                    Icon = Icons.Material.Filled.ManageAccounts,
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
-                        new()
-                        {
-                            Title = "Multi-Tenant",
-                            Href = "/system/tenants",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Users",
-                            Href = "/identity/users",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Roles",
-                            Href = "/identity/roles",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Profile",
-                            Href = "/user/profile",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Login History",
-                            Href = "/pages/identity/loginaudits",
-                            PageStatus = PageStatus.Completed
-                        },
-                    }
-                },
-                new()
-                {
-                    IsParent = true,
-                    Title = "System",
-                    Icon = Icons.Material.Filled.Devices,
-                    MenuItems = new List<MenuSectionSubItemModel>
-                    {
-                        
-                        new()
-                        {
-                            Title = "Picklist",
-                            Href = "/system/picklistset",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Audit Trails",
-                            Href = "/system/audittrails",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Logs",
-                            Href = "/system/logs",
-                            PageStatus = PageStatus.Completed
-                        },
-                        new()
-                        {
-                            Title = "Jobs",
-                            Href = "/jobs",
-                            PageStatus = PageStatus.Completed,
-                            Target = "_blank"
-                        }
+                        new() { Title = "Parqueaderos", Href = "/pages/carparks", PageStatus = PageStatus.Completed },
+                        new() { Title = "Usuarios", Href = "/identity/users", PageStatus = PageStatus.Completed },
+                        new() { Title = "Roles", Href = "/identity/roles", PageStatus = PageStatus.Completed },
                     }
                 }
             }

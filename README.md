@@ -1,6 +1,6 @@
 <div align="center">
 
-# Ace Parking — Blazor Server
+# Poliedro Parking — Blazor Server
 
 Clean Architecture, CQRS-driven parking management platform built with .NET 9 and Blazor Server.
 

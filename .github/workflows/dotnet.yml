@@ -26,6 +26,6 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore AceParking.Blazor.slnx
+      run: dotnet restore PoliedroParking.slnx
     - name: Build
-      run: dotnet build AceParking.Blazor.slnx --configuration Debug --no-restore
+      run: dotnet build PoliedroParking.slnx --configuration Debug --no-restore

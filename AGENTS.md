@@ -22,8 +22,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ## Build & Run
 
 ```
-dotnet restore AceParking.Blazor.slnx
-dotnet build AceParking.Blazor.slnx -c Debug
+dotnet restore PoliedroParking.slnx
+dotnet build PoliedroParking.slnx -c Debug
 dotnet run -p src/Server.UI
 ```
 

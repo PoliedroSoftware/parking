@@ -1,42 +1,34 @@
-﻿version: '3.8'
+﻿services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: poliedro-postgres
+    environment:
+      POSTGRES_DB: aceparking
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1091658551
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
 
-services:
-  aceparking:
-    image: ${DOCKER_REGISTRY-}blazorserver
+  parking:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: poliedro-parking
     environment:
-      - UseInMemoryDatabase=${USE_IN_MEMORY_DATABASE}
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-      - ASPNETCORE_URLS=${ASPNETCORE_URLS}
-      - ASPNETCORE_HTTP_PORTS=${ASPNETCORE_HTTP_PORTS}
-      - ASPNETCORE_HTTPS_PORTS=${ASPNETCORE_HTTPS_PORTS}
-      - AppConfigurationSettings__ApplicationUrl=${APP_URL}
-      - AppConfigurationSettings__AppName=${APP_NAME}
-      - AppConfigurationSettings__Company=${APP_COMPANY}
-      - DatabaseSettings__DBProvider=${DB_PROVIDER}
-      - DatabaseSettings__ConnectionString=${DB_CONNECTION_STRING}
-      - AI__GeminiApiKey=${GEMINI_API_KEY}
-      - SmtpClientOptions__UserName=${SMTP_USERNAME}
-      - SmtpClientOptions__Port=${SMTP_PORT}
-      - SmtpClientOptions__Host=${SMTP_HOST}
-      - SmtpClientOptions__Password=${SMTP_PASSWORD}
-      - SmtpClientOptions__DefaultFromEmail=${SMTP_DEFAULT_FROM}
-      - Authentication__Microsoft__ClientId=${MS_CLIENT_ID}
-      - Authentication__Microsoft__ClientSecret=${MS_CLIENT_SECRET}
-      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
-      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
-      - MaxMind__AccountId=${MAXMIND_ACCOUNT_ID}
-      - MaxMind__LicenseKey=${MAXMIND_LICENSE_KEY}
- 
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - DatabaseSettings__DBProvider=postgresql
+      - DatabaseSettings__ConnectionString=Host=postgres;Port=5432;Database=aceparking;Username=postgres;Password=1091658551;
+      - AppConfigurationSettings__AppName=PoliedroParking
+      - AppConfigurationSettings__Company=Poliedro
     ports:
-      - "5095:80"
-      - "5096:443"
-    restart: on-failure
-
-  
+      - 5095:80
+    depends_on:
+      - postgres
+    restart: unless-stopped
 
 volumes:
-  mssql_data:
-
+  pgdata:

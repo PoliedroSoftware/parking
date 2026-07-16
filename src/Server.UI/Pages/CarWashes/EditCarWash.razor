@@ -43,7 +43,7 @@
                             @foreach (var p in _availablePrices.Where(p => p.VehicleType == (_model.VehicleType ?? VehicleTypes.PrivateCar) && p.IsActive)
                                                                .GroupBy(p => p.ServiceType).Select(g => g.First()))
                             {
-                                <MudSelectItem Value="p.ServiceType">@p.ServiceType.GetDescription() - $ @p.BasePrice.ToString("N0")</MudSelectItem>
+                                <MudSelectItem Value="@p.ServiceType">@p.ServiceType.GetDescription() - $ @p.BasePrice.ToString("N0")</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>

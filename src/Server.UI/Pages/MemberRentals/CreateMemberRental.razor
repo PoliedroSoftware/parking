@@ -1,5 +1,6 @@
 ﻿@page "/pages/memberrentals/create"
-@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.Create
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.Members.DTOs
 
 @inherits MudComponentBase
 @inject IValidationService Validator
@@ -16,71 +17,76 @@
             </CardHeaderContent>
         </MudCardHeader>
         <MudCardContent>
-        <MudForm Model="@_model" @ref="@_memberrentalForm" Validation="@(Validator.ValidateValue(_model))">
-            <MudGrid Spacing="2">
-                <MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.MemberId)]" @bind-Value="_model.MemberId" For="@(() => _model.MemberId)" Min="0" Required="false" RequiredError="@L["member id is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.LicensePlate)]" @bind-Value="_model.LicensePlate" For="@(() => _model.LicensePlate)" Required="false" RequiredError="@L["license plate is required!"]"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.CardId)]" @bind-Value="_model.CardId" For="@(() => _model.CardId)" Required="false" RequiredError="@L["card id is required!"]"></MudTextField>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.StartDate)]" @bind-Date="_model.StartDate" For="@(() => _model.StartDate)" Required="false" RequiredError="@L["start date is required!"]"></MudDatePicker>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="false" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.RentalFee)]" @bind-Value="_model.RentalFee" For="@(() => _model.RentalFee)" Min="0.00m" Required="false" RequiredError="@L["rental fee is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.Deposit)]" @bind-Value="_model.Deposit" For="@(() => _model.Deposit)" Min="0.00m" Required="false" RequiredError="@L["deposit is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.AmountDue)]" @bind-Value="_model.AmountDue" For="@(() => _model.AmountDue)" Min="0.00m" Required="false" RequiredError="@L["amount due is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.AmountPaid)]" @bind-Value="_model.AmountPaid" For="@(() => _model.AmountPaid)" Min="0.00m" Required="false" RequiredError="@L["amount paid is required!"]"></MudNumericField >
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.PaymentTime)]" @bind-Date="_model.PaymentTime" For="@(() => _model.PaymentTime)" Required="false" RequiredError="@L["payment time is required!"]"></MudDatePicker>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudEnumSelect TEnum="Nullable<PaymentMethods>" Label="@L[_model.GetMemberDescription(x=>x.PaymentMethodId)]" @bind-Value="_model.PaymentMethodId" For="@(() => _model.PaymentMethodId)" Required="false" RequiredError="@L["payment method id is required!"]"></MudEnumSelect>
-                </MudItem> 
-<MudItem xs="12" md="6"> 
-                        <MudTextField Label="@L[_model.GetMemberDescription(x=>x.Notes)]" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Required="false" RequiredError="@L["notes is required!"]"></MudTextField>
-                </MudItem> 
-
-            </MudGrid>
-        </MudForm>
+            <MudForm Model="@_model" @ref="@_memberrentalForm" Validation="@(Validator.ValidateValue(_model))">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" md="6">
+                        <MemberAutocomplete T="MemberDto" Label="Miembro" Value="_model.Member" ValueChanged="OnMemberChanged" For="@(() => _model.Member)" Required="true" RequiredError="El miembro es requerido"></MemberAutocomplete>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Placa" @bind-Value="_model.LicensePlate" For="@(() => _model.LicensePlate)" ReadOnly></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Tarjeta ID" @bind-Value="_model.CardId" For="@(() => _model.CardId)" ReadOnly></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker ShowToolbar="false" Label="Fecha Inicio" @bind-Date="_model.StartDate" For="@(() => _model.StartDate)" Required="true" RequiredError="La fecha de inicio es requerida"></MudDatePicker>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker ShowToolbar="false" Label="Fecha Vencimiento" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="true" RequiredError="La fecha de vencimiento es requerida"></MudDatePicker>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Cuota Mensual" @bind-Value="_model.RentalFee" For="@(() => _model.RentalFee)" Min="0.00m" Required="true" RequiredError="La cuota es requerida"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Deposito" @bind-Value="_model.Deposit" For="@(() => _model.Deposit)" Min="0.00m"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Saldo Pendiente" @bind-Value="_model.AmountDue" For="@(() => _model.AmountDue)" Min="0.00m"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField Label="Monto Pagado" @bind-Value="_model.AmountPaid" For="@(() => _model.AmountPaid)" Min="0.00m"></MudNumericField>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudDatePicker ShowToolbar="false" Label="Fecha de Pago" @bind-Date="_model.PaymentTime" For="@(() => _model.PaymentTime)"></MudDatePicker>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudEnumSelect TEnum="Nullable<PaymentMethods>" Label="Metodo de Pago" @bind-Value="_model.PaymentMethodId" For="@(() => _model.PaymentMethodId)"></MudEnumSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Notas" @bind-Value="_model.Notes" For="@(() => _model.Notes)" Lines="2"></MudTextField>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
         </MudCardContent>
          <MudCardActions Class="d-flex justify-end gap-2">
                     <MudLoadingButton Color="Color.Primary" DropShadow="false" Loading="@_saving" OnClick="OnSubmit">@AppStrings.Save</MudLoadingButton>
          </MudCardActions>
-        </MudCard>
+    </MudCard>
 </MudContainer>
- 
+
 
 @code {
     public string? Title { get; private set; }
     MudForm _memberrentalForm = new();
     private bool _saving = false;
     private List<BreadcrumbItem>? _breadcrumbItems;
-    private CreateMemberRentalCommand _model = new();
+    private AddEditMemberRentalCommand _model = new();
     protected override Task OnInitializedAsync()
     {
-        Title = L["New MemberRental"];
+        Title = "Nueva Mensualidad";
         _breadcrumbItems = new List<BreadcrumbItem>
         {
-            new BreadcrumbItem(L["Home"], href: "/"),
-            new BreadcrumbItem(L["MemberRentals"], href: "/pages/memberrentals"),
-            new BreadcrumbItem(L["Create MemberRental"], href:null, disabled:true)
+            new BreadcrumbItem("Inicio", href: "/"),
+            new BreadcrumbItem("Mensualidades", href: "/pages/memberrentals"),
+            new BreadcrumbItem("Nueva Mensualidad", href:null, disabled:true)
         };
         return Task.CompletedTask;
+    }
+    void OnMemberChanged(MemberDto? member)
+    {
+        _model.Member = member;
+        _model.CardId = member?.CardId;
+        _model.LicensePlate = member?.LicensePlate;
     }
     async Task OnSubmit()
     {
@@ -95,7 +101,7 @@
                 data=>
                 {
                     Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-                    Navigation.NavigateTo($"/pages/MemberRentals");
+                    Navigation.NavigateTo("/pages/memberrentals");
                 },
                 errors=>
                 {

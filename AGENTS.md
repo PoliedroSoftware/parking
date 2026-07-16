@@ -46,6 +46,8 @@ Infrastructure → Application → Domain
 - **NEVER** inject `IApplicationDbContext` or `ApplicationDbContext` directly in UI or Application layers. Use `IApplicationDbContextFactory.CreateAsync(cancellationToken)` to get a scoped context.
 - **NEVER** inject `IConfiguration` in UI components.
 - **The only place UI can reference Infrastructure is `Program.cs`** (for DI registration).
+- DI registration uses three extension methods (must all be called): `AddApplication()` → `AddInfrastructure(config)` → `AddServerUI(config)`.
+- `RegisterSerilog()` must be called before the DI setup in `Program.cs`.
 - All service interfaces live in `Application/Common/Interfaces/`; implementations in `Infrastructure/Services/`.
 
 For detailed conventions (CQRS templates, naming, anti-patterns), see `.cursorrules` — the authoritative architecture guide for this repo.
@@ -74,8 +76,8 @@ When using in-memory DB (`UseInMemoryDatabase=true`), the DI setup uses `AddDbCo
 - Permission constants defined as nested classes: `Application/Common/Security/Permissions.cs` → `Permissions.Products.View`, etc.
 - **Policies are auto-generated** at startup by reflecting over `Permissions` nested types (in `Infrastructure/DependencyInjection.cs`).
 - Blazor pages use `@attribute [Authorize(Policy = Permissions.Products.View)]`.
-- In-component checks: `_accessRights = await PermissionService.GetAccessRightsAsync<ProductsAccessRights>()` then `if (_accessRights.Create) { ... }`.
-- When adding a new feature, you must: (1) add permission constants, (2) create an `AccessRights` class.
+- In-component checks: `_accessRights = await PermissionService.GetAccessRightsAsync<CarparksAccessRights>()` then `if (_accessRights.Create) { ... }`.
+- When adding a new feature, you must: (1) add permission constants as a `partial class Permissions` in `Application/Features/<Feature>/Security/`, (2) create an `AccessRights` class in the same file.
 
 ## Localization
 
@@ -88,7 +90,7 @@ When using in-memory DB (`UseInMemoryDatabase=true`), the DI setup uses `AddDbCo
 - **Hangfire**: in-memory storage by default, dashboard at `/jobs` (authorization-filtered).
 - **FusionCache**: 120 min default duration, fail-safe enabled (20 min), anti-stampede with jitter. Cache invalidation happens automatically via `CacheInvalidationBehaviour` pipeline.
 - **Data Protection**: keys persisted to EF Core DB (via `PersistKeysToDbContext<ApplicationDbContext>`).
-- **SignalR**: hub mapped at `ISignalRHub.Url` (`/serverHub`). Hub filter `UserContextHubFilter` enriches user context.
+- **SignalR**: hub mapped at `ISignalRHub.Url` (`/signalRHub`). Hub filter `UserContextHubFilter` enriches user context.
 - **Cookies**: `SameSiteMode.Strict`, `SecurePolicy.Always`, 15-day sliding expiration, `MemoryCacheTicketStore`.
 - **Identity**: custom `AuditSignInManager` replaces default `SignInManager`. OAuth providers: Microsoft, Google (Facebook commented out).
 - **QuestPDF**: Community license configured in `ConfigureServer()`.
@@ -111,4 +113,5 @@ dotnet ef migrations add <Name> -s src/Server.UI -p src/Migrators/Migrators.MSSQ
 
 - `sample.env` lists all env vars. Key ones: `DB_PROVIDER` (mssql/postgresql/sqlite), `DB_CONNECTION_STRING`, `USE_IN_MEMORY_DATABASE`.
 - Development uses `appsettings.json` in `src/Server.UI/`; Docker uses env vars injected via `docker-compose.yml`.
+- **Config naming differs**: `appsettings.json` uses nested keys like `DatabaseSettings:DBProvider`, `AppConfigurationSettings:AppName`; env vars use flat names like `DB_PROVIDER`, `AppConfigurationSettings__AppName` (double underscore separator).
 - If `UseInMemoryDatabase=true`, everything runs in-memory (no DB required).

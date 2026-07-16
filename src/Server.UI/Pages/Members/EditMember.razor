@@ -250,9 +250,10 @@
 			var result = await Mediator.Send(_model);
 			result.Match(
 				data =>
-				{
-					Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
-				},
+                {
+                    Snackbar.Add(AppStrings.SaveSuccess, MudBlazor.Severity.Info);
+                    Navigation.NavigateTo("/pages/members");
+                },
 				errors =>
 				{
 					Snackbar.Add(errors, MudBlazor.Severity.Error);

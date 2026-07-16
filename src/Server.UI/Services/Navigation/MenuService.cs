@@ -58,6 +58,7 @@ public class MenuService : IMenuService
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
                         new() { Title = "Reporte Mensual", Href = "/pages/reporte", PageStatus = PageStatus.Completed },
+                        new() { Title = "Utilidad Anual", Href = "/pages/utilidad", PageStatus = PageStatus.Completed },
                         new() { Title = "Arqueo de Caja", Href = "/pages/arqueo", PageStatus = PageStatus.Completed },
                         new() { Title = "Gastos", Href = "/pages/gastos", PageStatus = PageStatus.Completed },
                     }
@@ -89,6 +90,7 @@ public class MenuService : IMenuService
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
                         new() { Title = "Parqueaderos", Href = "/pages/carparks", PageStatus = PageStatus.Completed },
+                        new() { Title = "Impresora POS", Href = "/pages/ajustes/impresora", PageStatus = PageStatus.Completed },
                         new() { Title = "Usuarios", Href = "/identity/users", PageStatus = PageStatus.Completed },
                         new() { Title = "Roles", Href = "/identity/roles", PageStatus = PageStatus.Completed },
                     }

@@ -4,6 +4,7 @@
 
 @inject IApplicationDbContextFactory DbFactory
 @inject ParkingSessionService ParkingService
+@inject NavigationManager Navigation
 
 <PageTitle>Poliedro Software - Panel</PageTitle>
 
@@ -57,7 +58,11 @@
         </MudItem>
     </MudGrid>
 
-    <MudText Typo="Typo.h5" Class="mb-3">Resumen - @DateTime.Now.ToString("MMMM yyyy")</MudText>
+    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudText Typo="Typo.h5">Resumen - @DateTime.Now.ToString("MMMM yyyy")</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" 
+                   OnClick="RefreshData" Size="Size.Small">Actualizar</MudButton>
+    </MudStack>
 
     @* Ingresos por Categoria *@
     <MudGrid Spacing="3" Class="mb-4">
@@ -213,10 +218,20 @@
         _gastosTotales = expenses.Sum(e => e ?? 0);
         _totalGastos = expenses.Count;
 
-        _ingresosParqueo = 0;
-        _totalSalidas = 0;
+        var parkingRevenue = await db.ParkingRecords
+            .Where(p => p.Status == "Completado" && p.ExitTime.HasValue && p.ExitTime.Value >= firstDay)
+            .SumAsync(p => (int?)p.Amount) ?? 0;
+        _ingresosParqueo = (int)parkingRevenue;
+        _totalSalidas = await db.ParkingRecords
+            .CountAsync(p => p.Status == "Completado" && p.ExitTime.HasValue && p.ExitTime.Value >= firstDay);
 
         _utilidadNeta = _ingresosParqueo + _ingresosLavado + _ingresosMensualidad - _gastosTotales;
+    }
+
+    private async Task RefreshData()
+    {
+        try { await LoadData(); await InvokeAsync(StateHasChanged); }
+        catch (Exception ex) { Console.WriteLine($"Refresh error: {ex.Message}"); }
     }
 
     private string FormatDuration(TimeSpan d)

@@ -31,6 +31,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="System.Drawing.Common" Version="10.0.10" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Migrators\Migrators.MSSQL\Migrators.MSSQL.csproj" />

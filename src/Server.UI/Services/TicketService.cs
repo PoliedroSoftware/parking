@@ -4,11 +4,7 @@ namespace CleanArchitecture.Blazor.Server.UI.Services;
 
 public enum TicketType
 {
-    Entry,
-    Exit,
-    Payment,
-    Wash,
-    Monthly
+    Entry, Exit, Payment, Wash, Monthly
 }
 
 public class TicketData
@@ -38,6 +34,75 @@ public class TicketData
 
 public class TicketService
 {
+    public string GenerateTicketHtmlForWindow(TicketData data)
+    {
+        return GenerateTicketHtml(data);
+    }
+
+    public string GenerateTicketText(TicketData data)
+    {
+        var ticketType = data.Type switch
+        {
+            TicketType.Entry => "TICKET DE ENTRADA",
+            TicketType.Exit => "TICKET DE SALIDA",
+            TicketType.Payment => "COMPROBANTE DE PAGO",
+            TicketType.Wash => "TICKET DE LAVADO",
+            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
+            _ => "TICKET"
+        };
+
+        var sb = new System.Text.StringBuilder();
+
+        sb.AppendLine("POLIEDRO SOFTWARE");
+        sb.AppendLine("");
+        sb.AppendLine(ticketType);
+        sb.AppendLine("---");
+        sb.AppendLine($"Fecha : {data.DateTime:dd/MM/yyyy HH:mm}");
+        sb.AppendLine($"Placa : {data.LicensePlate}");
+        if (!string.IsNullOrEmpty(data.TicketNumber))
+            sb.AppendLine($"Ticket: {data.TicketNumber}");
+        if (!string.IsNullOrEmpty(data.VehicleType))
+            sb.AppendLine($"Tipo  : {data.VehicleType}");
+        if (!string.IsNullOrEmpty(data.WashServiceType))
+            sb.AppendLine($"Lavado: {data.WashServiceType}");
+        if (data.EntryTime.HasValue)
+            sb.AppendLine($"Entro : {data.EntryTime:HH:mm}");
+        if (data.Amount.HasValue && data.Amount > 0)
+        {
+            sb.AppendLine("---");
+            if (data.BasePrice.HasValue && data.BasePrice > 0)
+                sb.AppendLine($"Base           $ {data.BasePrice:N0}");
+            if (data.AdditionalsTotal.HasValue && data.AdditionalsTotal > 0)
+                sb.AppendLine($"Adicionales    $ {data.AdditionalsTotal:N0}");
+            if (data.Surcharge.HasValue && data.Surcharge > 0)
+                sb.AppendLine($"Recargo        $ {data.Surcharge:N0}");
+            sb.AppendLine($"TOTAL          $ {data.Amount:N0}");
+        }
+        if (data.Duration.HasValue)
+            sb.AppendLine($"Tiempo: {FormatDuration(data.Duration.Value)}");
+        if (!string.IsNullOrEmpty(data.CustomerName))
+            sb.AppendLine($"Cliente: {data.CustomerName}");
+        if (!string.IsNullOrEmpty(data.MemberName))
+            sb.AppendLine($"Miembro: {data.MemberName}");
+        if (!string.IsNullOrEmpty(data.OperatorName))
+            sb.AppendLine($"Operario: {data.OperatorName}");
+        if (!string.IsNullOrEmpty(data.PaymentMethod))
+            sb.AppendLine($"Pago   : {data.PaymentMethod}");
+        if (!string.IsNullOrEmpty(data.Notes))
+            sb.AppendLine($"Notas  : {data.Notes}");
+        sb.AppendLine("---");
+        sb.AppendLine("");
+        sb.AppendLine("Gracias por su visita");
+        sb.AppendLine("Poliedro Software");
+
+        return sb.ToString();
+    }
+
+    private static string FormatDuration(TimeSpan d)
+    {
+        if (d.TotalHours >= 1) return $"{(int)d.TotalHours}h {d.Minutes}m";
+        return $"{d.Minutes} min";
+    }
     private const string Charset = "utf-8";
     private const int PageWidthMm = 80;
     private const int ContentWidthMm = 72;

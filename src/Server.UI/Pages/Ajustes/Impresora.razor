@@ -1,0 +1,151 @@
+@page "/pages/ajustes/impresora"
+@using CleanArchitecture.Blazor.Server.UI.Services
+
+@inject PrinterService PrinterService
+@attribute [Authorize]
+
+<PageTitle>Impresora POS - Poliedro</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-3">
+    <MudText Typo="Typo.h4" Class="mb-2">Configuracion de Impresora POS</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Configure la impresora termica para tickets y reportes.
+        Los tickets se imprimiran directamente sin vista previa.
+    </MudText>
+
+    <MudCard Elevation="3">
+        <MudCardContent>
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="8">
+                    <MudSelect T="string" Label="Impresora Instalada"
+                               Value="_printerName" ValueChanged="OnPrinterChanged"
+                               Variant="Variant.Outlined"
+                               AdornmentIcon="@Icons.Material.Filled.Print"
+                               Adornment="Adornment.End">
+                        @foreach (var p in _printers)
+                        {
+                            <MudSelectItem Value="@p">@p</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Info"
+                               OnClick="RefreshPrinters" StartIcon="@Icons.Material.Filled.Refresh"
+                               Style="margin-top:8px;">
+                        Buscar Impresoras
+                    </MudButton>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSwitch T="bool" Label="Impresion Directa Activada"
+                               Value="_enabled" ValueChanged="OnEnabledChanged"
+                               Color="Color.Primary" />
+
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+    </MudCard>
+
+    @if (!string.IsNullOrEmpty(_statusMessage))
+    {
+        <MudAlert Severity="@_statusSeverity" Class="mt-4" Variant="Variant.Filled">
+            @_statusMessage
+        </MudAlert>
+    }
+
+    @if (!string.IsNullOrEmpty(_printerName) && _enabled)
+    {
+        <MudCard Elevation="3" Class="mt-4">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">Probar Impresion</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Class="mb-2">
+                    Imprima un ticket de prueba en <strong>@_printerName</strong>
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="PrintTest" StartIcon="@Icons.Material.Filled.Print"
+                           Disabled="@_printing">
+                    @if (_printing)
+                    {
+                        <MudText>Imprimiendo...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>IMPRIMIR TICKET DE PRUEBA</MudText>
+                    }
+                </MudButton>
+            </MudCardContent>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    private string _printerName = string.Empty;
+    private bool _enabled;
+    private List<string> _printers = new();
+    private string _statusMessage = string.Empty;
+    private Severity _statusSeverity = Severity.Info;
+    private bool _printing;
+
+    protected override void OnInitialized()
+    {
+        _printerName = PrinterService.PrinterName;
+        _enabled = PrinterService.Enabled;
+        _printers = PrinterService.GetInstalledPrinters();
+    }
+
+    private void RefreshPrinters()
+    {
+        _printers = PrinterService.GetInstalledPrinters();
+        _statusMessage = $"Se encontraron {_printers.Count} impresora(s)";
+        _statusSeverity = Severity.Success;
+    }
+
+    private void OnPrinterChanged(string name)
+    {
+        _printerName = name;
+        PrinterService.PrinterName = name;
+        _statusMessage = $"Impresora guardada: {name}";
+        _statusSeverity = Severity.Success;
+    }
+
+    private void OnEnabledChanged(bool enabled)
+    {
+        _enabled = enabled;
+        PrinterService.Enabled = enabled;
+        _statusMessage = enabled ? "Impresion directa ACTIVADA" : "Impresion directa DESACTIVADA";
+        _statusSeverity = Severity.Info;
+    }
+
+    private async Task PrintTest()
+    {
+        try
+        {
+            _printing = true;
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("<div style='text-align:center;font-weight:bold;'>POLIEDRO SOFTWARE</div>");
+            sb.AppendLine("<div style='text-align:center;'>Ticket de Prueba</div>");
+            sb.AppendLine("<div class='line'></div>");
+            sb.AppendLine($"<div>Impresora: {_printerName}</div>");
+            sb.AppendLine($"<div>Fecha: {DateTime.Now:dd/MM/yyyy HH:mm}</div>");
+            sb.AppendLine("<div class='line'></div>");
+            sb.AppendLine("<div style='text-align:center;'>IMPRESORA CONFIGURADA</div>");
+            sb.AppendLine("<div style='text-align:center;'>CORRECTAMENTE</div>");
+            sb.AppendLine("<div class='line'></div>");
+            sb.AppendLine("<div style='text-align:center;font-size:10px;'>Poliedro Software - Todos los derechos reservados</div>");
+            sb.AppendLine("<div style='text-align:center;'>www.poliedrosoftware.com</div>");
+
+            await PrinterService.PrintTicketAsync(sb.ToString());
+            _statusMessage = "Ticket de prueba enviado a la impresora";
+            _statusSeverity = Severity.Success;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error: {ex.Message}";
+            _statusSeverity = Severity.Error;
+        }
+        finally { _printing = false; }
+    }
+}

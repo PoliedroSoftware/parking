@@ -145,33 +145,39 @@
 
         await using var db = await DbFactory.CreateAsync();
 
-        var completed = MovementTracker.GetDaySummary().Movements
-            .Where(m => m.Time.Date >= firstDay && m.Time.Date <= lastDay).ToList();
+        var paidWashes = await db.CarWashes
+            .Where(c => c.StartTime.HasValue && c.StartTime.Value >= firstDay && c.StartTime.Value <= lastDay && c.IsPaid)
+            .Select(c => (int?)c.Price).ToListAsync();
+        _ingresosLavado = paidWashes.Sum(p => p ?? 0);
 
-        // Simulate aggregate data from this month
-        var now = DateTime.Now;
-        _ingresosParqueo = new Random(42).Next(200000, 600000);
-        _ingresosLavado = new Random(123).Next(100000, 400000);
-        _ingresosMensualidad = new Random(77).Next(300000, 900000);
+        var rentals = await db.MemberRentals
+            .Where(r => r.PaymentTime >= firstDay && r.PaymentTime <= lastDay)
+            .Select(r => (int?)r.AmountPaid).ToListAsync();
+        _ingresosMensualidad = rentals.Sum(r => r ?? 0);
+
+        _ingresosParqueo = (int)(await db.ParkingRecords
+            .Where(p => p.Status == "Completado" && p.ExitTime.HasValue && p.ExitTime.Value >= firstDay && p.ExitTime.Value <= lastDay)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0);
 
         _gastos = await db.Expenses.Where(e => e.Date >= firstDay && e.Date <= lastDay).OrderByDescending(e => e.Date).ToListAsync();
         _gastosTotales = _gastos.Sum(e => (int)e.Amount);
         _resultadoNeto = _ingresosParqueo + _ingresosLavado + _ingresosMensualidad - _gastosTotales;
 
-        var rnd = new Random(99);
-        for (int d = 1; d <= DateTime.DaysInMonth(_reportDate.Year, _reportDate.Month); d++)
-        {
-            _ingresosDiarios.Add(new DayRevenue
+        _ingresosDiarios = (await db.ParkingRecords
+            .Where(p => p.Status == "Completado" && p.ExitTime.HasValue && p.ExitTime.Value >= firstDay && p.ExitTime.Value <= lastDay)
+            .Select(p => new { p.ExitTime, p.Amount })
+            .ToListAsync())
+            .GroupBy(p => p.ExitTime!.Value.Date)
+            .Select(g => new DayRevenue
             {
-                Day = $"{d:00}/{_reportDate.Month:00}",
-                Parking = rnd.Next(5000, 30000),
-                Wash = rnd.Next(0, 20000),
-                Monthly = rnd.Next(0, 50000),
-                Total = 0
-            });
-            var dr = _ingresosDiarios.Last();
-            dr.Total = dr.Parking + dr.Wash + dr.Monthly;
-        }
+                Day = g.Key.ToString("dd/MM"),
+                Parking = (int)g.Sum(p => p.Amount),
+                Wash = 0,
+                Monthly = 0,
+                Total = (int)g.Sum(p => p.Amount)
+            })
+            .OrderBy(d => d.Day)
+            .ToList();
     }
 
     private async Task PrintReport()

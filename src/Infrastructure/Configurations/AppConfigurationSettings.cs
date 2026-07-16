@@ -42,4 +42,6 @@ public class AppConfigurationSettings : IApplicationSettings
     ///     The application name / title
     /// </summary>
     public string AppName { get; set; } = "Blazor Dashboard";
+    public string PrinterName { get; set; } = string.Empty;
+    public bool PrinterEnabled { get; set; }
 }

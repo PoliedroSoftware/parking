@@ -17,6 +17,7 @@
 @inject IZoneService ZoneService
 @inject TicketService TicketService
 @inject TicketPdfService TicketPdfService
+@inject PrinterService PrinterService
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @attribute [Authorize(Policy = Permissions.CarWashes.View)]
 <PageTitle>@Title</PageTitle>
@@ -417,7 +418,7 @@
     {
         var operatorNames = dto.Operators?.Any() == true ? string.Join(", ", dto.Operators.Select(o => o.OperatorName)) : null;
         var additionalsTotal = dto.Additionals?.Sum(a => a.Price) ?? 0;
-        var ticket = TicketService.GenerateTicketHtml(new TicketData
+        var ticketData = new TicketData
         {
             Type = TicketType.Wash, LicensePlate = dto.LicensePlate ?? "",
             VehicleType = dto.VehicleType?.GetDescription() ?? "", Amount = dto.Price,
@@ -427,8 +428,23 @@
             Notes = string.Join(", ", dto.Additionals?.Select(a => a.AdditionalName) ?? Array.Empty<string>()),
             CustomerName = dto.Member?.Name, OperatorName = operatorNames, QueueNumber = dto.QueueNumber,
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
-        });
-        await JS.InvokeVoidAsync("openTicketWindow", ticket);
+        };
+
+        if (PrinterService.Enabled && !string.IsNullOrWhiteSpace(PrinterService.PrinterName))
+        {
+            try
+            {
+                await PrinterService.PrintTicketAsync(TicketService.GenerateTicketText(ticketData));
+                return;
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error impresora: {ex.Message}", Severity.Error);
+            }
+        }
+
+        var html = TicketService.GenerateTicketHtmlForWindow(ticketData);
+        await JS.InvokeVoidAsync("openTicketWindow", html);
     }
 
     private async Task DownloadWashPdf(CarWashDto dto)

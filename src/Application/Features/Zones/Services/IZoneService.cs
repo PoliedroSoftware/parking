@@ -60,13 +60,14 @@ public class ZoneService : IZoneService
         return list ?? new List<ZoneDto>();
     }
 
-    private Task<List<ZoneDto>> QueryAsync(IApplicationDbContext db)
+    private async Task<List<ZoneDto>> QueryAsync(IApplicationDbContext db)
     {
-        return db.Zones
+        var zones = await db.Zones
         .AsNoTracking()
         .OrderBy(z => z.Name.Tc)
-        .ProjectTo<ZoneDto>(_mapper.ConfigurationProvider)
         .ToListAsync();
+        
+        return _mapper.Map<List<ZoneDto>>(zones);
     }
 
     private async Task RaiseOnChangeAsync()

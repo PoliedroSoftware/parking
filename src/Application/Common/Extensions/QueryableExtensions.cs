@@ -50,12 +50,13 @@ public static class QueryableExtensions
         IConfigurationProvider configuration, CancellationToken cancellationToken = default) where T : class, IEntity
     {
         var specificationEvaluator = SpecificationEvaluator.Default;
-        var count = await specificationEvaluator.GetQuery(query.AsNoTracking(), spec).CountAsync();
-        var data = await specificationEvaluator.GetQuery(query.AsNoTracking(), spec).Skip((pageNumber - 1) * pageSize)
+        var queryWithSpec = specificationEvaluator.GetQuery(query.AsNoTracking(), spec);
+        var count = await queryWithSpec.CountAsync(cancellationToken);
+        var data = await queryWithSpec.Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ProjectTo<TResult>(configuration)
             .ToListAsync(cancellationToken);
-        return new PaginatedData<TResult>(data, count, pageNumber, pageSize);
+        var mapped = configuration.CreateMapper().Map<List<TResult>>(data);
+        return new PaginatedData<TResult>(mapped, count, pageNumber, pageSize);
     }
 
     /// <summary>

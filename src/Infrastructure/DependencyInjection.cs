@@ -300,7 +300,7 @@ public static class DependencyInjection
             options.SessionStore = new MemoryCacheTicketStore();
             options.LoginPath = LOGIN_PATH;
             options.Cookie.SameSite = SameSiteMode.Strict;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         });
         services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
 

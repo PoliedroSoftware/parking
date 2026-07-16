@@ -10,7 +10,9 @@
 @inject ParkingSessionService ParkingService
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
+@inject IApplicationDbContextFactory DbFactory
 @inject BlazorDownloadFileService BlazorDownloadFileService
+@inject PrinterService PrinterService
 @attribute [Authorize]
 
 <PageTitle>@Title</PageTitle>
@@ -300,15 +302,44 @@
             Amount = 0
         });
 
-        await JSRuntime.InvokeVoidAsync("openTicketWindow",
-            TicketService.GenerateTicketHtml(new TicketData
+        await using var db = await DbFactory.CreateAsync();
+        db.ParkingRecords.Add(new ParkingRecord
+        {
+            LicensePlate = plate,
+            EntryTime = entryTime,
+            TicketNumber = ticketNo,
+            Status = "Activo",
+            Amount = 0
+        });
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var ticketData = new TicketData
+        {
+            Type = TicketType.Entry,
+            LicensePlate = plate,
+            DateTime = entryTime,
+            TicketNumber = ticketNo,
+            OperatorName = "Operador"
+        };
+
+        if (PrinterService.Enabled && !string.IsNullOrWhiteSpace(PrinterService.PrinterName))
+        {
+            try
             {
-                Type = TicketType.Entry,
-                LicensePlate = plate,
-                DateTime = entryTime,
-                TicketNumber = ticketNo,
-                OperatorName = "Operador"
-            }));
+                await PrinterService.PrintTicketAsync(TicketService.GenerateTicketText(ticketData));
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error impresora: {ex.Message}", Severity.Error);
+                await JSRuntime.InvokeVoidAsync("openTicketWindow",
+                    TicketService.GenerateTicketHtmlForWindow(ticketData));
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("openTicketWindow",
+                TicketService.GenerateTicketHtmlForWindow(ticketData));
+        }
 
         _lastMessage = $"ENTRADA: {plate} - {entryTime:HH:mm:ss}";
         _lastSeverity = Severity.Info;
@@ -333,19 +364,51 @@
         ParkingService.Checkout(plate);
         MovementTracker.UpdateExit(plate, customer, amount, formattedDuration);
 
-        await JSRuntime.InvokeVoidAsync("openTicketWindow",
-            TicketService.GenerateTicketHtml(new TicketData
+        await using var db = await DbFactory.CreateAsync();
+        var record = await db.ParkingRecords
+            .Where(p => p.LicensePlate == plate && p.Status == "Activo")
+            .OrderByDescending(p => p.EntryTime)
+            .FirstOrDefaultAsync();
+        if (record != null)
+        {
+            record.ExitTime = DateTime.Now;
+            record.Amount = amount;
+            record.Status = "Completado";
+            record.CustomerName = customer;
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+
+        var exitTicketData = new TicketData
+        {
+            Type = TicketType.Exit,
+            LicensePlate = plate,
+            DateTime = DateTime.Now,
+            EntryTime = session.EntryTime,
+            TicketNumber = session.TicketNumber,
+            Amount = amount,
+            Duration = duration,
+            CustomerName = customer == "Consumidor Final" ? null : customer,
+            OperatorName = "Operador"
+        };
+
+        if (PrinterService.Enabled && !string.IsNullOrWhiteSpace(PrinterService.PrinterName))
+        {
+            try
             {
-                Type = TicketType.Exit,
-                LicensePlate = plate,
-                DateTime = DateTime.Now,
-                EntryTime = session.EntryTime,
-                TicketNumber = session.TicketNumber,
-                Amount = amount,
-                Duration = duration,
-                CustomerName = customer == "Consumidor Final" ? null : customer,
-                OperatorName = "Operador"
-            }));
+                await PrinterService.PrintTicketAsync(TicketService.GenerateTicketText(exitTicketData));
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error impresora: {ex.Message}", Severity.Error);
+                await JSRuntime.InvokeVoidAsync("openTicketWindow",
+                    TicketService.GenerateTicketHtmlForWindow(exitTicketData));
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("openTicketWindow",
+                TicketService.GenerateTicketHtmlForWindow(exitTicketData));
+        }
 
         _lastMessage = $"SALIDA: {plate} - {formattedDuration} - $ {amount:N0}";
         _lastSeverity = Severity.Success;
@@ -384,7 +447,7 @@
             : null;
 
         await JSRuntime.InvokeVoidAsync("openTicketWindow",
-            TicketService.GenerateTicketHtml(new TicketData
+            TicketService.GenerateTicketHtmlForWindow(new TicketData
             {
                 Type = type,
                 LicensePlate = m.LicensePlate,

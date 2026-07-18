@@ -17,7 +17,7 @@
 @inject IZoneService ZoneService
 @inject TicketService TicketService
 @inject TicketPdfService TicketPdfService
-@inject PrinterService PrinterService
+@inject IPrinterService PrinterService
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @attribute [Authorize(Policy = Permissions.CarWashes.View)]
 <PageTitle>@Title</PageTitle>
@@ -430,21 +430,12 @@
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
         };
 
-        if (PrinterService.Enabled && !string.IsNullOrWhiteSpace(PrinterService.PrinterName))
-        {
-            try
-            {
-                await PrinterService.PrintTicketAsync(TicketService.GenerateTicketText(ticketData));
-                return;
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error impresora: {ex.Message}", Severity.Error);
-            }
-        }
+        if (!await EnsurePrinterQueueReady())
+            return;
 
         var html = TicketService.GenerateTicketHtmlForWindow(ticketData);
         await JS.InvokeVoidAsync("openTicketWindow", html);
+        Snackbar.Add("Vista previa de impresion abierta", Severity.Info);
     }
 
     private async Task DownloadWashPdf(CarWashDto dto)
@@ -487,5 +478,30 @@
             WashServiceType.FullDetail => Color.Primary,
             _ => Color.Default
         };
+    }
+
+    private async Task<bool> EnsurePrinterQueueReady()
+    {
+        try
+        {
+            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
+            if (repairedJobs < 0)
+            {
+                Snackbar.Add("Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.", Severity.Warning);
+                return true;
+            }
+
+            if (repairedJobs > 0)
+            {
+                Snackbar.Add($"Cola de impresion limpiada: {repairedJobs} trabajo(s).", Severity.Warning);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo limpiar la cola de impresion: {ex.Message}", Severity.Error);
+            return false;
+        }
     }
 }

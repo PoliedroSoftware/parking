@@ -1,8 +1,10 @@
+using System.Text;
 using CleanArchitecture.Blazor.Application;
 using CleanArchitecture.Blazor.Infrastructure;
 using CleanArchitecture.Blazor.Infrastructure.Extensions;
 using CleanArchitecture.Blazor.Server.UI;
 
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 builder.RegisterSerilog();

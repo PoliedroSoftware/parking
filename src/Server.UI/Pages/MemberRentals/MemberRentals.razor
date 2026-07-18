@@ -17,6 +17,7 @@
 @inject TicketService TicketService
 @inject TicketPdfService TicketPdfService
 @inject IJSRuntime JSRuntime
+@inject IPrinterService PrinterService
 
 @attribute [Authorize(Policy = Permissions.MemberRentals.View)]
 <PageTitle>@Title</PageTitle>
@@ -344,8 +345,11 @@
 			Amount = (int)dto.AmountPaid
 		});
 
-		await JSRuntime.InvokeVoidAsync("openTicketWindow", ticketHtml);
-		Snackbar.Add(L["Ticket de mensualidad generado"], Severity.Success);
+		if (await EnsurePrinterQueueReady())
+		{
+			await JSRuntime.InvokeVoidAsync("openTicketWindow", ticketHtml);
+			Snackbar.Add(L["Ticket de mensualidad generado"], Severity.Success);
+		}
 	}
 
 	private async Task DownloadMonthlyPdf(MemberRentalDto dto)
@@ -359,6 +363,31 @@
 		});
 		await BlazorDownloadFileService.DownloadFileAsync($"Mensualidad_{dto.LicensePlate}.pdf", pdf, "application/pdf");
 		Snackbar.Add("PDF descargado", Severity.Success);
+	}
+
+	private async Task<bool> EnsurePrinterQueueReady()
+	{
+		try
+		{
+			var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
+			if (repairedJobs < 0)
+			{
+				Snackbar.Add("Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.", Severity.Warning);
+				return true;
+			}
+
+			if (repairedJobs > 0)
+			{
+				Snackbar.Add($"Cola de impresion limpiada: {repairedJobs} trabajo(s).", Severity.Warning);
+			}
+
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"No se pudo limpiar la cola de impresion: {ex.Message}", Severity.Error);
+			return false;
+		}
 	}
 
 }

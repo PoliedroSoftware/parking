@@ -1,7 +1,7 @@
 @page "/pages/ajustes/impresora"
-@using CleanArchitecture.Blazor.Server.UI.Services
-
-@inject PrinterService PrinterService
+@inject IPrinterService PrinterService
+@inject IJSRuntime JSRuntime
+@inject TicketService TicketService
 @attribute [Authorize]
 
 <PageTitle>Impresora POS - Poliedro</PageTitle>
@@ -10,7 +10,7 @@
     <MudText Typo="Typo.h4" Class="mb-2">Configuracion de Impresora POS</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
         Configure la impresora termica para tickets y reportes.
-        Los tickets se imprimiran directamente sin vista previa.
+        Los tickets se abriran en la vista previa de impresion del navegador.
     </MudText>
 
     <MudCard Elevation="3">
@@ -36,10 +36,11 @@
                     </MudButton>
                 </MudItem>
                 <MudItem xs="12">
-                    <MudSwitch T="bool" Label="Impresion Directa Activada"
-                               Value="_enabled" ValueChanged="OnEnabledChanged"
-                               Color="Color.Primary" />
-
+                    <MudButton Variant="Variant.Outlined" Color="Color.Warning"
+                               OnClick="ClearQueue" StartIcon="@Icons.Material.Filled.DeleteSweep"
+                               Disabled="@(string.IsNullOrWhiteSpace(_printerName) || _printing)">
+                        Limpiar cola de impresion
+                    </MudButton>
                 </MudItem>
             </MudGrid>
         </MudCardContent>
@@ -52,38 +53,34 @@
         </MudAlert>
     }
 
-    @if (!string.IsNullOrEmpty(_printerName) && _enabled)
-    {
-        <MudCard Elevation="3" Class="mt-4">
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">Probar Impresion</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                <MudText Typo="Typo.body2" Class="mb-2">
-                    Imprima un ticket de prueba en <strong>@_printerName</strong>
-                </MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           OnClick="PrintTest" StartIcon="@Icons.Material.Filled.Print"
-                           Disabled="@_printing">
-                    @if (_printing)
-                    {
-                        <MudText>Imprimiendo...</MudText>
-                    }
-                    else
-                    {
-                        <MudText>IMPRIMIR TICKET DE PRUEBA</MudText>
-                    }
-                </MudButton>
-            </MudCardContent>
-        </MudCard>
-    }
+    <MudCard Elevation="3" Class="mt-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Probar Impresion</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.body2" Class="mb-2">
+                Abra la vista previa del navegador y seleccione la impresora termica de 80 mm.
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="PrintTest" StartIcon="@Icons.Material.Filled.Print"
+                       Disabled="@_printing">
+                @if (_printing)
+                {
+                    <MudText>Abriendo...</MudText>
+                }
+                else
+                {
+                    <MudText>ABRIR VISTA PREVIA DE PRUEBA</MudText>
+                }
+            </MudButton>
+        </MudCardContent>
+    </MudCard>
 </MudContainer>
 
 @code {
     private string _printerName = string.Empty;
-    private bool _enabled;
     private List<string> _printers = new();
     private string _statusMessage = string.Empty;
     private Severity _statusSeverity = Severity.Info;
@@ -92,15 +89,12 @@
     protected override void OnInitialized()
     {
         _printerName = PrinterService.PrinterName;
-        _enabled = PrinterService.Enabled;
-        _printers = PrinterService.GetInstalledPrinters();
+        LoadPrinters();
     }
 
     private void RefreshPrinters()
     {
-        _printers = PrinterService.GetInstalledPrinters();
-        _statusMessage = $"Se encontraron {_printers.Count} impresora(s)";
-        _statusSeverity = Severity.Success;
+        LoadPrinters();
     }
 
     private void OnPrinterChanged(string name)
@@ -111,35 +105,36 @@
         _statusSeverity = Severity.Success;
     }
 
-    private void OnEnabledChanged(bool enabled)
-    {
-        _enabled = enabled;
-        PrinterService.Enabled = enabled;
-        _statusMessage = enabled ? "Impresion directa ACTIVADA" : "Impresion directa DESACTIVADA";
-        _statusSeverity = Severity.Info;
-    }
-
     private async Task PrintTest()
     {
         try
         {
             _printing = true;
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("<div style='text-align:center;font-weight:bold;'>POLIEDRO SOFTWARE</div>");
-            sb.AppendLine("<div style='text-align:center;'>Ticket de Prueba</div>");
-            sb.AppendLine("<div class='line'></div>");
-            sb.AppendLine($"<div>Impresora: {_printerName}</div>");
-            sb.AppendLine($"<div>Fecha: {DateTime.Now:dd/MM/yyyy HH:mm}</div>");
-            sb.AppendLine("<div class='line'></div>");
-            sb.AppendLine("<div style='text-align:center;'>IMPRESORA CONFIGURADA</div>");
-            sb.AppendLine("<div style='text-align:center;'>CORRECTAMENTE</div>");
-            sb.AppendLine("<div class='line'></div>");
-            sb.AppendLine("<div style='text-align:center;font-size:10px;'>Poliedro Software - Todos los derechos reservados</div>");
-            sb.AppendLine("<div style='text-align:center;'>www.poliedrosoftware.com</div>");
+            var ticketData = new TicketData
+            {
+                Type = TicketType.Entry,
+                CarparkName = "Poliedro Parking",
+                LicensePlate = "TEST-80",
+                VehicleType = "Prueba",
+                DateTime = DateTime.Now,
+                TicketNumber = "TEST",
+                OperatorName = "Sistema"
+            };
 
-            await PrinterService.PrintTicketAsync(sb.ToString());
-            _statusMessage = "Ticket de prueba enviado a la impresora";
-            _statusSeverity = Severity.Success;
+            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
+            if (repairedJobs < 0)
+            {
+                _statusMessage = "Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.";
+                _statusSeverity = Severity.Warning;
+            }
+
+            await JSRuntime.InvokeVoidAsync("openTicketWindow",
+                TicketService.GenerateTicketHtmlForWindow(ticketData));
+            if (repairedJobs >= 0)
+            {
+                _statusMessage = "Vista previa de prueba abierta";
+                _statusSeverity = Severity.Success;
+            }
         }
         catch (Exception ex)
         {
@@ -147,5 +142,50 @@
             _statusSeverity = Severity.Error;
         }
         finally { _printing = false; }
+    }
+
+    private async Task ClearQueue()
+    {
+        try
+        {
+            _printing = true;
+            var deleted = await PrinterService.RepairQueueBeforePrintAsync();
+            if (deleted < 0)
+            {
+                _statusMessage = "Windows no permitio limpiar la cola. Ejecute la app como administrador o limpie la cola manualmente.";
+                _statusSeverity = Severity.Warning;
+                return;
+            }
+
+            _statusMessage = deleted == 1
+                ? "Se reparo la cola y se elimino 1 trabajo"
+                : $"Se reparo la cola y se eliminaron {deleted} trabajos";
+            _statusSeverity = Severity.Success;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error limpiando cola: {ex.Message}";
+            _statusSeverity = Severity.Error;
+        }
+        finally
+        {
+            _printing = false;
+        }
+    }
+
+    private void LoadPrinters()
+    {
+        try
+        {
+            _printers = PrinterService.GetInstalledPrinters().ToList();
+            _statusMessage = $"Se encontraron {_printers.Count} impresora(s)";
+            _statusSeverity = Severity.Success;
+        }
+        catch (Exception ex)
+        {
+            _printers = new List<string>();
+            _statusMessage = $"Error buscando impresoras: {ex.Message}";
+            _statusSeverity = Severity.Error;
+        }
     }
 }

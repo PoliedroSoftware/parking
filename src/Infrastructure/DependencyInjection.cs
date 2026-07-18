@@ -186,6 +186,7 @@ public static class DependencyInjection
             .AddScoped<IExcelService, ExcelService>()
             .AddScoped<IUploadService, FileUploadService>()
             .AddScoped<IPDFService, PDFService>()
+            .AddSingleton<IPrinterService, PrinterService>()
             ;
     }
     #endregion

@@ -1,4 +1,4 @@
-@page "/pages/tickets"
+﻿@page "/pages/tickets"
 
 @using CleanArchitecture.Blazor.Server.UI.Services
 @using CleanArchitecture.Blazor.Domain.Enums
@@ -12,37 +12,84 @@
 @inject ISnackbar Snackbar
 @inject IApplicationDbContextFactory DbFactory
 @inject BlazorDownloadFileService BlazorDownloadFileService
-@inject PrinterService PrinterService
+@inject IPrinterService PrinterService
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>@Title</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<MudContainer MaxWidth="MaxWidth.Large" Class="parking-shell">
+    <section class="parking-header">
         <div>
-            <MudText Typo="Typo.h3" Style="font-weight:700;">@L["Parqueo"]</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Ingrese la placa para entrada o salida"]</MudText>
+            <MudText Typo="Typo.h4" Class="parking-title">@L["Parqueo"]</MudText>
+            <MudText Typo="Typo.body1" Class="parking-subtitle">@L["Entrada y salida de vehiculos"]</MudText>
         </div>
-        <MudChip T="string" Color="Color.Primary" Variant="Variant.Text" Style="font-size:16px;">
-            @L["Activos"]: @ParkingService.ActiveSessionCount
-        </MudChip>
-    </div>
+        <div class="parking-date">@DateTime.Today.ToString("dd/MM/yyyy")</div>
+    </section>
+
+    <MudGrid Spacing="2" Class="parking-metrics">
+        <MudItem xs="12" sm="4">
+            <div class="metric-card">
+                <span class="metric-label">@L["Activos"]</span>
+                <strong>@_activeViewModels.Count</strong>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <div class="metric-card">
+                <span class="metric-label">Movimientos</span>
+                <strong>@_movements.Count</strong>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <div class="metric-card metric-card-total">
+                <span class="metric-label">Total del dia</span>
+                <strong>$ @_movements.Sum(m => m.Amount).ToString("N0")</strong>
+            </div>
+        </MudItem>
+    </MudGrid>
 
     @* PLATE INPUT *@
-    <MudPaper Elevation="3" Class="pa-6" Style="background: linear-gradient(135deg, #f5f0e8 0%, #e8e0d0 100%); max-width:700px; margin: 0 auto 16px auto; text-align:center;">
-        <MudText Typo="Typo.subtitle2" Class="mb-3" Color="Color.Secondary">@L["INGRESE EL NUMERO DE PLACA"]</MudText>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-            <MudTextField T="string" @bind-Value="_licensePlate" Immediate="true"
-                          Style="max-width:420px;width:100%;"
-                          Variant="Variant.Outlined"
-                          Placeholder="ABC-123"
-                          AutoFocus="true"
-                          Class="plate-input"
-                          OnKeyUp="OnPlateKeyUp" />
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+    <MudPaper Elevation="0" Class="parking-entry-panel">
+        <div class="entry-heading">
+            <div>
+                <MudText Typo="Typo.subtitle1" Class="entry-title">@L["Placa del vehiculo"]</MudText>
+                <MudText Typo="Typo.body2" Class="entry-subtitle">Entrada / salida</MudText>
+            </div>
+            <MudIcon Icon="@Icons.Material.Filled.LocalParking" Class="entry-icon" />
+        </div>
+        <div class="entry-form">
+            <MudAutocomplete T="string" @bind-Value="_licensePlate" Immediate="true"
+                             @ref="_plateInput"
+                             SearchFunc="SearchActivePlates"
+                             CoerceText="true"
+                             CoerceValue="true"
+                             ResetValueOnEmptyText="false"
+                             MaxItems="8"
+                             Style="width:100%;"
+                             Variant="Variant.Outlined"
+                             Placeholder="ABC123"
+                             AutoFocus="true"
+                             Class="plate-input"
+                             Adornment="Adornment.End"
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             OnKeyUp="OnPlateKeyUp" />
+            <div class="vehicle-selector">
+                <MudText Typo="Typo.caption" Class="selector-label">Tipo de vehiculo</MudText>
+                <MudStack Row Spacing="1" Class="vehicle-chip-row">
+                    @foreach (var vt in _vehicleTypes)
+                    {
+                        <MudChip T="string" Size="Size.Small"
+                                 Variant="@(_vehicleType == vt ? Variant.Filled : Variant.Outlined)"
+                                 Color="@(_vehicleType == vt ? Color.Primary : Color.Default)"
+                                 Style="cursor:pointer;" OnClick="@(() => { _vehicleType = vt; StateHasChanged(); })">
+                            @vt.GetDescription()
+                        </MudChip>
+                    }
+                </MudStack>
+            </div>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="process-button"
                        OnClick="ProcessPlate" StartIcon="@Icons.Material.Filled.PlayArrow"
-                       Disabled="@(string.IsNullOrWhiteSpace(_licensePlate))"
-                       Style="min-width:200px;height:56px;font-size:18px;font-weight:700;">
+                       Disabled="@(string.IsNullOrWhiteSpace(_licensePlate))">
                 @L["PROCESAR"]
             </MudButton>
         </div>
@@ -51,18 +98,18 @@
     @* FEEDBACK *@
     @if (_lastMessage != null)
     {
-        <MudAlert Severity="@_lastSeverity" Variant="Variant.Filled" Class="mb-3" Style="max-width:700px;margin:0 auto 12px auto;font-size:18px;">
+        <MudAlert Severity="@_lastSeverity" Variant="Variant.Filled" Class="parking-alert">
             @_lastMessage
         </MudAlert>
     }
 
     @* ACTIVE PARKING SESSIONS *@
-    @if (ParkingService.ActiveSessions.Any())
+    @if (_activeViewModels.Any())
     {
-        <MudCard Elevation="3" Class="mt-4">
+        <MudCard Elevation="0" Class="parking-card">
             <MudCardHeader>
                 <CardHeaderContent>
-                    <MudText Typo="Typo.h6" Color="Color.Warning">
+                    <MudText Typo="Typo.h6" Class="section-title active-title">
                         <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Class="mr-2" />
                         Parqueos Activos
                     </MudText>
@@ -70,7 +117,7 @@
             </MudCardHeader>
             <MudCardContent>
                 <div class="mud-data-grid-responsive">
-                <MudTable Items="@_activeViewModels" Hover="true" Dense="true" FixedHeader="true" Height="280px">
+                <MudTable Items="@_activeViewModels" Hover="true" Dense="true" FixedHeader="true" Height="280px" Class="parking-table">
                     <HeaderContent>
                         <MudTh>Placa</MudTh>
                         <MudTh>Entrada</MudTh>
@@ -80,10 +127,10 @@
                         <MudTh></MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd><strong style="font-size:16px;">@context.LicensePlate</strong></MudTd>
+                        <MudTd><strong class="plate-cell">@context.LicensePlate</strong></MudTd>
                         <MudTd>@context.EntryTime.ToString("HH:mm")</MudTd>
                         <MudTd>@FormatDuration(DateTime.Now - context.EntryTime)</MudTd>
-                        <MudTd Style="text-align:right;font-weight:700;font-size:15px;">$ @context.EstimatedAmount.ToString("N0")</MudTd>
+                        <MudTd Class="amount-cell">$ @context.EstimatedAmount.ToString("N0")</MudTd>
                         <MudTd Style="text-align:center;">
                             <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
                                        OnClick="@(() => CheckoutFromList(context))" StartIcon="@Icons.Material.Filled.Logout">
@@ -99,10 +146,10 @@
     }
 
     @* MOVIMIENTOS DEL DIA *@
-    <MudCard Elevation="3" Class="mt-6">
+    <MudCard Elevation="0" Class="parking-card movements-card">
         <MudCardHeader>
             <CardHeaderContent>
-                <MudText Typo="Typo.h6">Movimientos del Dia - @DateTime.Today.ToString("dd/MM/yyyy")</MudText>
+                <MudText Typo="Typo.h6" Class="section-title">Movimientos del Dia</MudText>
             </CardHeaderContent>
             <CardHeaderActions>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
@@ -115,7 +162,7 @@
             @if (_movements.Any())
             {
                 <div class="mud-data-grid-responsive">
-                <MudTable Items="@_movements" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="350px">
+                <MudTable Items="@_movements" Hover="true" Dense="true" FixedHeader="true" Height="350px" Class="parking-table">
                     <HeaderContent>
                         <MudTh>Entrada</MudTh>
                         <MudTh>Salida</MudTh>
@@ -134,10 +181,10 @@
                                 @GetStatusLabel(context)
                             </MudChip>
                         </MudTd>
-                        <MudTd><strong>@context.LicensePlate</strong></MudTd>
+                        <MudTd><strong class="plate-cell small">@context.LicensePlate</strong></MudTd>
                         <MudTd>@(string.IsNullOrEmpty(context.CustomerName) ? "Consumidor Final" : context.CustomerName)</MudTd>
                         <MudTd>@context.FormattedDuration</MudTd>
-                        <MudTd Style="text-align:right;font-weight:600;">
+                        <MudTd Class="amount-cell">
                             @if (context.Amount > 0)
                             {
                                 <span>$ @context.Amount.ToString("N0")</span>
@@ -148,7 +195,7 @@
                             }
                         </MudTd>
                         <MudTd>
-                            @if (context.Status == "Activo")
+                            @if (context.Status == ActiveParkingStatus)
                             {
                                 <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
                                            OnClick="@(() => CheckoutByPlate(context.LicensePlate))" StartIcon="@Icons.Material.Filled.Logout">
@@ -162,6 +209,10 @@
                                                    Icon="@Icons.Material.Filled.Print"
                                                    Color="Color.Info"
                                                    OnClick="@(() => ReprintTicket(context))" />
+                                    <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                   Icon="@Icons.Material.Filled.Refresh"
+                                                   Color="Color.Warning"
+                                                   OnClick="ResetPrinterQueue" />
                                     <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
                                                    Icon="@Icons.Material.Filled.PictureAsPdf"
                                                    Color="Color.Error"
@@ -189,66 +240,339 @@
 </MudContainer>
 
 <style>
-    .plate-input input {
-        font-size: 34px !important;
-        font-weight: 800 !important;
-        text-align: center !important;
-        letter-spacing: 5px !important;
-        text-transform: uppercase !important;
-        height: 70px !important;
-        font-family: 'Courier New', monospace !important;
+    .parking-shell {
+        padding-top: 22px;
+        padding-bottom: 36px;
     }
+
+    .parking-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .parking-title {
+        color: #172033;
+        font-weight: 800 !important;
+        line-height: 1.1;
+    }
+
+    .parking-subtitle,
+    .entry-subtitle {
+        color: #657083;
+        margin-top: 4px;
+    }
+
+    .parking-date {
+        border: 1px solid #d8dee8;
+        border-radius: 999px;
+        color: #334155;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 8px 14px;
+        white-space: nowrap;
+    }
+
+    .parking-metrics {
+        margin-bottom: 18px;
+    }
+
+    .metric-card {
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid #e3e8ef;
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        min-height: 76px;
+        padding: 16px 18px;
+    }
+
+    .metric-card strong {
+        color: #172033;
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .metric-card-total {
+        border-color: #bdd7ff;
+        background: #f7fbff;
+    }
+
+    .metric-label {
+        color: #657083;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .parking-entry-panel {
+        background: #ffffff;
+        border: 1px solid #dde5ef;
+        border-radius: 16px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        margin: 0 0 18px 0;
+        padding: 22px;
+        width: 100%;
+    }
+
+    .entry-heading {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+    .entry-title {
+        color: #172033;
+        font-weight: 800 !important;
+    }
+
+    .entry-icon {
+        align-items: center;
+        background: #eef6ff;
+        border-radius: 14px;
+        color: #1565c0;
+        display: inline-flex;
+        font-size: 34px !important;
+        height: 56px;
+        justify-content: center;
+        padding: 10px;
+        width: 56px;
+    }
+
+    .entry-form {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+    }
+
+    .plate-input {
+        width: 100%;
+    }
+
+    .plate-input input {
+        color: #111827 !important;
+        font-size: 42px !important;
+        font-weight: 800 !important;
+        height: 86px !important;
+        font-family: 'Courier New', monospace !important;
+        letter-spacing: 0 !important;
+        text-align: center !important;
+        text-transform: uppercase !important;
+    }
+
     .plate-input .mud-input-label {
         font-size: 18px !important;
+    }
+
+    .vehicle-selector {
+        background: #f6f8fb;
+        border: 1px solid #e0e6ef;
+        border-radius: 12px;
+        padding: 16px;
+        width: 100%;
+    }
+
+    .selector-label {
+        color: #657083;
+        display: block;
+        font-weight: 700 !important;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .vehicle-chip-row {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .process-button {
+        border-radius: 12px;
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        height: 60px;
+        width: 100%;
+    }
+
+    .parking-alert {
+        font-size: 17px;
+        margin: 0 0 16px 0;
+        width: 100%;
+    }
+
+    .parking-card {
+        border: 1px solid #e3e8ef;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .movements-card {
+        margin-top: 22px;
+    }
+
+    .section-title {
+        align-items: center;
+        color: #172033;
+        display: flex;
+        font-weight: 800 !important;
+    }
+
+    .active-title {
+        color: #9a5b00;
+    }
+
+    .parking-table .mud-table-head .mud-table-cell {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .parking-table .mud-table-row:hover {
+        background: #f7fbff;
+    }
+
+    .plate-cell {
+        color: #111827;
+        font-size: 16px;
+        font-weight: 900;
+    }
+
+    .plate-cell.small {
+        font-size: 15px;
+    }
+
+    .amount-cell {
+        color: #0f5132;
+        font-weight: 800;
+        text-align: right;
+    }
+
+    @@media (max-width: 720px) {
+        .parking-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .parking-entry-panel {
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .plate-input input {
+            font-size: 30px !important;
+            height: 76px !important;
+        }
     }
 </style>
 
 @code {
     public string? Title { get; private set; }
     private string _licensePlate = string.Empty;
+    private VehicleTypes _vehicleType = VehicleTypes.PrivateCar;
+    private static readonly VehicleTypes[] _vehicleTypes = new[]
+    {
+        VehicleTypes.MotorCycle, VehicleTypes.PrivateCar, VehicleTypes.LightGoods,
+        VehicleTypes.HeavyGoods, VehicleTypes.Coaches, VehicleTypes.Containers,
+        VehicleTypes.LightBuses
+    };
     private string? _lastMessage;
     private Severity _lastSeverity = Severity.Info;
     private List<MovementRecord> _movements = new();
     private List<ActiveParkingViewModel> _activeViewModels = new();
+    private MudAutocomplete<string>? _plateInput;
     private Timer? _refreshTimer;
+    private bool _disposed;
+    private const string ActiveParkingStatus = "Activo";
+    private const string CompletedParkingStatus = "Completado";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Title = L["Parqueo"];
-        LoadTodayMovements();
-        RefreshActiveViewModels();
-        _refreshTimer = new Timer(async _ =>
+        await LoadParkingStateSafeAsync(showSnackbar: true);
+        _refreshTimer = new Timer(_ => _ = InvokeAsync(async () =>
         {
-            RefreshActiveViewModels();
-            await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+            if (_disposed)
+                return;
+
+            await LoadParkingStateSafeAsync();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await FocusPlateInputAsync();
     }
 
     public void Dispose()
     {
+        _disposed = true;
         _refreshTimer?.Dispose();
     }
 
-    private void LoadTodayMovements()
+    private async Task LoadParkingStateSafeAsync(bool showSnackbar = false)
     {
-        _movements = MovementTracker.GetTodayMovements().ToList();
-    }
-
-    private void RefreshMovements()
-    {
-        LoadTodayMovements();
-        StateHasChanged();
-    }
-
-    private void RefreshActiveViewModels()
-    {
-        _activeViewModels = ParkingService.ActiveSessions.Select(s => new ActiveParkingViewModel
+        try
         {
-            LicensePlate = s.LicensePlate,
-            EntryTime = s.EntryTime,
-            TicketNumber = s.TicketNumber,
-            EstimatedAmount = CalculateAmount(DateTime.Now - s.EntryTime)
-        }).OrderBy(s => s.EntryTime).ToList();
+            await LoadParkingStateAsync();
+        }
+        catch (Exception ex)
+        {
+            _lastMessage = $"Error cargando parqueos: {ex.Message}";
+            _lastSeverity = Severity.Error;
+
+            if (showSnackbar)
+                Snackbar.Add(_lastMessage, Severity.Error);
+        }
+    }
+
+    private async Task LoadParkingStateAsync()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var today = DateTime.Today;
+        var tomorrow = today.AddDays(1);
+
+        var records = await db.ParkingRecords
+            .AsNoTracking()
+            .Where(p => (p.EntryTime >= today && p.EntryTime < tomorrow) ||
+                        (p.ExitTime.HasValue && p.ExitTime.Value >= today && p.ExitTime.Value < tomorrow) ||
+                        p.Status == ActiveParkingStatus)
+            .OrderByDescending(p => p.ExitTime ?? p.EntryTime)
+            .ToListAsync();
+
+        _movements = records
+            .Where(p => p.EntryTime >= today && p.EntryTime < tomorrow ||
+                        p.ExitTime.HasValue && p.ExitTime.Value >= today && p.ExitTime.Value < tomorrow)
+            .Select(ToMovementRecord)
+            .ToList();
+
+        _activeViewModels = records
+            .Where(p => p.Status == ActiveParkingStatus)
+            .OrderBy(p => p.EntryTime)
+            .Select(p => new ActiveParkingViewModel
+            {
+                LicensePlate = p.LicensePlate,
+                EntryTime = p.EntryTime,
+                TicketNumber = p.TicketNumber ?? string.Empty,
+                VehicleType = ParseVehicleType(p.Notes),
+                EstimatedAmount = CalculateAmount(DateTime.Now - p.EntryTime)
+            })
+            .ToList();
+    }
+
+    private async Task RefreshMovements()
+    {
+        await LoadParkingStateSafeAsync(showSnackbar: true);
+        StateHasChanged();
     }
 
     private int CalculateAmount(TimeSpan duration)
@@ -265,18 +589,54 @@
         }
     }
 
-    private async Task ProcessPlate()
+    private Task<IEnumerable<string>> SearchActivePlates(string search, CancellationToken cancellationToken)
     {
-        var plate = _licensePlate.Trim().ToUpper();
-        if (string.IsNullOrEmpty(plate)) return;
+        var normalizedSearch = NormalizePlate(search);
+        var matches = _activeViewModels
+            .Select(vm => vm.LicensePlate)
+            .Where(plate => !string.IsNullOrWhiteSpace(plate))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
 
-        if (ParkingService.IsParked(plate))
+        if (!string.IsNullOrWhiteSpace(normalizedSearch))
         {
-            await DoCheckout(plate, "");
+            matches = matches
+                .Where(plate => NormalizePlate(plate).Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(plate => NormalizePlate(plate).StartsWith(normalizedSearch, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(plate => plate);
         }
         else
         {
-            await DoEntry(plate);
+            matches = matches.OrderBy(plate => plate);
+        }
+
+        return Task.FromResult(matches.Take(8));
+    }
+
+    private async Task ProcessPlate()
+    {
+        var plate = NormalizePlate(_licensePlate);
+        if (string.IsNullOrEmpty(plate)) return;
+
+        try
+        {
+            var activeRecord = await GetActiveParkingRecordAsync(plate);
+            if (activeRecord is not null)
+            {
+                await DoCheckout(activeRecord.LicensePlate, "");
+            }
+            else
+            {
+                await DoEntry(plate);
+            }
+        }
+        catch (Exception ex)
+        {
+            _lastMessage = $"Error procesando placa {plate}: {ex.Message}";
+            _lastSeverity = Severity.Error;
+            Snackbar.Add(_lastMessage, Severity.Error);
+            _licensePlate = string.Empty;
+            await InvokeAsync(StateHasChanged);
+            await FocusPlateInputAsync();
         }
     }
 
@@ -285,33 +645,25 @@
         var entryTime = DateTime.Now;
         var ticketNo = TicketService.GenerateTicketNumber();
 
-        ParkingService.RegisterEntry(new ParkingSession
-        {
-            LicensePlate = plate,
-            EntryTime = entryTime,
-            VehicleType = "Carro",
-            TicketNumber = ticketNo
-        });
-
-        MovementTracker.AddMovement(new MovementRecord
-        {
-            Time = entryTime,
-            Type = "Entrada",
-            LicensePlate = plate,
-            Status = "Activo",
-            Amount = 0
-        });
-
         await using var db = await DbFactory.CreateAsync();
         db.ParkingRecords.Add(new ParkingRecord
         {
             LicensePlate = plate,
             EntryTime = entryTime,
             TicketNumber = ticketNo,
-            Status = "Activo",
-            Amount = 0
+            Status = ActiveParkingStatus,
+            Amount = 0,
+            Notes = _vehicleType.ToString()
         });
         await db.SaveChangesAsync(CancellationToken.None);
+
+        ParkingService.RegisterEntry(new ParkingSession
+        {
+            LicensePlate = plate,
+            EntryTime = entryTime,
+            VehicleType = _vehicleType.GetDescription(),
+            TicketNumber = ticketNo
+        });
 
         var ticketData = new TicketData
         {
@@ -319,23 +671,11 @@
             LicensePlate = plate,
             DateTime = entryTime,
             TicketNumber = ticketNo,
-            OperatorName = "Operador"
+            OperatorName = "Operador",
+            VehicleType = _vehicleType.GetDescription()
         };
 
-        if (PrinterService.Enabled && !string.IsNullOrWhiteSpace(PrinterService.PrinterName))
-        {
-            try
-            {
-                await PrinterService.PrintTicketAsync(TicketService.GenerateTicketText(ticketData));
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error impresora: {ex.Message}", Severity.Error);
-                await JSRuntime.InvokeVoidAsync("openTicketWindow",
-                    TicketService.GenerateTicketHtmlForWindow(ticketData));
-            }
-        }
-        else
+        if (await EnsurePrinterQueueReady())
         {
             await JSRuntime.InvokeVoidAsync("openTicketWindow",
                 TicketService.GenerateTicketHtmlForWindow(ticketData));
@@ -345,66 +685,55 @@
         _lastSeverity = Severity.Info;
         Snackbar.Add($"Entrada: {plate}", Severity.Success);
 
-        _licensePlate = string.Empty;
-        LoadTodayMovements();
-        RefreshActiveViewModels();
-        StateHasChanged();
+        await ClearPlateAndReloadAsync();
     }
 
     private async Task DoCheckout(string plate, string customerName)
     {
-        var session = ParkingService.GetSession(plate);
-        if (session == null) return;
+        await using var db = await DbFactory.CreateAsync();
+        var normalizedPlate = NormalizePlate(plate);
+        var record = await db.ParkingRecords
+            .Where(p => p.Status == ActiveParkingStatus &&
+                        p.LicensePlate.Replace("-", "").Replace(" ", "").ToUpper() == normalizedPlate)
+            .OrderByDescending(p => p.EntryTime)
+            .FirstOrDefaultAsync();
 
-        var duration = DateTime.Now - session.EntryTime;
+        if (record is null)
+        {
+            Snackbar.Add($"No hay parqueo activo para la placa {plate}.", Severity.Warning);
+            await ClearPlateAndReloadAsync();
+            return;
+        }
+
+        var exitTime = DateTime.Now;
+        var duration = exitTime - record.EntryTime;
         var amount = CalculateAmount(duration);
         var customer = string.IsNullOrWhiteSpace(customerName) ? "Consumidor Final" : customerName.Trim();
         var formattedDuration = FormatDuration(duration);
 
         ParkingService.Checkout(plate);
-        MovementTracker.UpdateExit(plate, customer, amount, formattedDuration);
 
-        await using var db = await DbFactory.CreateAsync();
-        var record = await db.ParkingRecords
-            .Where(p => p.LicensePlate == plate && p.Status == "Activo")
-            .OrderByDescending(p => p.EntryTime)
-            .FirstOrDefaultAsync();
-        if (record != null)
-        {
-            record.ExitTime = DateTime.Now;
-            record.Amount = amount;
-            record.Status = "Completado";
-            record.CustomerName = customer;
-            await db.SaveChangesAsync(CancellationToken.None);
-        }
+        record.ExitTime = exitTime;
+        record.Amount = amount;
+        record.Status = CompletedParkingStatus;
+        record.CustomerName = customer;
+        await db.SaveChangesAsync(CancellationToken.None);
 
         var exitTicketData = new TicketData
         {
             Type = TicketType.Exit,
             LicensePlate = plate,
-            DateTime = DateTime.Now,
-            EntryTime = session.EntryTime,
-            TicketNumber = session.TicketNumber,
+            DateTime = exitTime,
+            EntryTime = record.EntryTime,
+            TicketNumber = record.TicketNumber,
             Amount = amount,
             Duration = duration,
             CustomerName = customer == "Consumidor Final" ? null : customer,
-            OperatorName = "Operador"
+            OperatorName = "Operador",
+            VehicleType = ParseVehicleType(record.Notes)
         };
 
-        if (PrinterService.Enabled && !string.IsNullOrWhiteSpace(PrinterService.PrinterName))
-        {
-            try
-            {
-                await PrinterService.PrintTicketAsync(TicketService.GenerateTicketText(exitTicketData));
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error impresora: {ex.Message}", Severity.Error);
-                await JSRuntime.InvokeVoidAsync("openTicketWindow",
-                    TicketService.GenerateTicketHtmlForWindow(exitTicketData));
-            }
-        }
-        else
+        if (await EnsurePrinterQueueReady())
         {
             await JSRuntime.InvokeVoidAsync("openTicketWindow",
                 TicketService.GenerateTicketHtmlForWindow(exitTicketData));
@@ -414,26 +743,108 @@
         _lastSeverity = Severity.Success;
         Snackbar.Add($"Salida: {plate} - $ {amount:N0}", Severity.Success);
 
-        _licensePlate = string.Empty;
-        LoadTodayMovements();
-        RefreshActiveViewModels();
-        StateHasChanged();
+        await ClearPlateAndReloadAsync();
     }
 
     private async Task CheckoutFromList(ActiveParkingViewModel vm)
     {
-        if (ParkingService.IsParked(vm.LicensePlate))
-        {
-            await DoCheckout(vm.LicensePlate, "");
-        }
+        await DoCheckout(vm.LicensePlate, "");
     }
 
     private async Task CheckoutByPlate(string plate)
     {
-        if (ParkingService.IsParked(plate))
+        await DoCheckout(NormalizePlate(plate), "");
+    }
+
+    private async Task<ParkingRecord?> GetActiveParkingRecordAsync(string plate)
+    {
+        var normalizedPlate = NormalizePlate(plate);
+        await using var db = await DbFactory.CreateAsync();
+        return await db.ParkingRecords
+            .AsNoTracking()
+            .Where(p => p.Status == ActiveParkingStatus &&
+                        p.LicensePlate.Replace("-", "").Replace(" ", "").ToUpper() == normalizedPlate)
+            .OrderByDescending(p => p.EntryTime)
+            .FirstOrDefaultAsync();
+    }
+
+    private static string NormalizePlate(string? plate)
+    {
+        return string.IsNullOrWhiteSpace(plate)
+            ? string.Empty
+            : plate.Trim().Replace("-", string.Empty).Replace(" ", string.Empty).ToUpperInvariant();
+    }
+
+    private async Task ClearPlateAndReloadAsync()
+    {
+        _licensePlate = string.Empty;
+        await LoadParkingStateSafeAsync(showSnackbar: true);
+        await InvokeAsync(StateHasChanged);
+        await FocusPlateInputAsync();
+    }
+
+    private async Task FocusPlateInputAsync()
+    {
+        try
         {
-            await DoCheckout(plate, "");
+            if (_plateInput is not null)
+                await _plateInput.FocusAsync();
         }
+        catch
+        {
+            // The input can be unavailable while the print popup opens or the circuit is closing.
+        }
+    }
+
+    private async Task ResetPrinterQueue()
+    {
+        try
+        {
+            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
+            if (repairedJobs < 0)
+            {
+                Snackbar.Add("Windows no permitio resetear la impresora. Abra la app como administrador o limpie la cola manualmente.", Severity.Warning);
+                await FocusPlateInputAsync();
+                return;
+            }
+
+            Snackbar.Add(repairedJobs > 0
+                ? $"Impresora reiniciada. Cola limpiada: {repairedJobs} trabajo(s)."
+                : "Impresora revisada. No habia trabajos bloqueados.",
+                repairedJobs > 0 ? Severity.Warning : Severity.Success);
+            await FocusPlateInputAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo resetear la impresora: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private static MovementRecord ToMovementRecord(ParkingRecord record)
+    {
+        var duration = record.ExitTime.HasValue ? record.ExitTime.Value - record.EntryTime : (TimeSpan?)null;
+        return new MovementRecord
+        {
+            Id = record.TicketNumber ?? record.Id.ToString(),
+            Time = record.EntryTime,
+            Type = "Entrada",
+            LicensePlate = record.LicensePlate,
+            CustomerName = record.CustomerName ?? string.Empty,
+            Amount = (int)record.Amount,
+            Status = record.Status,
+            ExitTime = record.ExitTime,
+            FormattedDuration = duration.HasValue ? FormatDuration(duration) : string.Empty
+        };
+    }
+
+    private static string ParseVehicleType(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes))
+            return "Carro";
+
+        return Enum.TryParse<VehicleTypes>(notes, out var vehicleType)
+            ? vehicleType.GetDescription()
+            : notes;
     }
 
     private async Task ReprintTicket(MovementRecord m)
@@ -442,24 +853,27 @@
                  : m.Type == "Mensualidad" ? TicketType.Monthly
                  : TicketType.Exit;
 
-        var duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
-            ? ParseDuration(m.FormattedDuration)
-            : null;
+        var ticketNo = m.Type == "Entrada" ? $"TK-ENT-{m.Id}" : m.Id;
+        var ticketData = new TicketData
+        {
+            Type = type,
+            LicensePlate = m.LicensePlate,
+            DateTime = m.ExitTime ?? m.Time,
+            EntryTime = m.Time,
+            TicketNumber = ticketNo,
+            Amount = m.Amount,
+            Duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
+                ? ParseDuration(m.FormattedDuration) : null,
+            CustomerName = string.IsNullOrEmpty(m.CustomerName) || m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
+            OperatorName = "Operador"
+        };
 
-        await JSRuntime.InvokeVoidAsync("openTicketWindow",
-            TicketService.GenerateTicketHtmlForWindow(new TicketData
-            {
-                Type = type,
-                LicensePlate = m.LicensePlate,
-                DateTime = m.ExitTime ?? m.Time,
-                EntryTime = m.Time,
-                TicketNumber = m.Id,
-                Amount = m.Amount,
-                Duration = duration,
-                CustomerName = m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
-                OperatorName = "Operador"
-            }));
-        Snackbar.Add("Ticket reimpreso", Severity.Info);
+        if (await EnsurePrinterQueueReady())
+        {
+            await JSRuntime.InvokeVoidAsync("openTicketWindow",
+                TicketService.GenerateTicketHtmlForWindow(ticketData));
+            Snackbar.Add("Vista previa de impresion abierta", Severity.Info);
+        }
     }
 
     private async Task DownloadPdf(MovementRecord m)
@@ -504,6 +918,31 @@
         return null;
     }
 
+    private async Task<bool> EnsurePrinterQueueReady()
+    {
+        try
+        {
+            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
+            if (repairedJobs < 0)
+            {
+                Snackbar.Add("Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.", Severity.Warning);
+                return true;
+            }
+
+            if (repairedJobs > 0)
+            {
+                Snackbar.Add($"Cola de impresion limpiada: {repairedJobs} trabajo(s).", Severity.Warning);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo limpiar la cola de impresion: {ex.Message}", Severity.Error);
+            return false;
+        }
+    }
+
     private static string FormatDuration(TimeSpan? duration)
     {
         if (duration == null) return "--";
@@ -517,14 +956,14 @@
     {
         if (m.Type == "Lavado") return Color.Warning;
         if (m.Type == "Mensualidad") return Color.Primary;
-        return m.Status == "Activo" ? Color.Info : Color.Success;
+        return m.Status == ActiveParkingStatus ? Color.Info : Color.Success;
     }
 
     private string GetStatusLabel(MovementRecord m)
     {
         if (m.Type == "Lavado") return "LAVADO";
         if (m.Type == "Mensualidad") return "MENSUAL";
-        return m.Status == "Activo" ? "ACTIVO" : "COMPLETADO";
+        return m.Status == ActiveParkingStatus ? "ACTIVO" : "COMPLETADO";
     }
 
     public class ActiveParkingViewModel
@@ -532,6 +971,7 @@
         public string LicensePlate { get; set; } = string.Empty;
         public DateTime EntryTime { get; set; }
         public string TicketNumber { get; set; } = string.Empty;
+        public string VehicleType { get; set; } = string.Empty;
         public int EstimatedAmount { get; set; }
     }
 }

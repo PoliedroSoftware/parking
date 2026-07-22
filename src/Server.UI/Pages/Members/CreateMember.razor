@@ -2,10 +2,13 @@
 @using CleanArchitecture.Blazor.Application.Features.Members.Commands.Create
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Vehicles.DTOs
+@using CleanArchitecture.Blazor.Domain.Constants
+@using CleanArchitecture.Blazor.Domain.Entities
 
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<Members> L
+@inject IApplicationDbContextFactory DbFactory
 @attribute [Authorize(Policy = Permissions.Members.Create)]
 
 <PageTitle>@Title</PageTitle>
@@ -41,11 +44,11 @@
                         <MudPaper Elevation="1" Class="pa-3 mb-3" Style="background:#f5f5f5;">
                             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Seleccione tipo para auto-llenar el valor (editable)</MudText>
                             <MudStack Row Spacing="2">
-                                @foreach (var t in _defaultPrices)
+                                @foreach (var rate in _monthlyRates)
                                 {
                                     <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                             Style="cursor:pointer;" OnClick="@(() => ApplyDefaultPrice(t))">
-                                        @t.Type.GetDescription(): $ @t.Price.ToString("N0")
+                                             Style="cursor:pointer;" OnClick="@(() => ApplyMonthlyRate(rate))">
+                                        @rate.Name: $ @rate.MonthlyFee.ToString("N0")
                                     </MudChip>
                                 }
                             </MudStack>
@@ -113,21 +116,11 @@
     private VehicleTypes _newVehicleType = VehicleTypes.PrivateCar;
     private decimal _newVehiclePrice;
     private List<MonthlyVehicle> _vehicles = new();
+    private List<MonthlyRate> _monthlyRates = new();
     private List<BreadcrumbItem>? _breadcrumbItems;
     private CreateMemberCommand _model = new() { IsActive = true, StartDate = DateTime.Today, Amount = 0 };
 
-    private static readonly List<DefaultPrice> _defaultPrices = new()
-    {
-        new() { Type = VehicleTypes.MotorCycle, Price = 30_000 },
-        new() { Type = VehicleTypes.PrivateCar, Price = 80_000 },
-        new() { Type = VehicleTypes.LightGoods, Price = 100_000 },
-        new() { Type = VehicleTypes.HeavyGoods, Price = 150_000 },
-        new() { Type = VehicleTypes.Coaches, Price = 200_000 },
-        new() { Type = VehicleTypes.Containers, Price = 60_000 },
-        new() { Type = VehicleTypes.LightBuses, Price = 120_000 },
-    };
-
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         Title = "Nueva Mensualidad";
         _breadcrumbItems = new List<BreadcrumbItem>
@@ -135,7 +128,19 @@
             new(L["Home"], href: "/"), new("Mensualidades", href: "/pages/members"),
             new("Crear Mensualidad", href: null, disabled: true)
         };
-        return Task.CompletedTask;
+        await LoadMonthlyRates();
+    }
+
+    private async Task LoadMonthlyRates()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        _monthlyRates = await db.MonthlyRates
+            .AsNoTracking()
+            .Where(x => x.IsActive &&
+                        (x.Description == null || !x.Description.StartsWith(MonthlyRateDefaults.BaseMarker)))
+            .OrderBy(x => x.VehicleType)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
     }
 
     private void AddVehicle()
@@ -155,14 +160,14 @@
 
     private void OnVehicleTypeChange(VehicleTypes type)
     {
-        var def = _defaultPrices.FirstOrDefault(d => d.Type == type);
-        if (def != null) _newVehiclePrice = def.Price;
+        var rate = _monthlyRates.FirstOrDefault(d => d.VehicleType == type);
+        if (rate != null) _newVehiclePrice = rate.MonthlyFee;
     }
 
-    private void ApplyDefaultPrice(DefaultPrice p)
+    private void ApplyMonthlyRate(MonthlyRate rate)
     {
-        _newVehicleType = p.Type;
-        _newVehiclePrice = p.Price;
+        _newVehicleType = rate.VehicleType;
+        _newVehiclePrice = rate.MonthlyFee;
     }
 
     private void UpdateTotal()
@@ -215,9 +220,4 @@
         public decimal Price { get; set; }
     }
 
-    public class DefaultPrice
-    {
-        public VehicleTypes Type { get; set; }
-        public decimal Price { get; set; }
-    }
 }

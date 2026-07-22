@@ -1,5 +1,7 @@
 @page "/tables/wash-prices"
+@using CleanArchitecture.Blazor.Domain.Constants
 @using CleanArchitecture.Blazor.Domain.Entities
+@using CleanArchitecture.Blazor.Domain.Enums
 
 @inject IApplicationDbContextFactory DbFactory
 @inject ISnackbar Snackbar
@@ -7,68 +9,638 @@
 
 <PageTitle>Tarifas de Lavado</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudText Typo="Typo.h3" Style="font-weight:700;">Tarifas de Lavado</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Precios por tipo de vehiculo</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+        <div>
+            <MudText Typo="Typo.h4" Style="font-weight:800;">Tarifas de Lavado</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Opciones usadas por el formulario de registro de lavado.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadData">
+            Actualizar
+        </MudButton>
+    </MudStack>
 
-    <MudCard Elevation="3" Class="mb-4">
-        <MudCardContent>
-            @foreach (var group in _prices.GroupBy(p => p.ServiceType))
-            {
-                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mt-4 mb-2" Style="font-weight:700;">@group.Key.GetDescription()</MudText>
-                <MudTable Items="@group.ToList()" Dense="true" Hover="true" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>Vehiculo</MudTh>
-                        <MudTh Style="text-align:right;">Precio</MudTh>
-                        <MudTh>Activo</MudTh>
-                        <MudTh></MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd>@context.VehicleType.GetDescription()</MudTd>
-                        <MudTd>
-                            <MudNumericField T="decimal" @bind-Value="context.BasePrice" Min="0" Style="min-width:80px;max-width:100%;" Dense="true"></MudNumericField>
-                        </MudTd>
-                        <MudTd>
-                            <MudCheckBox @bind-Value="context.IsActive" Dense="true"></MudCheckBox>
-                        </MudTd>
-                        <MudTd>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="@(() => SavePrice(context))">Guardar</MudButton>
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            }
-        </MudCardContent>
-    </MudCard>
+    <MudGrid Spacing="3">
+        <MudItem xs="12" lg="5">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(_editingPriceId.HasValue ? "Editar tarifa" : "Nueva tarifa")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12">
+                            <MudTextField T="string" Label="Nombre" @bind-Value="_priceEditor.Name"
+                                          Required="true" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudSelect T="WashServiceType" Label="Tipo de lavado" @bind-Value="_priceEditor.ServiceType"
+                                       Required="true" Margin="Margin.Dense" Disabled="@EditingBasePrice">
+                                @foreach (var serviceType in _washServiceTypes)
+                                {
+                                    <MudSelectItem T="WashServiceType" Value="@serviceType">@serviceType.GetDescription()</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudSelect T="VehicleTypes" Label="Tipo de vehiculo" @bind-Value="_priceEditor.VehicleType"
+                                       Required="true" Margin="Margin.Dense" Disabled="@EditingBasePrice">
+                                @foreach (var vehicleType in _vehicleTypes)
+                                {
+                                    <MudSelectItem T="VehicleTypes" Value="@vehicleType">@vehicleType.GetDescription()</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField T="decimal" Label="Precio base" @bind-Value="_priceEditor.BasePrice"
+                                             Min="0" Required="true" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudCheckBox T="bool" Label="Activa" @bind-Value="_priceEditor.IsActive"
+                                         Color="Color.Primary" Disabled="@EditingBasePrice" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField T="string" Label="Descripcion" @bind-Value="_priceEditor.Description"
+                                          Lines="2" Margin="Margin.Dense" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" OnClick="ResetPriceEditor">Limpiar</MudButton>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveServicePrice"
+                               Disabled="@_saving">
+                        Guardar tarifa
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
 
-    <MudAlert Severity="Severity.Info" Class="mt-4">
-        <strong>Adicionales:</strong> Lavado de Motor $15.000 | Cera $10.000 | Aspirado $8.000 | Ozono $20.000 | Chasis $12.000 | Polichado $25.000
-    </MudAlert>
+        <MudItem xs="12" lg="7">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Tarifas registradas</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@_servicePrices" Hover="true" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Nombre</MudTh>
+                            <MudTh>Lavado</MudTh>
+                            <MudTh>Vehiculo</MudTh>
+                            <MudTh Style="text-align:right;">Precio</MudTh>
+                            <MudTh>Estado</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Name</MudTd>
+                            <MudTd>@context.ServiceType.GetDescription()</MudTd>
+                            <MudTd>@context.VehicleType.GetDescription()</MudTd>
+                            <MudTd Style="text-align:right;font-weight:700;">$ @context.BasePrice.ToString("N0")</MudTd>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                                    @(context.IsActive ? "Activa" : "Inactiva")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd Style="text-align:right;">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit"
+                                               OnClick="@(() => EditServicePrice(context))" />
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(() => DeleteServicePrice(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Color="Color.Secondary">No hay tarifas registradas.</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" lg="5">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(_editingAdditionalId.HasValue ? "Editar adicional" : "Nuevo adicional")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12">
+                            <MudTextField T="string" Label="Nombre" @bind-Value="_additionalEditor.Name"
+                                          Required="true" Margin="Margin.Dense" Disabled="@EditingBaseAdditional" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField T="decimal" Label="Precio" @bind-Value="_additionalEditor.Price"
+                                             Min="0" Required="true" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudCheckBox T="bool" Label="Activo" @bind-Value="_additionalEditor.IsActive"
+                                         Color="Color.Primary" Disabled="@EditingBaseAdditional" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField T="string" Label="Descripcion" @bind-Value="_additionalEditor.Description"
+                                          Lines="2" Margin="Margin.Dense" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" OnClick="ResetAdditionalEditor">Limpiar</MudButton>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAdditional"
+                               Disabled="@_saving">
+                        Guardar adicional
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" lg="7">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Adicionales registrados</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@_additionals" Hover="true" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Nombre</MudTh>
+                            <MudTh>Descripcion</MudTh>
+                            <MudTh Style="text-align:right;">Precio</MudTh>
+                            <MudTh>Estado</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Name</MudTd>
+                            <MudTd>@WashCatalogDefaults.CleanDescription(context.Description)</MudTd>
+                            <MudTd Style="text-align:right;font-weight:700;">$ @context.Price.ToString("N0")</MudTd>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                                    @(context.IsActive ? "Activo" : "Inactivo")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd Style="text-align:right;">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit"
+                                               OnClick="@(() => EditAdditional(context))" />
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(() => DeleteAdditional(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Color="Color.Secondary">No hay adicionales registrados.</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
 </MudContainer>
 
 @code {
-    private List<WashServicePrice> _prices = new();
+    private readonly WashServiceType[] _washServiceTypes = Enum.GetValues<WashServiceType>()
+        .Where(x => x != WashServiceType.None)
+        .ToArray();
+
+    private readonly VehicleTypes[] _vehicleTypes = Enum.GetValues<VehicleTypes>()
+        .Where(x => x != VehicleTypes.None)
+        .ToArray();
+
+    private List<WashServicePrice> _servicePrices = new();
+    private List<WashAdditional> _additionals = new();
+    private WashServicePrice _priceEditor = NewPriceEditor();
+    private WashAdditional _additionalEditor = NewAdditionalEditor();
+    private int? _editingPriceId;
+    private int? _editingAdditionalId;
+    private bool _saving;
+    private bool EditingBasePrice => _editingPriceId.HasValue &&
+        _servicePrices.Any(x => x.Id == _editingPriceId.Value && IsBaseServicePrice(x));
+
+    private bool EditingBaseAdditional => _editingAdditionalId.HasValue &&
+        _additionals.Any(x => x.Id == _editingAdditionalId.Value && IsBaseAdditional(x));
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadPrices();
+        await LoadData();
     }
 
-    private async Task LoadPrices()
+    private async Task LoadData()
     {
         await using var db = await DbFactory.CreateAsync();
-        _prices = await db.WashServicePrices.OrderBy(p => p.ServiceType).ThenBy(p => p.VehicleType).ToListAsync();
+        await NormalizeLegacyBaseRowsAsync(db);
+
+        _servicePrices = await db.WashServicePrices
+            .AsNoTracking()
+            .Where(p => p.Description == null || !p.Description.StartsWith(WashCatalogDefaults.BaseMarker))
+            .OrderByDescending(p => p.IsActive)
+            .ThenBy(p => p.ServiceType)
+            .ThenBy(p => p.VehicleType)
+            .ThenBy(p => p.Name)
+            .ToListAsync();
+
+        _additionals = await db.WashAdditionals
+            .AsNoTracking()
+            .Where(a => a.Description == null || !a.Description.StartsWith(WashCatalogDefaults.BaseMarker))
+            .OrderByDescending(a => a.IsActive)
+            .ThenBy(a => a.Name)
+            .ToListAsync();
     }
 
-    private async Task SavePrice(WashServicePrice price)
+    private static async Task NormalizeLegacyBaseRowsAsync(IApplicationDbContext db)
     {
-        await using var db = await DbFactory.CreateAsync();
-        var existing = await db.WashServicePrices.FindAsync(price.Id);
-        if (existing != null)
+        var prices = await db.WashServicePrices.ToListAsync();
+        foreach (var price in WashCatalogDefaults.ServicePrices)
         {
-            existing.BasePrice = price.BasePrice;
-            existing.IsActive = price.IsActive;
+            var baseName = $"Base - {price.Name}";
+            var legacyBase = prices.FirstOrDefault(x =>
+                WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.ServiceType == price.ServiceType &&
+                x.VehicleType == price.VehicleType &&
+                !x.Name.Equals(baseName, StringComparison.OrdinalIgnoreCase));
+
+            if (legacyBase is null)
+                continue;
+
+            legacyBase.Name = baseName;
+            legacyBase.BasePrice = price.BasePrice;
+            legacyBase.IsActive = true;
+            legacyBase.Description = WashCatalogDefaults.MarkDescription(price.Description);
+
+            var visibleExists = prices.Any(x =>
+                !WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.ServiceType == price.ServiceType &&
+                x.VehicleType == price.VehicleType);
+
+            if (!visibleExists)
+                db.WashServicePrices.Add(new WashServicePrice
+                {
+                    Name = price.Name,
+                    ServiceType = price.ServiceType,
+                    VehicleType = price.VehicleType,
+                    BasePrice = price.BasePrice,
+                    IsActive = true,
+                    Description = price.Description
+                });
+        }
+
+        var additionals = await db.WashAdditionals.ToListAsync();
+        foreach (var additional in WashCatalogDefaults.Additionals)
+        {
+            var baseName = $"Base - {additional.Name}";
+            var legacyBase = additionals.FirstOrDefault(x =>
+                WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.Name.Equals(additional.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (legacyBase is null)
+                continue;
+
+            legacyBase.Name = baseName;
+            legacyBase.Price = additional.Price;
+            legacyBase.IsActive = true;
+            legacyBase.Description = WashCatalogDefaults.MarkDescription(additional.Description);
+
+            var visibleExists = additionals.Any(x =>
+                !WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.Name.Equals(additional.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (!visibleExists)
+                db.WashAdditionals.Add(new WashAdditional
+                {
+                    Name = additional.Name,
+                    Price = additional.Price,
+                    IsActive = true,
+                    Description = additional.Description
+                });
+        }
+
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private async Task SaveServicePrice()
+    {
+        if (string.IsNullOrWhiteSpace(_priceEditor.Name))
+        {
+            Snackbar.Add("El nombre de la tarifa es requerido.", Severity.Warning);
+            return;
+        }
+
+        if (_priceEditor.ServiceType == WashServiceType.None || _priceEditor.VehicleType == VehicleTypes.None)
+        {
+            Snackbar.Add("Seleccione tipo de lavado y tipo de vehiculo.", Severity.Warning);
+            return;
+        }
+
+        if (_priceEditor.BasePrice <= 0)
+        {
+            Snackbar.Add("El precio base debe ser mayor a cero.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await using var db = await DbFactory.CreateAsync();
+            var duplicated = await db.WashServicePrices.AnyAsync(p =>
+                p.Id != (_editingPriceId ?? 0) &&
+                (p.Description == null || !p.Description.StartsWith(WashCatalogDefaults.BaseMarker)) &&
+                p.ServiceType == _priceEditor.ServiceType &&
+                p.VehicleType == _priceEditor.VehicleType);
+
+            if (duplicated)
+            {
+                Snackbar.Add("Ya existe una tarifa para ese tipo de lavado y vehiculo.", Severity.Warning);
+                return;
+            }
+
+            if (_editingPriceId.HasValue)
+            {
+                var existing = await db.WashServicePrices.FindAsync(_editingPriceId.Value);
+                if (existing is null)
+                {
+                    Snackbar.Add("La tarifa ya no existe.", Severity.Error);
+                    return;
+                }
+
+                var isBasePrice = IsBaseServicePrice(existing);
+                existing.Name = _priceEditor.Name.Trim();
+                existing.ServiceType = isBasePrice ? existing.ServiceType : _priceEditor.ServiceType;
+                existing.VehicleType = isBasePrice ? existing.VehicleType : _priceEditor.VehicleType;
+                existing.BasePrice = _priceEditor.BasePrice;
+                existing.IsActive = isBasePrice || _priceEditor.IsActive;
+                existing.Description = isBasePrice
+                    ? WashCatalogDefaults.MarkDescription(_priceEditor.Description ?? string.Empty)
+                    : _priceEditor.Description;
+                await AlignServicePriceUsageAsync(db, existing);
+            }
+            else
+            {
+                var created = new WashServicePrice
+                {
+                    Name = _priceEditor.Name.Trim(),
+                    ServiceType = _priceEditor.ServiceType,
+                    VehicleType = _priceEditor.VehicleType,
+                    BasePrice = _priceEditor.BasePrice,
+                    IsActive = _priceEditor.IsActive,
+                    Description = _priceEditor.Description
+                };
+                db.WashServicePrices.Add(created);
+                await AlignServicePriceUsageAsync(db, created);
+            }
+
             await db.SaveChangesAsync(CancellationToken.None);
-            Snackbar.Add($"Tarifa actualizada: {existing.Name} - ${existing.BasePrice:N0}", Severity.Success);
+            Snackbar.Add("Tarifa de lavado guardada.", Severity.Success);
+            ResetPriceEditor();
+            await LoadData();
+        }
+        finally
+        {
+            _saving = false;
         }
     }
+
+    private async Task SaveAdditional()
+    {
+        if (string.IsNullOrWhiteSpace(_additionalEditor.Name))
+        {
+            Snackbar.Add("El nombre del adicional es requerido.", Severity.Warning);
+            return;
+        }
+
+        if (_additionalEditor.Price <= 0)
+        {
+            Snackbar.Add("El precio del adicional debe ser mayor a cero.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await using var db = await DbFactory.CreateAsync();
+            var normalizedName = _additionalEditor.Name.Trim().ToUpperInvariant();
+            var duplicated = await db.WashAdditionals.AnyAsync(a =>
+                a.Id != (_editingAdditionalId ?? 0) &&
+                (a.Description == null || !a.Description.StartsWith(WashCatalogDefaults.BaseMarker)) &&
+                a.Name.ToUpper() == normalizedName);
+
+            if (duplicated)
+            {
+                Snackbar.Add("Ya existe un adicional con ese nombre.", Severity.Warning);
+                return;
+            }
+
+            if (_editingAdditionalId.HasValue)
+            {
+                var existing = await db.WashAdditionals.FindAsync(_editingAdditionalId.Value);
+                if (existing is null)
+                {
+                    Snackbar.Add("El adicional ya no existe.", Severity.Error);
+                    return;
+                }
+
+                var isBaseAdditional = IsBaseAdditional(existing);
+                existing.Name = isBaseAdditional ? existing.Name : _additionalEditor.Name.Trim();
+                existing.Price = _additionalEditor.Price;
+                existing.IsActive = isBaseAdditional || _additionalEditor.IsActive;
+                existing.Description = isBaseAdditional
+                    ? WashCatalogDefaults.MarkDescription(_additionalEditor.Description ?? string.Empty)
+                    : _additionalEditor.Description;
+                await AlignAdditionalUsageAsync(db, existing);
+            }
+            else
+            {
+                var created = new WashAdditional
+                {
+                    Name = _additionalEditor.Name.Trim(),
+                    Price = _additionalEditor.Price,
+                    IsActive = _additionalEditor.IsActive,
+                    Description = _additionalEditor.Description
+                };
+                db.WashAdditionals.Add(created);
+                await AlignAdditionalUsageAsync(db, created);
+            }
+
+            await db.SaveChangesAsync(CancellationToken.None);
+            Snackbar.Add("Adicional de lavado guardado.", Severity.Success);
+            ResetAdditionalEditor();
+            await LoadData();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void EditServicePrice(WashServicePrice price)
+    {
+        _editingPriceId = price.Id;
+        _priceEditor = new WashServicePrice
+        {
+            Id = price.Id,
+            Name = price.Name,
+            ServiceType = price.ServiceType,
+            VehicleType = price.VehicleType,
+            BasePrice = price.BasePrice,
+            IsActive = price.IsActive,
+            Description = WashCatalogDefaults.CleanDescription(price.Description)
+        };
+    }
+
+    private void EditAdditional(WashAdditional additional)
+    {
+        _editingAdditionalId = additional.Id;
+        _additionalEditor = new WashAdditional
+        {
+            Id = additional.Id,
+            Name = additional.Name,
+            Price = additional.Price,
+            IsActive = additional.IsActive,
+            Description = WashCatalogDefaults.CleanDescription(additional.Description)
+        };
+    }
+
+    private async Task DeleteServicePrice(WashServicePrice price)
+    {
+        if (IsBaseServicePrice(price))
+        {
+            Snackbar.Add("Esta tarifa base no se puede eliminar.", Severity.Warning);
+            return;
+        }
+
+        await using var db = await DbFactory.CreateAsync();
+        var baseDefinition = WashCatalogDefaults.FindServicePrice(price.ServiceType, price.VehicleType);
+
+        var existing = await db.WashServicePrices.FindAsync(price.Id);
+        if (existing is null)
+            return;
+
+        if (baseDefinition is not null)
+            await AlignServicePriceUsageAsync(db, baseDefinition);
+
+        db.WashServicePrices.Remove(existing);
+        await db.SaveChangesAsync(CancellationToken.None);
+        Snackbar.Add("Tarifa eliminada.", Severity.Info);
+        await LoadData();
+    }
+
+    private async Task DeleteAdditional(WashAdditional additional)
+    {
+        if (IsBaseAdditional(additional))
+        {
+            Snackbar.Add("Este adicional base no se puede eliminar.", Severity.Warning);
+            return;
+        }
+
+        await using var db = await DbFactory.CreateAsync();
+        var baseDefinition = WashCatalogDefaults.FindAdditional(additional.Name);
+
+        var existing = await db.WashAdditionals.FindAsync(additional.Id);
+        if (existing is null)
+            return;
+
+        if (baseDefinition is not null)
+            await AlignAdditionalUsageAsync(db, baseDefinition);
+
+        db.WashAdditionals.Remove(existing);
+        await db.SaveChangesAsync(CancellationToken.None);
+        Snackbar.Add("Adicional eliminado.", Severity.Info);
+        await LoadData();
+    }
+
+    private static bool IsBaseServicePrice(WashServicePrice price)
+    {
+        return WashCatalogDefaults.IsMarkedBase(price.Description) &&
+               WashCatalogDefaults.IsBaseServicePrice(price.ServiceType, price.VehicleType);
+    }
+
+    private static bool IsBaseAdditional(WashAdditional additional)
+    {
+        return WashCatalogDefaults.IsMarkedBase(additional.Description) &&
+               WashCatalogDefaults.IsBaseAdditional(additional.Name);
+    }
+
+    private static async Task AlignServicePriceUsageAsync(IApplicationDbContext db, WashServicePrice price)
+    {
+        if (!WashCatalogDefaults.IsBaseServicePrice(price.ServiceType, price.VehicleType))
+            return;
+
+        await AlignServicePriceUsageAsync(db, new WashServicePriceDefinition(
+            price.Name,
+            price.ServiceType,
+            price.VehicleType,
+            price.BasePrice,
+            price.Description ?? string.Empty));
+    }
+
+    private static async Task AlignServicePriceUsageAsync(IApplicationDbContext db, WashServicePriceDefinition price)
+    {
+        var washes = await db.CarWashes
+            .Include(x => x.Additionals)
+            .Where(x => x.WashServiceType == price.ServiceType &&
+                        x.VehicleType == price.VehicleType &&
+                        !x.IsPaid)
+            .ToListAsync();
+
+        foreach (var wash in washes)
+        {
+            var additionalsTotal = wash.Additionals.Sum(x => x.Price);
+            wash.Price = price.BasePrice + additionalsTotal + wash.WeekendSurcharge;
+        }
+    }
+
+    private static async Task AlignAdditionalUsageAsync(IApplicationDbContext db, WashAdditional additional)
+    {
+        if (!WashCatalogDefaults.IsBaseAdditional(additional.Name))
+            return;
+
+        await AlignAdditionalUsageAsync(db, new WashAdditionalDefinition(
+            additional.Name,
+            additional.Price,
+            additional.Description ?? string.Empty));
+    }
+
+    private static async Task AlignAdditionalUsageAsync(IApplicationDbContext db, WashAdditionalDefinition additional)
+    {
+        var usages = await db.CarWashAdditionals
+            .Where(x => x.AdditionalName.ToUpper() == additional.Name.ToUpper() &&
+                        x.CarWash != null &&
+                        !x.CarWash.IsPaid)
+            .ToListAsync();
+
+        foreach (var usage in usages)
+        {
+            usage.AdditionalName = additional.Name;
+            usage.Price = additional.Price;
+        }
+    }
+
+    private void ResetPriceEditor()
+    {
+        _editingPriceId = null;
+        _priceEditor = NewPriceEditor();
+    }
+
+    private void ResetAdditionalEditor()
+    {
+        _editingAdditionalId = null;
+        _additionalEditor = NewAdditionalEditor();
+    }
+
+    private static WashServicePrice NewPriceEditor() => new()
+    {
+        ServiceType = WashServiceType.Basic,
+        VehicleType = VehicleTypes.PrivateCar,
+        IsActive = true
+    };
+
+    private static WashAdditional NewAdditionalEditor() => new()
+    {
+        IsActive = true
+    };
 }

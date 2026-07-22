@@ -6,6 +6,7 @@ using CleanArchitecture.Blazor.Domain.Identity;
 using CleanArchitecture.Blazor.Domain.Entities;
 using CleanArchitecture.Blazor.Domain.Enums;
 using CleanArchitecture.Blazor.Domain.Common;
+using CleanArchitecture.Blazor.Domain.Constants;
 
 namespace CleanArchitecture.Blazor.Infrastructure.Persistence;
 
@@ -598,46 +599,273 @@ public class ApplicationDbContextInitializer
             await _context.SaveChangesAsync();
         }
 
-        // 6. Wash Additionals (seed always if empty)
-        if (!await _context.WashAdditionals.AnyAsync())
+        await UpsertBaseParkingRatesAsync();
+        await UpsertBaseMonthlyRatesAsync();
+        await UpsertBaseWashAdditionalsAsync();
+        await UpsertBaseWashServicePricesAsync();
+    }
+
+    private async Task UpsertBaseParkingRatesAsync()
+    {
+        _logger.LogInformation("Upserting base parking rates...");
+        var existingRates = await _context.ParkingRates.ToListAsync();
+
+        foreach (var rate in ParkingRateDefaults.Rates)
         {
-            _logger.LogInformation("Seeding wash additionals...");
-            var additionals = new List<WashAdditional>
+            var baseName = $"Base - {rate.Name}";
+            var existingBase = existingRates.FirstOrDefault(x =>
+                ParkingRateDefaults.IsMarkedBase(x.Description) &&
+                x.VehicleType == rate.VehicleType);
+            var shouldCreateVisible = existingBase is null ||
+                                      existingBase.Name.Equals(rate.Name, StringComparison.OrdinalIgnoreCase);
+
+            if (existingBase is null)
             {
-                new() { Name = "Lavado de Motor", Price = 15000, Description = "Lavado completo del motor con desengrasante" },
-                new() { Name = "Cera Liquida", Price = 10000, Description = "Aplicacion de cera liquida para brillo" },
-                new() { Name = "Aspirado Interior", Price = 8000, Description = "Aspirado completo de tapetes y sillas" },
-                new() { Name = "Desinfeccion Ozono", Price = 20000, Description = "Tratamiento con ozono para eliminar olores" },
-                new() { Name = "Lavado de Chasis", Price = 12000, Description = "Lavado a presion del chasis y bajos" },
-                new() { Name = "Polichado", Price = 25000, Description = "Polichado y abrillantado de pintura" },
-            };
-            await _context.WashAdditionals.AddRangeAsync(additionals);
-            await _context.SaveChangesAsync();
+                _context.ParkingRates.Add(new ParkingRate
+                {
+                    Name = baseName,
+                    VehicleType = rate.VehicleType,
+                    HourlyRate = rate.HourlyRate,
+                    DayRate = rate.DayRate,
+                    NightRate = rate.NightRate,
+                    IsActive = true,
+                    Description = ParkingRateDefaults.MarkDescription(rate.Description)
+                });
+            }
+            else
+            {
+                existingBase.Name = baseName;
+                existingBase.VehicleType = rate.VehicleType;
+                existingBase.HourlyRate = rate.HourlyRate;
+                existingBase.DayRate = rate.DayRate;
+                existingBase.NightRate = rate.NightRate;
+                existingBase.IsActive = true;
+                existingBase.Description = ParkingRateDefaults.MarkDescription(rate.Description);
+            }
+
+            var visibleExists = existingRates.Any(x =>
+                !ParkingRateDefaults.IsMarkedBase(x.Description) &&
+                x.VehicleType == rate.VehicleType);
+
+            if (!visibleExists && shouldCreateVisible)
+                _context.ParkingRates.Add(new ParkingRate
+                {
+                    Name = rate.Name,
+                    VehicleType = rate.VehicleType,
+                    HourlyRate = rate.HourlyRate,
+                    DayRate = rate.DayRate,
+                    NightRate = rate.NightRate,
+                    IsActive = true,
+                    Description = rate.Description
+                });
         }
 
-        // 7. Wash Service Prices
-        if (!await _context.WashServicePrices.AnyAsync())
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task UpsertBaseMonthlyRatesAsync()
+    {
+        _logger.LogInformation("Upserting base monthly rates...");
+        var existingRates = await _context.MonthlyRates.ToListAsync();
+
+        foreach (var rate in MonthlyRateDefaults.Rates)
         {
-            _logger.LogInformation("Seeding wash service prices...");
-            var prices = new List<WashServicePrice>
+            var baseName = $"Base - {rate.Name}";
+            var existingBase = existingRates.FirstOrDefault(x =>
+                MonthlyRateDefaults.IsMarkedBase(x.Description) &&
+                x.VehicleType == rate.VehicleType);
+            var shouldCreateVisible = existingBase is null ||
+                                      existingBase.Name.Equals(rate.Name, StringComparison.OrdinalIgnoreCase);
+
+            if (existingBase is null)
             {
-                new() { Name = "Basico Carro", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.PrivateCar, BasePrice = 25000 },
-                new() { Name = "Basico Moto", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.MotorCycle, BasePrice = 12000 },
-                new() { Name = "Basico Camioneta", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.LightGoods, BasePrice = 30000 },
-                new() { Name = "Premium Carro", ServiceType = WashServiceType.Premium, VehicleType = VehicleTypes.PrivateCar, BasePrice = 45000 },
-                new() { Name = "Premium Moto", ServiceType = WashServiceType.Premium, VehicleType = VehicleTypes.MotorCycle, BasePrice = 20000 },
-                new() { Name = "Premium Camioneta", ServiceType = WashServiceType.Premium, VehicleType = VehicleTypes.LightGoods, BasePrice = 55000 },
-                new() { Name = "Full Detail Carro", ServiceType = WashServiceType.FullDetail, VehicleType = VehicleTypes.PrivateCar, BasePrice = 80000 },
-                new() { Name = "Full Detail Camioneta", ServiceType = WashServiceType.FullDetail, VehicleType = VehicleTypes.LightGoods, BasePrice = 95000 },
-                new() { Name = "Carroceria Carro", ServiceType = WashServiceType.BodyOnly, VehicleType = VehicleTypes.PrivateCar, BasePrice = 18000 },
-                new() { Name = "Tapiceria Carro", ServiceType = WashServiceType.Upholstery, VehicleType = VehicleTypes.PrivateCar, BasePrice = 35000 },
-                new() { Name = "Tapiceria Camioneta", ServiceType = WashServiceType.Upholstery, VehicleType = VehicleTypes.LightGoods, BasePrice = 45000 },
-                new() { Name = "Basico Taxi", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.Containers, BasePrice = 20000 },
-                new() { Name = "Basico Camion", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.HeavyGoods, BasePrice = 40000 },
-                new() { Name = "Basico Bus", ServiceType = WashServiceType.Basic, VehicleType = VehicleTypes.Coaches, BasePrice = 50000 },
-            };
-            await _context.WashServicePrices.AddRangeAsync(prices);
-            await _context.SaveChangesAsync();
+                _context.MonthlyRates.Add(new MonthlyRate
+                {
+                    Name = baseName,
+                    VehicleType = rate.VehicleType,
+                    MonthlyFee = rate.MonthlyFee,
+                    Deposit = rate.Deposit,
+                    IsActive = true,
+                    Description = MonthlyRateDefaults.MarkDescription(rate.Description)
+                });
+            }
+            else
+            {
+                existingBase.Name = baseName;
+                existingBase.VehicleType = rate.VehicleType;
+                existingBase.MonthlyFee = rate.MonthlyFee;
+                existingBase.Deposit = rate.Deposit;
+                existingBase.IsActive = true;
+                existingBase.Description = MonthlyRateDefaults.MarkDescription(rate.Description);
+            }
+
+            var visibleExists = existingRates.Any(x =>
+                !MonthlyRateDefaults.IsMarkedBase(x.Description) &&
+                x.VehicleType == rate.VehicleType &&
+                x.Name.Equals(rate.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (!visibleExists && shouldCreateVisible)
+                _context.MonthlyRates.Add(new MonthlyRate
+                {
+                    Name = rate.Name,
+                    VehicleType = rate.VehicleType,
+                    MonthlyFee = rate.MonthlyFee,
+                    Deposit = rate.Deposit,
+                    IsActive = true,
+                    Description = rate.Description
+                });
         }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task UpsertBaseWashAdditionalsAsync()
+    {
+        _logger.LogInformation("Upserting base wash additionals...");
+        var existingAdditionals = await _context.WashAdditionals.ToListAsync();
+
+        foreach (var additional in WashCatalogDefaults.Additionals)
+        {
+            var baseName = $"Base - {additional.Name}";
+            var existingBase = existingAdditionals.FirstOrDefault(x =>
+                WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                (x.Name.Equals(additional.Name, StringComparison.OrdinalIgnoreCase) ||
+                 x.Name.Equals(baseName, StringComparison.OrdinalIgnoreCase)));
+            var shouldCreateVisible = existingBase is null ||
+                                      existingBase.Name.Equals(additional.Name, StringComparison.OrdinalIgnoreCase);
+
+            if (existingBase is null)
+            {
+                _context.WashAdditionals.Add(new WashAdditional
+                {
+                    Name = baseName,
+                    Price = additional.Price,
+                    IsActive = true,
+                    Description = WashCatalogDefaults.MarkDescription(additional.Description)
+                });
+            }
+            else
+            {
+                existingBase.Name = baseName;
+                existingBase.Price = additional.Price;
+                existingBase.IsActive = true;
+                existingBase.Description = WashCatalogDefaults.MarkDescription(additional.Description);
+            }
+
+            var visibleExists = existingAdditionals.Any(x =>
+                !WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.Name.Equals(additional.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (!visibleExists && shouldCreateVisible)
+                _context.WashAdditionals.Add(new WashAdditional
+                {
+                    Name = additional.Name,
+                    Price = additional.Price,
+                    IsActive = true,
+                    Description = additional.Description
+                });
+        }
+
+        await _context.SaveChangesAsync();
+        await AlignBaseWashAdditionalsAsync();
+    }
+
+    private async Task UpsertBaseWashServicePricesAsync()
+    {
+        _logger.LogInformation("Upserting base wash service prices...");
+        var existingPrices = await _context.WashServicePrices.ToListAsync();
+
+        foreach (var price in WashCatalogDefaults.ServicePrices)
+        {
+            var baseName = $"Base - {price.Name}";
+            var existingBase = existingPrices.FirstOrDefault(x =>
+                WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.ServiceType == price.ServiceType &&
+                x.VehicleType == price.VehicleType);
+            var shouldCreateVisible = existingBase is null ||
+                                      existingBase.Name.Equals(price.Name, StringComparison.OrdinalIgnoreCase);
+
+            if (existingBase is null)
+            {
+                _context.WashServicePrices.Add(new WashServicePrice
+                {
+                    Name = baseName,
+                    ServiceType = price.ServiceType,
+                    VehicleType = price.VehicleType,
+                    BasePrice = price.BasePrice,
+                    IsActive = true,
+                    Description = WashCatalogDefaults.MarkDescription(price.Description)
+                });
+            }
+            else
+            {
+                existingBase.Name = baseName;
+                existingBase.ServiceType = price.ServiceType;
+                existingBase.VehicleType = price.VehicleType;
+                existingBase.BasePrice = price.BasePrice;
+                existingBase.IsActive = true;
+                existingBase.Description = WashCatalogDefaults.MarkDescription(price.Description);
+            }
+
+            var visibleExists = existingPrices.Any(x =>
+                !WashCatalogDefaults.IsMarkedBase(x.Description) &&
+                x.ServiceType == price.ServiceType &&
+                x.VehicleType == price.VehicleType);
+
+            if (!visibleExists && shouldCreateVisible)
+                _context.WashServicePrices.Add(new WashServicePrice
+                {
+                    Name = price.Name,
+                    ServiceType = price.ServiceType,
+                    VehicleType = price.VehicleType,
+                    BasePrice = price.BasePrice,
+                    IsActive = true,
+                    Description = price.Description
+                });
+        }
+
+        await _context.SaveChangesAsync();
+        await AlignBaseWashServicePricesAsync();
+    }
+
+    private async Task AlignBaseWashAdditionalsAsync()
+    {
+        foreach (var additional in WashCatalogDefaults.Additionals)
+        {
+            var existingUsages = await _context.CarWashAdditionals
+                .Where(x => x.AdditionalName.ToUpper() == additional.Name.ToUpper() &&
+                            x.CarWash != null &&
+                            !x.CarWash.IsPaid)
+                .ToListAsync();
+
+            foreach (var usage in existingUsages)
+            {
+                usage.AdditionalName = additional.Name;
+                usage.Price = additional.Price;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task AlignBaseWashServicePricesAsync()
+    {
+        foreach (var price in WashCatalogDefaults.ServicePrices)
+        {
+            var existingWashes = await _context.CarWashes
+                .Include(x => x.Additionals)
+                .Where(x => x.WashServiceType == price.ServiceType &&
+                            x.VehicleType == price.VehicleType &&
+                            !x.IsPaid)
+                .ToListAsync();
+
+            foreach (var wash in existingWashes)
+            {
+                var additionalsTotal = wash.Additionals.Sum(x => x.Price);
+                wash.Price = price.BasePrice + additionalsTotal + wash.WeekendSurcharge;
+            }
+        }
+
+        await _context.SaveChangesAsync();
     }
 }

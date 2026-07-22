@@ -35,6 +35,8 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<WashAdditional> WashAdditionals { get; set; }
     public DbSet<Expense> Expenses { get; set; }
     public DbSet<ParkingRecord> ParkingRecords { get; set; }
+    public DbSet<ParkingRate> ParkingRates { get; set; }
+    public DbSet<MonthlyRate> MonthlyRates { get; set; }
 
     public DbSet<Holiday> Holidays { get; set; }
     public DbSet<Tenant> Tenants { get; set; }

@@ -1,4 +1,4 @@
-@page "/tables/parking-rates"
+@page "/tables/monthly-rates"
 @using CleanArchitecture.Blazor.Domain.Constants
 @using CleanArchitecture.Blazor.Domain.Entities
 @using CleanArchitecture.Blazor.Domain.Enums
@@ -7,14 +7,14 @@
 @inject ISnackbar Snackbar
 @attribute [Authorize]
 
-<PageTitle>Tarifas de Parqueo</PageTitle>
+<PageTitle>Tarifas de Mensualidad</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
         <div>
-            <MudText Typo="Typo.h4" Style="font-weight:800;">Tarifas de Parqueo</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:800;">Tarifas de Mensualidad</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Configure valores por hora, dia y noche para cada tipo de vehiculo.
+                Configure cuotas mensuales por tipo de vehiculo.
             </MudText>
         </div>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
@@ -46,17 +46,13 @@
                                 }
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudNumericField T="decimal" Label="Hora" @bind-Value="_rateEditor.HourlyRate"
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField T="decimal" Label="Cuota mensual" @bind-Value="_rateEditor.MonthlyFee"
                                              Min="0" Required="true" Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudNumericField T="decimal" Label="Dia" @bind-Value="_rateEditor.DayRate"
-                                             Min="0" Required="true" Margin="Margin.Dense" />
-                        </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudNumericField T="decimal" Label="Noche" @bind-Value="_rateEditor.NightRate"
-                                             Min="0" Required="true" Margin="Margin.Dense" />
+                        <MudItem xs="12" sm="6">
+                            <MudNumericField T="decimal" Label="Deposito" @bind-Value="_rateEditor.Deposit"
+                                             Min="0" Margin="Margin.Dense" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
                             <MudCheckBox T="bool" Label="Activa" @bind-Value="_rateEditor.IsActive"
@@ -91,18 +87,16 @@
                         <HeaderContent>
                             <MudTh>Nombre</MudTh>
                             <MudTh>Vehiculo</MudTh>
-                            <MudTh Style="text-align:right;">Hora</MudTh>
-                            <MudTh Style="text-align:right;">Dia</MudTh>
-                            <MudTh Style="text-align:right;">Noche</MudTh>
+                            <MudTh Style="text-align:right;">Cuota</MudTh>
+                            <MudTh Style="text-align:right;">Deposito</MudTh>
                             <MudTh>Estado</MudTh>
                             <MudTh></MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>@context.Name</MudTd>
                             <MudTd>@context.VehicleType.GetDescription()</MudTd>
-                            <MudTd Style="text-align:right;font-weight:700;">$ @context.HourlyRate.ToString("N0")</MudTd>
-                            <MudTd Style="text-align:right;font-weight:700;">$ @context.DayRate.ToString("N0")</MudTd>
-                            <MudTd Style="text-align:right;font-weight:700;">$ @context.NightRate.ToString("N0")</MudTd>
+                            <MudTd Style="text-align:right;font-weight:700;">$ @context.MonthlyFee.ToString("N0")</MudTd>
+                            <MudTd Style="text-align:right;font-weight:700;">$ @context.Deposit.ToString("N0")</MudTd>
                             <MudTd>
                                 <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
                                     @(context.IsActive ? "Activa" : "Inactiva")
@@ -131,8 +125,8 @@
         .Where(x => x != VehicleTypes.None)
         .ToArray();
 
-    private List<ParkingRate> _rates = new();
-    private ParkingRate _rateEditor = NewRateEditor();
+    private List<MonthlyRate> _rates = new();
+    private MonthlyRate _rateEditor = NewRateEditor();
     private int? _editingRateId;
     private bool _saving;
 
@@ -146,9 +140,9 @@
         await using var db = await DbFactory.CreateAsync();
         await NormalizeLegacyBaseRowsAsync(db);
 
-        _rates = await db.ParkingRates
+        _rates = await db.MonthlyRates
             .AsNoTracking()
-            .Where(p => p.Description == null || !p.Description.StartsWith(ParkingRateDefaults.BaseMarker))
+            .Where(p => p.Description == null || !p.Description.StartsWith(MonthlyRateDefaults.BaseMarker))
             .OrderByDescending(p => p.IsActive)
             .ThenBy(p => p.VehicleType)
             .ThenBy(p => p.Name)
@@ -157,12 +151,12 @@
 
     private static async Task NormalizeLegacyBaseRowsAsync(IApplicationDbContext db)
     {
-        var rates = await db.ParkingRates.ToListAsync();
-        foreach (var rate in ParkingRateDefaults.Rates)
+        var rates = await db.MonthlyRates.ToListAsync();
+        foreach (var rate in MonthlyRateDefaults.Rates)
         {
             var baseName = $"Base - {rate.Name}";
             var legacyBase = rates.FirstOrDefault(x =>
-                ParkingRateDefaults.IsMarkedBase(x.Description) &&
+                MonthlyRateDefaults.IsMarkedBase(x.Description) &&
                 x.VehicleType == rate.VehicleType &&
                 !x.Name.Equals(baseName, StringComparison.OrdinalIgnoreCase));
 
@@ -170,24 +164,23 @@
                 continue;
 
             legacyBase.Name = baseName;
-            legacyBase.HourlyRate = rate.HourlyRate;
-            legacyBase.DayRate = rate.DayRate;
-            legacyBase.NightRate = rate.NightRate;
+            legacyBase.MonthlyFee = rate.MonthlyFee;
+            legacyBase.Deposit = rate.Deposit;
             legacyBase.IsActive = true;
-            legacyBase.Description = ParkingRateDefaults.MarkDescription(rate.Description);
+            legacyBase.Description = MonthlyRateDefaults.MarkDescription(rate.Description);
 
             var visibleExists = rates.Any(x =>
-                !ParkingRateDefaults.IsMarkedBase(x.Description) &&
-                x.VehicleType == rate.VehicleType);
+                !MonthlyRateDefaults.IsMarkedBase(x.Description) &&
+                x.VehicleType == rate.VehicleType &&
+                x.Name.Equals(rate.Name, StringComparison.OrdinalIgnoreCase));
 
             if (!visibleExists)
-                db.ParkingRates.Add(new ParkingRate
+                db.MonthlyRates.Add(new MonthlyRate
                 {
                     Name = rate.Name,
                     VehicleType = rate.VehicleType,
-                    HourlyRate = rate.HourlyRate,
-                    DayRate = rate.DayRate,
-                    NightRate = rate.NightRate,
+                    MonthlyFee = rate.MonthlyFee,
+                    Deposit = rate.Deposit,
                     IsActive = true,
                     Description = rate.Description
                 });
@@ -210,9 +203,9 @@
             return;
         }
 
-        if (_rateEditor.HourlyRate <= 0)
+        if (_rateEditor.MonthlyFee <= 0)
         {
-            Snackbar.Add("El valor por hora debe ser mayor a cero.", Severity.Warning);
+            Snackbar.Add("La cuota mensual debe ser mayor a cero.", Severity.Warning);
             return;
         }
 
@@ -220,20 +213,22 @@
         {
             _saving = true;
             await using var db = await DbFactory.CreateAsync();
-            var duplicated = await db.ParkingRates.AnyAsync(p =>
+            var normalizedName = _rateEditor.Name.Trim().ToUpperInvariant();
+            var duplicated = await db.MonthlyRates.AnyAsync(p =>
                 p.Id != (_editingRateId ?? 0) &&
-                (p.Description == null || !p.Description.StartsWith(ParkingRateDefaults.BaseMarker)) &&
-                p.VehicleType == _rateEditor.VehicleType);
+                (p.Description == null || !p.Description.StartsWith(MonthlyRateDefaults.BaseMarker)) &&
+                p.VehicleType == _rateEditor.VehicleType &&
+                p.Name.ToUpper() == normalizedName);
 
             if (duplicated)
             {
-                Snackbar.Add("Ya existe una tarifa para ese tipo de vehiculo.", Severity.Warning);
+                Snackbar.Add("Ya existe una tarifa con ese nombre para el tipo de vehiculo.", Severity.Warning);
                 return;
             }
 
             if (_editingRateId.HasValue)
             {
-                var existing = await db.ParkingRates.FindAsync(_editingRateId.Value);
+                var existing = await db.MonthlyRates.FindAsync(_editingRateId.Value);
                 if (existing is null)
                 {
                     Snackbar.Add("La tarifa ya no existe.", Severity.Error);
@@ -248,28 +243,26 @@
 
                 existing.Name = _rateEditor.Name.Trim();
                 existing.VehicleType = _rateEditor.VehicleType;
-                existing.HourlyRate = _rateEditor.HourlyRate;
-                existing.DayRate = _rateEditor.DayRate;
-                existing.NightRate = _rateEditor.NightRate;
+                existing.MonthlyFee = _rateEditor.MonthlyFee;
+                existing.Deposit = _rateEditor.Deposit;
                 existing.IsActive = _rateEditor.IsActive;
                 existing.Description = _rateEditor.Description;
             }
             else
             {
-                db.ParkingRates.Add(new ParkingRate
+                db.MonthlyRates.Add(new MonthlyRate
                 {
                     Name = _rateEditor.Name.Trim(),
                     VehicleType = _rateEditor.VehicleType,
-                    HourlyRate = _rateEditor.HourlyRate,
-                    DayRate = _rateEditor.DayRate,
-                    NightRate = _rateEditor.NightRate,
+                    MonthlyFee = _rateEditor.MonthlyFee,
+                    Deposit = _rateEditor.Deposit,
                     IsActive = _rateEditor.IsActive,
                     Description = _rateEditor.Description
                 });
             }
 
             await db.SaveChangesAsync(CancellationToken.None);
-            Snackbar.Add("Tarifa de parqueo guardada.", Severity.Success);
+            Snackbar.Add("Tarifa de mensualidad guardada.", Severity.Success);
             ResetRateEditor();
             await LoadData();
         }
@@ -279,23 +272,22 @@
         }
     }
 
-    private void EditRate(ParkingRate rate)
+    private void EditRate(MonthlyRate rate)
     {
         _editingRateId = rate.Id;
-        _rateEditor = new ParkingRate
+        _rateEditor = new MonthlyRate
         {
             Id = rate.Id,
             Name = rate.Name,
             VehicleType = rate.VehicleType,
-            HourlyRate = rate.HourlyRate,
-            DayRate = rate.DayRate,
-            NightRate = rate.NightRate,
+            MonthlyFee = rate.MonthlyFee,
+            Deposit = rate.Deposit,
             IsActive = rate.IsActive,
-            Description = ParkingRateDefaults.CleanDescription(rate.Description)
+            Description = MonthlyRateDefaults.CleanDescription(rate.Description)
         };
     }
 
-    private async Task DeleteRate(ParkingRate rate)
+    private async Task DeleteRate(MonthlyRate rate)
     {
         if (IsBaseRate(rate))
         {
@@ -304,7 +296,7 @@
         }
 
         await using var db = await DbFactory.CreateAsync();
-        var existing = await db.ParkingRates.FindAsync(rate.Id);
+        var existing = await db.MonthlyRates.FindAsync(rate.Id);
         if (existing is null)
             return;
 
@@ -314,16 +306,16 @@
             return;
         }
 
-        db.ParkingRates.Remove(existing);
+        db.MonthlyRates.Remove(existing);
         await db.SaveChangesAsync(CancellationToken.None);
         Snackbar.Add("Tarifa eliminada.", Severity.Info);
         ResetRateEditor();
         await LoadData();
     }
 
-    private static bool IsBaseRate(ParkingRate rate)
+    private static bool IsBaseRate(MonthlyRate rate)
     {
-        return ParkingRateDefaults.IsMarkedBase(rate.Description);
+        return MonthlyRateDefaults.IsMarkedBase(rate.Description);
     }
 
     private void ResetRateEditor()
@@ -332,7 +324,7 @@
         _rateEditor = NewRateEditor();
     }
 
-    private static ParkingRate NewRateEditor() => new()
+    private static MonthlyRate NewRateEditor() => new()
     {
         VehicleType = VehicleTypes.PrivateCar,
         IsActive = true

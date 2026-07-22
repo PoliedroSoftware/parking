@@ -492,6 +492,7 @@
     private bool _disposed;
     private const string ActiveParkingStatus = "Activo";
     private const string CompletedParkingStatus = "Completado";
+    private const int ParkingHourlyRate = 3500;
 
     protected override async Task OnInitializedAsync()
     {
@@ -578,7 +579,7 @@
     private int CalculateAmount(TimeSpan duration)
     {
         var hours = Math.Ceiling(duration.TotalHours);
-        return Math.Max(2000, (int)(hours * 3500));
+        return Math.Max(2000, (int)(hours * ParkingHourlyRate));
     }
 
     private async Task OnPlateKeyUp(KeyboardEventArgs e)
@@ -727,6 +728,7 @@
             EntryTime = record.EntryTime,
             TicketNumber = record.TicketNumber,
             Amount = amount,
+            HourlyRate = ParkingHourlyRate,
             Duration = duration,
             CustomerName = customer == "Consumidor Final" ? null : customer,
             OperatorName = "Operador",
@@ -862,6 +864,7 @@
             EntryTime = m.Time,
             TicketNumber = ticketNo,
             Amount = m.Amount,
+            HourlyRate = type == TicketType.Exit ? ParkingHourlyRate : null,
             Duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
                 ? ParseDuration(m.FormattedDuration) : null,
             CustomerName = string.IsNullOrEmpty(m.CustomerName) || m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
@@ -889,7 +892,9 @@
         {
             Type = type, LicensePlate = m.LicensePlate,
             DateTime = m.ExitTime ?? m.Time, EntryTime = m.Time,
-            TicketNumber = m.Id, Amount = m.Amount, Duration = duration,
+            TicketNumber = m.Id, Amount = m.Amount,
+            HourlyRate = type == TicketType.Exit ? ParkingHourlyRate : null,
+            Duration = duration,
             CustomerName = m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
             OperatorName = "Operador"
         });

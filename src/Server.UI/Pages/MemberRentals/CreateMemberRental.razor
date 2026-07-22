@@ -1,10 +1,13 @@
 ﻿@page "/pages/memberrentals/create"
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@using CleanArchitecture.Blazor.Domain.Constants
+@using CleanArchitecture.Blazor.Domain.Entities
 
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<MemberRentals> L
+@inject IApplicationDbContextFactory DbFactory
 @attribute [Authorize(Policy = Permissions.MemberRentals.Create)]
 
 <PageTitle>@Title</PageTitle>
@@ -33,6 +36,16 @@
                     </MudItem>
                     <MudItem xs="12" md="6">
                         <MudDatePicker ShowToolbar="false" Label="Fecha Vencimiento" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="true" RequiredError="La fecha de vencimiento es requerida"></MudDatePicker>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="int?" Label="Tarifa mensual" Value="_selectedMonthlyRateId" ValueChanged="OnMonthlyRateSelected" Clearable="true">
+                            @foreach (var rate in _monthlyRates)
+                            {
+                                <MudSelectItem T="int?" Value="@((int?)rate.Id)">
+                                    @rate.Name - @rate.VehicleType.GetDescription() ($ @rate.MonthlyFee.ToString("N0"))
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6">
                         <MudNumericField Label="Cuota Mensual" @bind-Value="_model.RentalFee" For="@(() => _model.RentalFee)" Min="0.00m" Required="true" RequiredError="La cuota es requerida"></MudNumericField>
@@ -71,7 +84,10 @@
     private bool _saving = false;
     private List<BreadcrumbItem>? _breadcrumbItems;
     private AddEditMemberRentalCommand _model = new();
-    protected override Task OnInitializedAsync()
+    private List<MonthlyRate> _monthlyRates = new();
+    private int? _selectedMonthlyRateId;
+
+    protected override async Task OnInitializedAsync()
     {
         Title = "Nueva Mensualidad";
         _breadcrumbItems = new List<BreadcrumbItem>
@@ -80,14 +96,42 @@
             new BreadcrumbItem("Mensualidades", href: "/pages/memberrentals"),
             new BreadcrumbItem("Nueva Mensualidad", href:null, disabled:true)
         };
-        return Task.CompletedTask;
+        await LoadMonthlyRates();
     }
+
+    private async Task LoadMonthlyRates()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        _monthlyRates = await db.MonthlyRates
+            .AsNoTracking()
+            .Where(x => x.IsActive &&
+                        (x.Description == null || !x.Description.StartsWith(MonthlyRateDefaults.BaseMarker)))
+            .OrderBy(x => x.VehicleType)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
+    }
+
     void OnMemberChanged(MemberDto? member)
     {
         _model.Member = member;
         _model.CardId = member?.CardId;
         _model.LicensePlate = member?.LicensePlate;
     }
+
+    private Task OnMonthlyRateSelected(int? monthlyRateId)
+    {
+        _selectedMonthlyRateId = monthlyRateId;
+        var rate = _monthlyRates.FirstOrDefault(x => x.Id == monthlyRateId);
+        if (rate is null)
+            return Task.CompletedTask;
+
+        _model.RentalFee = rate.MonthlyFee;
+        _model.Deposit = rate.Deposit;
+        _model.AmountDue = rate.MonthlyFee + rate.Deposit;
+
+        return Task.CompletedTask;
+    }
+
     async Task OnSubmit()
     {
         try

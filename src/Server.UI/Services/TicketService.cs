@@ -20,6 +20,7 @@ public class TicketData
     public DateTime? EntryTime { get; set; }
     public string? TicketNumber { get; set; }
     public decimal? Amount { get; set; }
+    public decimal? HourlyRate { get; set; }
     public string? PaymentMethod { get; set; }
     public TimeSpan? Duration { get; set; }
     public string? OperatorName { get; set; }
@@ -111,6 +112,8 @@ public class TicketService
                 var t = d.TotalHours >= 1 ? $"{(int)d.TotalHours}h {d.Minutes}m" : $"{d.Minutes} min";
                 sb.AppendLine($"[ROW]:Tiempo total:|{t}");
             }
+            if (data.HourlyRate.HasValue && data.HourlyRate > 0)
+                sb.AppendLine($"[ROW]:Valor hora:|$ {data.HourlyRate.Value:N0}");
             sb.AppendLine("[DOUBLE]");
             sb.AppendLine($"[HUGE]:$ {data.Amount.Value:N0}");
             if (!string.IsNullOrEmpty(data.PaymentMethod))
@@ -349,6 +352,8 @@ public class TicketService
             }
             if (data.Amount.HasValue)
             {
+                if (data.HourlyRate.HasValue && data.HourlyRate > 0)
+                    AppendRow(sb, "Valor hora", Money(data.HourlyRate.Value));
                 sb.AppendLine("<div class='total-box'>");
                 sb.AppendLine("<div class='total-label'>Total pagado</div>");
                 sb.AppendLine($"<div class='total-amount'>{Money(data.Amount.Value)}</div>");

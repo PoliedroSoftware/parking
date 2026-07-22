@@ -3,6 +3,7 @@
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.DTOs
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.Queries.GetById
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@using CleanArchitecture.Blazor.Domain.Constants
 
 @inherits MudComponentBase
 @inject IValidationService Validator
@@ -176,8 +177,12 @@ else
         };
 
         await using var db = await DbFactory.CreateAsync();
-        _availableAdditionals = await db.WashAdditionals.Where(a => a.IsActive).ToListAsync();
-        _availablePrices = await db.WashServicePrices.Where(p => p.IsActive).ToListAsync();
+        _availableAdditionals = await db.WashAdditionals
+            .Where(a => a.IsActive && (a.Description == null || !a.Description.StartsWith(WashCatalogDefaults.BaseMarker)))
+            .ToListAsync();
+        _availablePrices = await db.WashServicePrices
+            .Where(p => p.IsActive && (p.Description == null || !p.Description.StartsWith(WashCatalogDefaults.BaseMarker)))
+            .ToListAsync();
 
         var result = await Mediator.Send(new GetCarWashByIdQuery { Id = Id });
         await result.MatchAsync(async dto =>

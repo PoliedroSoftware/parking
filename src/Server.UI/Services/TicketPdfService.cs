@@ -92,6 +92,8 @@ public class TicketPdfService
                             var tiempo = d.TotalHours >= 1 ? $"{(int)d.TotalHours}h {d.Minutes}m" : $"{d.Minutes} min";
                             col.Item().Row(r => { r.RelativeItem().Text("Tiempo total:").FontSize(7); r.RelativeItem().AlignRight().Text(tiempo).Bold(); });
                         }
+                        if (data.HourlyRate.HasValue && data.HourlyRate > 0)
+                            col.Item().Row(r => { r.RelativeItem().Text("Valor hora:").FontSize(7); r.RelativeItem().AlignRight().Text($"$ {data.HourlyRate.Value:N0}").FontSize(7).Bold(); });
                         if (data.Amount.HasValue)
                         {
                             col.Item().PaddingVertical(2).BorderBottom(1).BorderTop(1).BorderColor("#000").AlignCenter().Text($"$ {data.Amount.Value:N0}").Bold().FontSize(20);

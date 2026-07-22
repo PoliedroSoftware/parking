@@ -2,10 +2,13 @@
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.Update
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.GetById
 @using CleanArchitecture.Blazor.Server.UI.Components.Sessions
+@using CleanArchitecture.Blazor.Domain.Constants
+@using CleanArchitecture.Blazor.Domain.Entities
 
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<MemberRentals> L
+@inject IApplicationDbContextFactory DbFactory
 @attribute [Authorize(Policy = Permissions.MemberRentals.Edit)]
 
 <PageTitle>@Title</PageTitle>
@@ -38,6 +41,16 @@
 <MudItem xs="12" md="6"> 
                         <MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x=>x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="false" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
                 </MudItem> 
+<MudItem xs="12" md="6">
+                        <MudSelect T="int?" Label="Tarifa mensual" Value="_selectedMonthlyRateId" ValueChanged="OnMonthlyRateSelected" Clearable="true">
+                            @foreach (var rate in _monthlyRates)
+                            {
+                                <MudSelectItem T="int?" Value="@((int?)rate.Id)">
+                                    @rate.Name - @rate.VehicleType.GetDescription() ($ @rate.MonthlyFee.ToString("N0"))
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                </MudItem>
 <MudItem xs="12" md="6"> 
                         <MudNumericField  Label="@L[_model.GetMemberDescription(x=>x.RentalFee)]" @bind-Value="_model.RentalFee" For="@(() => _model.RentalFee)" Min="0.00m" Required="false" RequiredError="@L["rental fee is required!"]"></MudNumericField >
                 </MudItem> 
@@ -79,6 +92,8 @@
     private bool _saving = false;
     private List<BreadcrumbItem>? _breadcrumbItems;
     private UpdateMemberRentalCommand? _model;
+    private List<MonthlyRate> _monthlyRates = new();
+    private int? _selectedMonthlyRateId;
     protected override async Task OnInitializedAsync()
     {
         Title = L["Edit MemberRental"];
@@ -87,6 +102,7 @@
             new BreadcrumbItem(L["Home"], href: "/"),
             new BreadcrumbItem(L["MemberRentals"], href: "/pages/memberrentals")
         };
+        await LoadMonthlyRates();
         var result = await Mediator.Send(new GetMemberRentalByIdQuery() { Id = Id });
         result.Map(data =>
         {
@@ -101,6 +117,32 @@
         });
 
     }
+    private async Task LoadMonthlyRates()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        _monthlyRates = await db.MonthlyRates
+            .AsNoTracking()
+            .Where(x => x.IsActive &&
+                        (x.Description == null || !x.Description.StartsWith(MonthlyRateDefaults.BaseMarker)))
+            .OrderBy(x => x.VehicleType)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
+    }
+
+    private Task OnMonthlyRateSelected(int? monthlyRateId)
+    {
+        _selectedMonthlyRateId = monthlyRateId;
+        var rate = _monthlyRates.FirstOrDefault(x => x.Id == monthlyRateId);
+        if (rate is null || _model is null)
+            return Task.CompletedTask;
+
+        _model.RentalFee = rate.MonthlyFee;
+        _model.Deposit = rate.Deposit;
+        _model.AmountDue = rate.MonthlyFee + rate.Deposit;
+
+        return Task.CompletedTask;
+    }
+
     async Task OnSubmit()
     {
         try

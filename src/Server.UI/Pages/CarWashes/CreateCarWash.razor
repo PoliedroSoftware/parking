@@ -2,6 +2,7 @@
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.Commands.AddEdit
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@using CleanArchitecture.Blazor.Domain.Constants
 
 @inherits MudComponentBase
 @inject IValidationService Validator
@@ -167,8 +168,12 @@
         };
 
         await using var db = await DbFactory.CreateAsync();
-        _availableAdditionals = await db.WashAdditionals.Where(a => a.IsActive).ToListAsync();
-        _availablePrices = await db.WashServicePrices.Where(p => p.IsActive).ToListAsync();
+        _availableAdditionals = await db.WashAdditionals
+            .Where(a => a.IsActive && (a.Description == null || !a.Description.StartsWith(WashCatalogDefaults.BaseMarker)))
+            .ToListAsync();
+        _availablePrices = await db.WashServicePrices
+            .Where(p => p.IsActive && (p.Description == null || !p.Description.StartsWith(WashCatalogDefaults.BaseMarker)))
+            .ToListAsync();
 
         var today = DateTime.Today;
         var maxQ = await db.CarWashes.Where(c => c.StartTime.HasValue && c.StartTime.Value.Year == today.Year && c.StartTime.Value.Month == today.Month && c.StartTime.Value.Day == today.Day).MaxAsync(c => (int?)c.QueueNumber) ?? 0;

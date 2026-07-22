@@ -1,9 +1,12 @@
 ﻿@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@using CleanArchitecture.Blazor.Domain.Constants
+@using CleanArchitecture.Blazor.Domain.Entities
 
 @inherits MudComponentBase
 @inject IValidationService Validator
 @inject IStringLocalizer<MemberRentals> L
+@inject IApplicationDbContextFactory DbFactory
 
 <MudDialog>
 	<DialogContent>
@@ -23,6 +26,16 @@
 				</MudItem>
 				<MudItem xs="12" md="6">
 					<MudDatePicker ShowToolbar="false" Label="@L[_model.GetMemberDescription(x => x.ExpiryDate)]" @bind-Date="_model.ExpiryDate" For="@(() => _model.ExpiryDate)" Required="false" RequiredError="@L["expiry date is required!"]"></MudDatePicker>
+				</MudItem>
+				<MudItem xs="12" md="6">
+					<MudSelect T="int?" Label="Tarifa mensual" Value="_selectedMonthlyRateId" ValueChanged="OnMonthlyRateSelected" Clearable="true">
+						@foreach (var rate in _monthlyRates)
+						{
+							<MudSelectItem T="int?" Value="@((int?)rate.Id)">
+								@rate.Name - @rate.VehicleType.GetDescription() ($ @rate.MonthlyFee.ToString("N0"))
+							</MudSelectItem>
+						}
+					</MudSelect>
 				</MudItem>
 				<MudItem xs="12" md="6">
 					<MudNumericField Label="@L[_model.GetMemberDescription(x => x.RentalFee)]" @bind-Value="_model.RentalFee" For="@(() => _model.RentalFee)" Min="0.00m" Required="false" RequiredError="@L["rental fee is required!"]"></MudNumericField>
@@ -60,14 +73,40 @@
 	MudForm _memberrentalForm = new();
 	private bool _saving = false;
 	private bool _savingnew = false;
+	private List<MonthlyRate> _monthlyRates = new();
+	private int? _selectedMonthlyRateId;
 	[CascadingParameter]
 	IMudDialogInstance MudDialog { get; set; } = default!;
 	[EditorRequired][Parameter] public AddEditMemberRentalCommand _model { get; set; } = null!;
+	protected override async Task OnInitializedAsync()
+	{
+		await using var db = await DbFactory.CreateAsync();
+		_monthlyRates = await db.MonthlyRates
+			.AsNoTracking()
+			.Where(x => x.IsActive &&
+						(x.Description == null || !x.Description.StartsWith(MonthlyRateDefaults.BaseMarker)))
+			.OrderBy(x => x.VehicleType)
+			.ThenBy(x => x.Name)
+			.ToListAsync();
+	}
 	void OnMemberChanged(MemberDto? member)
 	{
 		_model.Member = member;
 		_model.CardId = member?.CardId;
 		_model.LicensePlate = member?.LicensePlate;
+	}
+	private Task OnMonthlyRateSelected(int? monthlyRateId)
+	{
+		_selectedMonthlyRateId = monthlyRateId;
+		var rate = _monthlyRates.FirstOrDefault(x => x.Id == monthlyRateId);
+		if (rate is null)
+			return Task.CompletedTask;
+
+		_model.RentalFee = rate.MonthlyFee;
+		_model.Deposit = rate.Deposit;
+		_model.AmountDue = rate.MonthlyFee + rate.Deposit;
+
+		return Task.CompletedTask;
 	}
 	async Task OnSubmit()
 	{

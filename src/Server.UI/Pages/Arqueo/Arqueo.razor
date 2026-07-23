@@ -1,7 +1,7 @@
 @page "/pages/arqueo"
 
 @using CleanArchitecture.Blazor.Server.UI.Services
-@using CleanArchitecture.Blazor.Server.UI.Services
+@using System.Globalization
 
 @inject IJSRuntime JSRuntime
 
@@ -129,7 +129,7 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>@(summary.Movements.IndexOf(context) + 1)</MudTd>
-                        <MudTd>@context.Time.ToString("HH:mm:ss")</MudTd>
+                        <MudTd>@FormatTime(context.Time, includeSeconds: true)</MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small" Color="@GetMovementColor(context)">
                                 @GetMovementLabel(context)
@@ -204,15 +204,26 @@
         foreach (var m in summary.Movements)
         {
             var cliente = string.IsNullOrEmpty(m.CustomerName) ? "CF" : m.CustomerName;
-            sb.AppendLine($"<div><span>{m.Time:HH:mm} {m.Type}</span> <span>{m.LicensePlate}</span> <span style='float:right'>{(m.Amount > 0 ? $"$ {m.Amount:N0}" : "-")}</span></div>");
+            sb.AppendLine($"<div><span>{FormatTime(m.Time)} {m.Type}</span> <span>{m.LicensePlate}</span> <span style='float:right'>{(m.Amount > 0 ? $"$ {m.Amount:N0}" : "-")}</span></div>");
         }
 
         sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div class='center'>Impreso: {DateTime.Now:dd/MM/yyyy HH:mm}</div>");
+        sb.AppendLine($"<div class='center'>Impreso: {FormatDateTime(DateTime.Now)}</div>");
         sb.AppendLine("<div class='center'>POLIEDRO SOFTWARE</div>");
         sb.AppendLine("<script>window.onload=function(){window.print();}</script>");
         sb.AppendLine("</body></html>");
 
         await JSRuntime.InvokeVoidAsync("openTicketWindow", sb.ToString());
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatTime(DateTime value, bool includeSeconds = false)
+    {
+        var format = includeSeconds ? "hh:mm:ss tt" : "hh:mm tt";
+        return value.ToString(format, CultureInfo.InvariantCulture);
     }
 }

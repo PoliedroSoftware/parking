@@ -8,6 +8,8 @@
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.Queries.Export
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.Queries.Pagination
 @using CleanArchitecture.Blazor.Application.Features.CarWashes.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@using CleanArchitecture.Blazor.Application.Features.Members.Queries.GetByLicensePlate
 @using CleanArchitecture.Blazor.Application.Features.Zones.Services
 @using CleanArchitecture.Blazor.Server.UI.Services
 @using CleanArchitecture.Blazor.Server.UI.Pages.CarWashes.Components
@@ -16,8 +18,8 @@
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @inject IZoneService ZoneService
 @inject TicketService TicketService
+@inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
-@inject IPrinterService PrinterService
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @attribute [Authorize(Policy = Permissions.CarWashes.View)]
 <PageTitle>@Title</PageTitle>
@@ -146,6 +148,11 @@
                          Color="@GetWashColor(context.Item.WashServiceType)" Size="Size.Small" />
             </CellTemplate>
         </PropertyColumn>
+        <TemplateColumn Title="Lavadores" Sortable="false" HeaderStyle="min-width:150px">
+            <CellTemplate>
+                <MudText Typo="Typo.body2">@FormatOperators(context.Item)</MudText>
+            </CellTemplate>
+        </TemplateColumn>
         <PropertyColumn Property="x => x.Price" Title="@L[_carWashDto.GetMemberDescription(x => x.Price)]" Format="C" />
         <TemplateColumn Title="Entrega Est." Sortable="false" HeaderStyle="width:140px">
             <CellTemplate>
@@ -171,22 +178,40 @@
                 </MudStack>
             </CellTemplate>
         </TemplateColumn>
-        <TemplateColumn Title="Pago" Sortable="false" HeaderStyle="width:140px">
+        <TemplateColumn Title="Pago" Sortable="false" HeaderStyle="width:210px">
             <CellTemplate>
-                @if (context.Item.IsPaid)
-                {
-                    <MudChip T="string" Size="Size.Small" Color="Color.Success">@context.Item.PaymentMethod?.GetDescription()</MudChip>
-                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Print" Color="Color.Info"
-                                    OnClick="@(() => PrintTicketDirect(context.Item))" />
-                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.PictureAsPdf" Color="Color.Error"
-                                    OnClick="@(() => DownloadWashPdf(context.Item))" />
-                }
-                else
-                {
-                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
-                               OnClick="@(() => OnPayClick(context.Item))" StartIcon="@Icons.Material.Filled.Payment"
-                               Style="font-size:11px;">COBRAR</MudButton>
-                }
+                <MudStack Spacing="1">
+                    <MudChip T="string" Size="Size.Small"
+                             Color="@(context.Item.IsPaid ? Color.Success : Color.Error)"
+                             Variant="Variant.Filled"
+                             Style="font-weight:800;letter-spacing:0;">
+                        @(context.Item.IsPaid ? "PAGADO" : "NO PAGADO")
+                    </MudChip>
+                    @if (context.Item.IsPaid)
+                    {
+                        <MudText Typo="Typo.caption">@GetPaymentMethodText(context.Item)</MudText>
+                        <MudStack Row Spacing="1">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Print" Color="Color.Info"
+                                            OnClick="@(() => PrintTicketDirect(context.Item))" />
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.PictureAsPdf" Color="Color.Error"
+                                            OnClick="@(() => DownloadWashPdf(context.Item))" />
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudStack Row Spacing="1">
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                                       OnClick="@(() => OnPayClick(context.Item))" StartIcon="@Icons.Material.Filled.Payment"
+                                       Style="font-size:11px;">COBRAR</MudButton>
+                            @if (context.Item.HasMonthlyMembership)
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                                           OnClick="@(() => OnChargeToMonthlyClick(context.Item))" StartIcon="@Icons.Material.Filled.EventRepeat"
+                                           Style="font-size:11px;">MENSUALIDAD</MudButton>
+                            }
+                        </MudStack>
+                    }
+                </MudStack>
             </CellTemplate>
         </TemplateColumn>
         <PropertyColumn Property="x => x.Notes" Title="@L[_carWashDto.GetMemberDescription(x => x.Notes)]" />
@@ -414,9 +439,74 @@
         }
     }
 
+    private async Task OnChargeToMonthlyClick(CarWashDto dto)
+    {
+        var memberId = dto.MonthlyMemberId ?? dto.MemberId;
+        if (dto.MonthlyMemberId.HasValue && dto.Member is null)
+        {
+            dto.Member = new MemberDto
+            {
+                Id = dto.MonthlyMemberId.Value,
+                Name = dto.MonthlyMemberName ?? string.Empty,
+                LicensePlate = dto.LicensePlate
+            };
+        }
+
+        if (!memberId.HasValue)
+        {
+            var memberResult = await Mediator.Send(new GetMemberByLicensePlateQuery
+            {
+                LicensePlate = dto.LicensePlate ?? string.Empty
+            });
+
+            if (!memberResult.Succeeded || memberResult.Data is null)
+            {
+                Snackbar.Add(memberResult.Errors.FirstOrDefault() ?? "No se encontro mensualista para esta placa.", Severity.Warning);
+                return;
+            }
+
+            dto.Member = memberResult.Data;
+            dto.MemberId = memberResult.Data.Id;
+            memberId = memberResult.Data.Id;
+        }
+
+        dto.IsPaid = true;
+        dto.ChargeToMonthly = true;
+        dto.PaymentMethod = PaymentMethods.ChargeToMonthly;
+
+        var cmd = new AddEditCarWashCommand
+        {
+            Id = dto.Id, LicensePlate = dto.LicensePlate, VehicleType = dto.VehicleType,
+            WashServiceType = dto.WashServiceType, Status = dto.Status, Price = dto.Price,
+            CommissionTotal = dto.CommissionTotal, WeekendSurcharge = dto.WeekendSurcharge,
+            IsPaid = true, PaymentMethod = PaymentMethods.ChargeToMonthly, Notes = dto.Notes,
+            QueueNumber = dto.QueueNumber, EstimatedDelivery = dto.EstimatedDelivery,
+            ChargeToMonthly = true, MemberId = memberId, Member = dto.Member,
+            Additionals = dto.Additionals, Operators = dto.Operators
+        };
+
+        var result = await Mediator.Send(cmd);
+        if (result.Succeeded)
+        {
+            MovementTracker.AddMovement(new MovementRecord
+            {
+                Time = DateTime.Now, Type = "Lavado mensualidad", LicensePlate = dto.LicensePlate ?? "",
+                Amount = (int)dto.Price
+            });
+
+            Snackbar.Add("Lavado cobrado a mensualidad.", Severity.Success);
+            await PrintTicketDirect(dto);
+            await _carWashesGrid.ReloadServerData();
+        }
+        else
+        {
+            Snackbar.Add(result.Errors.FirstOrDefault() ?? "No se pudo cobrar a mensualidad.", Severity.Error);
+        }
+    }
+
     private async Task PrintTicketDirect(CarWashDto dto)
     {
-        var operatorNames = dto.Operators?.Any() == true ? string.Join(", ", dto.Operators.Select(o => o.OperatorName)) : null;
+        var operatorNames = FormatOperatorsOrNull(dto);
         var additionalsTotal = dto.Additionals?.Sum(a => a.Price) ?? 0;
         var ticketData = new TicketData
         {
@@ -424,37 +514,65 @@
             VehicleType = dto.VehicleType?.GetDescription() ?? "", Amount = dto.Price,
             BasePrice = dto.Price - additionalsTotal - dto.WeekendSurcharge,
             AdditionalsTotal = additionalsTotal, Surcharge = dto.WeekendSurcharge,
-            PaymentMethod = dto.PaymentMethod?.GetDescription(), WashServiceType = dto.WashServiceType?.GetDescription(),
-            Notes = string.Join(", ", dto.Additionals?.Select(a => a.AdditionalName) ?? Array.Empty<string>()),
+            IsPaid = dto.IsPaid, PaymentMethod = dto.PaymentMethod?.GetDescription(), WashServiceType = dto.WashServiceType?.GetDescription(),
+            Notes = FormatAdditionalServices(dto),
             CustomerName = dto.Member?.Name, OperatorName = operatorNames, QueueNumber = dto.QueueNumber,
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
         };
 
-        if (!await EnsurePrinterQueueReady())
-            return;
-
-        var html = TicketService.GenerateTicketHtmlForWindow(ticketData);
-        await JS.InvokeVoidAsync("openTicketWindow", html);
-        Snackbar.Add("Vista previa de impresion abierta", Severity.Info);
+        await PrintPosTicket(ticketData);
     }
 
     private async Task DownloadWashPdf(CarWashDto dto)
     {
         var additionalsTotal = dto.Additionals?.Sum(a => a.Price) ?? 0;
-        var operatorNames = dto.Operators?.Any() == true ? string.Join(", ", dto.Operators.Select(o => o.OperatorName)) : null;
+        var operatorNames = FormatOperatorsOrNull(dto);
         var pdf = TicketPdfService.GenerateTicketPdf(new TicketData
         {
             Type = TicketType.Wash, LicensePlate = dto.LicensePlate ?? "",
             VehicleType = dto.VehicleType?.GetDescription() ?? "", Amount = dto.Price,
             BasePrice = dto.Price - additionalsTotal - dto.WeekendSurcharge,
             AdditionalsTotal = additionalsTotal, Surcharge = dto.WeekendSurcharge,
-            PaymentMethod = dto.PaymentMethod?.GetDescription(), WashServiceType = dto.WashServiceType?.GetDescription(),
-            Notes = string.Join(", ", dto.Additionals?.Select(a => a.AdditionalName) ?? Array.Empty<string>()),
+            IsPaid = dto.IsPaid, PaymentMethod = dto.PaymentMethod?.GetDescription(), WashServiceType = dto.WashServiceType?.GetDescription(),
+            Notes = FormatAdditionalServices(dto),
             CustomerName = dto.Member?.Name, OperatorName = operatorNames, QueueNumber = dto.QueueNumber,
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
         });
         await BlazorDownloadFileService.DownloadFileAsync($"Lavado_{dto.LicensePlate}_{dto.Id}.pdf", pdf, "application/pdf");
         Snackbar.Add("PDF descargado", Severity.Success);
+    }
+
+    private static string FormatOperators(CarWashDto dto)
+    {
+        return FormatOperatorsOrNull(dto) ?? "-";
+    }
+
+    private static string? FormatOperatorsOrNull(CarWashDto dto)
+    {
+        var names = dto.Operators?
+            .Select(x => x.OperatorName?.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return names?.Length > 0 ? string.Join("; ", names) : null;
+    }
+
+    private static string FormatAdditionalServices(CarWashDto dto)
+    {
+        return string.Join("; ", dto.Additionals?
+            .Select(a => a.AdditionalName?.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            ?? Array.Empty<string>());
+    }
+
+    private static string GetPaymentMethodText(CarWashDto dto)
+    {
+        var method = dto.PaymentMethod?.GetDescription();
+        return string.IsNullOrWhiteSpace(method)
+            ? "Metodo de pago: -"
+            : $"Metodo de pago: {method}";
     }
 
     private Color GetStatusColor(CarWashStatus? status)
@@ -480,28 +598,12 @@
         };
     }
 
-    private async Task<bool> EnsurePrinterQueueReady()
+    private async Task PrintPosTicket(TicketData ticketData)
     {
-        try
-        {
-            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
-            if (repairedJobs < 0)
-            {
-                Snackbar.Add("Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.", Severity.Warning);
-                return true;
-            }
-
-            if (repairedJobs > 0)
-            {
-                Snackbar.Add($"Cola de impresion limpiada: {repairedJobs} trabajo(s).", Severity.Warning);
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"No se pudo limpiar la cola de impresion: {ex.Message}", Severity.Error);
-            return false;
-        }
+        var result = await PosTicketPrintService.PrintAsync(ticketData);
+        var severity = result.PrintedDirectly
+            ? Severity.Success
+            : result.PreviewOpened ? Severity.Warning : Severity.Error;
+        Snackbar.Add(result.Message, severity);
     }
 }

@@ -229,7 +229,7 @@ public class PrinterService : IPrinterService
 
             if (line == "[HEADER]")
             {
-                ticket.Center().Reverse(true).Bold(true).Size(0x11).Line("POLIEDRO SOFTWARE");
+                ticket.Center().Bold(true).Size(0x11).Line("POLIEDRO SOFTWARE");
                 ticket.ResetStyles();
                 continue;
             }

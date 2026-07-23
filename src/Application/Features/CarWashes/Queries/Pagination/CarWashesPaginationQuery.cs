@@ -18,6 +18,7 @@
 using CleanArchitecture.Blazor.Application.Features.CarWashes.DTOs;
 using CleanArchitecture.Blazor.Application.Features.CarWashes.Caching;
 using CleanArchitecture.Blazor.Application.Features.CarWashes.Specifications;
+using CleanArchitecture.Blazor.Application.Features.Members.Caching;
 
 namespace CleanArchitecture.Blazor.Application.Features.CarWashes.Queries.Pagination;
 
@@ -28,7 +29,7 @@ public class CarWashesWithPaginationQuery : CarWashAdvancedFilter, ICacheableReq
         return $"Listview:{ListView}:{CurrentUser?.UserId}, Search:{Keyword}, {OrderBy}, {SortDirection}, {PageNumber}, {PageSize},{LicensePlate},{Status},{WashServiceType},{IsPaid}";
     }
     public string CacheKey => CarWashCacheKey.GetPaginationCacheKey($"{this}");
-    public IEnumerable<string>? Tags => CarWashCacheKey.Tags;
+    public IEnumerable<string>? Tags => CarWashCacheKey.Tags?.Concat(MemberCacheKey.Tags ?? Array.Empty<string>());
     public CarWashAdvancedSpecification Specification => new CarWashAdvancedSpecification(this);
 }
     
@@ -54,6 +55,84 @@ public class CarWashesWithPaginationQueryHandler :
                                                     request.PageSize,
                                                     _mapper.ConfigurationProvider,
                                                     cancellationToken);
+            var washIds = data.Items.Select(x => x.Id).ToArray();
+            if (washIds.Length == 0)
+            {
+                return data;
+            }
+
+            var additionals = await db.CarWashAdditionals
+                .Where(x => washIds.Contains(x.CarWashId))
+                .Select(x => new
+                {
+                    x.CarWashId,
+                    Additional = new CarWashAdditionalDto
+                    {
+                        Id = x.Id,
+                        AdditionalName = x.AdditionalName,
+                        Price = x.Price
+                    }
+                })
+                .ToListAsync(cancellationToken);
+
+            var operators = await db.CarWashOperators
+                .Where(x => washIds.Contains(x.CarWashId))
+                .Select(x => new
+                {
+                    x.CarWashId,
+                    Operator = new CarWashOperatorDto
+                    {
+                        Id = x.Id,
+                        OperatorName = x.OperatorName,
+                        Commission = x.Commission
+                    }
+                })
+                .ToListAsync(cancellationToken);
+
+            var plates = data.Items
+                .Select(x => x.LicensePlate?.Trim().ToUpperInvariant())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToArray();
+            var monthlyMembers = plates.Length == 0
+                ? new List<MonthlyMemberLookup>()
+                : await db.Members
+                    .AsNoTracking()
+                    .Where(x => x.IsActive && x.LicensePlate != null)
+                    .Select(x => new MonthlyMemberLookup(
+                        x.Id,
+                        x.Name,
+                        x.LicensePlate!))
+                    .ToListAsync(cancellationToken);
+            var monthlyMembersByPlate = monthlyMembers
+                .Select(x => x with { LicensePlate = x.LicensePlate.Trim().ToUpperInvariant() })
+                .Where(x => plates.Contains(x.LicensePlate))
+                .GroupBy(x => x.LicensePlate)
+                .ToDictionary(x => x.Key, x => x.First());
+
+            foreach (var item in data.Items)
+            {
+                item.Additionals = additionals
+                    .Where(x => x.CarWashId == item.Id)
+                    .Select(x => x.Additional)
+                    .ToList();
+                item.Operators = operators
+                    .Where(x => x.CarWashId == item.Id)
+                    .Select(x => x.Operator)
+                    .ToList();
+
+                var normalizedPlate = item.LicensePlate?.Trim().ToUpperInvariant();
+                if (!string.IsNullOrWhiteSpace(normalizedPlate) &&
+                    monthlyMembersByPlate.TryGetValue(normalizedPlate, out var monthlyMember))
+                {
+                    item.HasMonthlyMembership = true;
+                    item.MonthlyMemberId = monthlyMember.Id;
+                    item.MonthlyMemberName = monthlyMember.Name;
+                }
+            }
+
             return data;
         }
+
+        private sealed record MonthlyMemberLookup(int Id, string Name, string LicensePlate);
 }

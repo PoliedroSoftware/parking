@@ -59,6 +59,14 @@ public class MemberDto
     public string? Notes { get; set; }
     [Description("Member rentals")]
     public List<MemberRentalDto>? MemberRentals { get; set; }
+    [Description("Payment status")]
+    public string PaymentStatus { get; set; } = string.Empty;
+    [Description("Paid through")]
+    public DateTime? PaidThrough { get; set; }
+    [Description("Last paid month")]
+    public string LastPaidMonth { get; set; } = string.Empty;
+    [Description("Months overdue")]
+    public int MonthsOverdue { get; set; }
     [Description("Tenant id")]
     public string? TenantId { get; set; }
     [Description("Tenant")]

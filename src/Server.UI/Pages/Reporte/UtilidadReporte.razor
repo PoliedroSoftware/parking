@@ -1,6 +1,7 @@
 @page "/pages/utilidad"
 @using CleanArchitecture.Blazor.Domain.Entities
 @using CleanArchitecture.Blazor.Server.UI.Services
+@using System.Globalization
 
 @inject IApplicationDbContextFactory DbFactory
 
@@ -79,7 +80,7 @@
                 <MudText Typo="Typo.body2" Style="font-weight:700;">POLIEDRO SOFTWARE</MudText>
                 <MudText Typo="Typo.caption">Reporte de Utilidad</MudText>
                 <MudText Typo="Typo.caption">Año: @_selectedYear</MudText>
-                <MudText Typo="Typo.caption">Emitido: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</MudText>
+                <MudText Typo="Typo.caption">Emitido: @FormatDateTime(DateTime.Now)</MudText>
                 <MudDivider Class="my-1" />
             </div>
             @foreach (var m in _monthlyData)
@@ -204,6 +205,11 @@
     }
 
     private int TotalRevenue(MonthlyProfit m) => m.ParkingRevenue + m.WashRevenue + m.MonthlyRevenue;
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
+    }
 
     public class MonthlyProfit
     {

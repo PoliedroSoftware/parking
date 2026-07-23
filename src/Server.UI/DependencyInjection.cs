@@ -115,6 +115,7 @@ public static class DependencyInjection
         services.AddScoped<LocalTimeOffset>();
         services.AddScoped<HubClient>();
             services.AddScoped<TicketService>();
+            services.AddScoped<PosTicketPrintService>();
             services.AddScoped<TicketPdfService>();
             services.AddSingleton<ParkingSessionService>();
         services

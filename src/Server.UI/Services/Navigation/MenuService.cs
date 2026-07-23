@@ -34,6 +34,7 @@ public class MenuService : IMenuService
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
                         new() { Title = "Lavados", Href = "/pages/carwashes", PageStatus = PageStatus.Completed },
+                        new() { Title = "Lavadores", Href = "/tables/wash-operators", PageStatus = PageStatus.Completed },
                         new() { Title = "Tarifas Lavado", Href = "/tables/wash-prices", PageStatus = PageStatus.Completed },
                     }
                 },

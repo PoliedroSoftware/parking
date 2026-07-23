@@ -1,7 +1,6 @@
 @page "/pages/ajustes/impresora"
 @inject IPrinterService PrinterService
-@inject IJSRuntime JSRuntime
-@inject TicketService TicketService
+@inject PosTicketPrintService PosTicketPrintService
 @attribute [Authorize]
 
 <PageTitle>Impresora POS - Poliedro</PageTitle>
@@ -10,7 +9,7 @@
     <MudText Typo="Typo.h4" Class="mb-2">Configuracion de Impresora POS</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
         Configure la impresora termica para tickets y reportes.
-        Los tickets se abriran en la vista previa de impresion del navegador.
+        Los tickets se envian directo a la impresora POS configurada.
     </MudText>
 
     <MudCard Elevation="3">
@@ -121,20 +120,11 @@
                 OperatorName = "Sistema"
             };
 
-            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
-            if (repairedJobs < 0)
-            {
-                _statusMessage = "Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.";
-                _statusSeverity = Severity.Warning;
-            }
-
-            await JSRuntime.InvokeVoidAsync("openTicketWindow",
-                TicketService.GenerateTicketHtmlForWindow(ticketData));
-            if (repairedJobs >= 0)
-            {
-                _statusMessage = "Vista previa de prueba abierta";
-                _statusSeverity = Severity.Success;
-            }
+            var result = await PosTicketPrintService.PrintAsync(ticketData);
+            _statusMessage = result.Message;
+            _statusSeverity = result.PrintedDirectly
+                ? Severity.Success
+                : result.PreviewOpened ? Severity.Warning : Severity.Error;
         }
         catch (Exception ex)
         {

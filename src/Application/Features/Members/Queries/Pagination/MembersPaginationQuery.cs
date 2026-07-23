@@ -18,6 +18,7 @@
 using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using CleanArchitecture.Blazor.Application.Features.Members.Caching;
 using CleanArchitecture.Blazor.Application.Features.Members.Specifications;
+using System.Globalization;
 
 namespace CleanArchitecture.Blazor.Application.Features.Members.Queries.Pagination;
 
@@ -54,6 +55,81 @@ public class MembersWithPaginationQueryHandler :
                                                     request.PageSize,
                                                     _mapper.ConfigurationProvider,
                                                     cancellationToken);
+            await EnrichPaymentStatusAsync(db, data, cancellationToken);
             return data;
+        }
+
+        private static async Task EnrichPaymentStatusAsync(
+            IApplicationDbContext db,
+            PaginatedData<MemberDto> data,
+            CancellationToken cancellationToken)
+        {
+            var members = data.Items.ToList();
+            var memberIds = members.Select(x => x.Id).ToArray();
+            if (memberIds.Length == 0)
+                return;
+
+            var payments = await db.MemberRentals
+                .AsNoTracking()
+                .Where(x => x.MemberId.HasValue && memberIds.Contains(x.MemberId.Value))
+                .Select(x => new
+                {
+                    MemberId = x.MemberId!.Value,
+                    x.StartDate,
+                    x.ExpiryDate,
+                    x.AmountPaid
+                })
+                .ToListAsync(cancellationToken);
+
+            var culture = CultureInfo.GetCultureInfo("es-CO");
+            var currentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var nextMonth = currentMonth.AddMonths(1);
+
+            foreach (var member in members)
+            {
+                var memberPayments = payments
+                    .Where(x => x.MemberId == member.Id && x.AmountPaid > 0)
+                    .ToList();
+
+                var currentMonthPaid = memberPayments.Any(x =>
+                    (x.StartDate ?? DateTime.MinValue) < nextMonth &&
+                    (x.ExpiryDate ?? x.StartDate ?? DateTime.MinValue) >= currentMonth);
+
+                var lastCovered = memberPayments
+                    .Select(x => x.ExpiryDate ?? x.StartDate)
+                    .Where(x => x.HasValue)
+                    .Select(x => x!.Value)
+                    .DefaultIfEmpty()
+                    .Max();
+
+                if (currentMonthPaid)
+                {
+                    member.PaymentStatus = "Al dia";
+                    member.MonthsOverdue = 0;
+                    member.PaidThrough = lastCovered == default ? null : lastCovered;
+                }
+                else
+                {
+                    var referenceDate = lastCovered == default ? member.StartDate : lastCovered;
+                    var coveredMonth = referenceDate.HasValue
+                        ? new DateTime(referenceDate.Value.Year, referenceDate.Value.Month, 1)
+                        : currentMonth.AddMonths(-1);
+                    var monthsOverdue = Math.Max(1, ((currentMonth.Year - coveredMonth.Year) * 12) + currentMonth.Month - coveredMonth.Month);
+
+                    member.MonthsOverdue = monthsOverdue;
+                    member.PaidThrough = lastCovered == default ? null : lastCovered;
+                    member.PaymentStatus = monthsOverdue == 1
+                        ? "Debe mes actual"
+                        : $"Debe {monthsOverdue} meses anteriores";
+                }
+
+                if (member.PaidThrough.HasValue)
+                {
+                    member.LastPaidMonth = culture.TextInfo.ToTitleCase(
+                        member.PaidThrough.Value.ToString("MMMM yyyy", culture));
+                }
+            }
+
+            data.Items = members;
         }
 }

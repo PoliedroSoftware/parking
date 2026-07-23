@@ -1,5 +1,5 @@
 using System.Net;
-using System.Text.Json;
+using System.Globalization;
 using CleanArchitecture.Blazor.Domain.Enums;
 
 namespace CleanArchitecture.Blazor.Server.UI.Services;
@@ -21,7 +21,9 @@ public class TicketData
     public string? TicketNumber { get; set; }
     public decimal? Amount { get; set; }
     public decimal? HourlyRate { get; set; }
+    public bool? IsPaid { get; set; }
     public string? PaymentMethod { get; set; }
+    public string? BillingPeriod { get; set; }
     public TimeSpan? Duration { get; set; }
     public string? OperatorName { get; set; }
     public string? MemberName { get; set; }
@@ -33,6 +35,22 @@ public class TicketData
     public decimal? AdditionalsTotal { get; set; }
     public decimal? Surcharge { get; set; }
     public DateTime? EstimatedDelivery { get; set; }
+    public List<TicketVehicleData> Vehicles { get; set; } = new();
+    public List<TicketPendingWashData> PendingWashes { get; set; } = new();
+}
+
+public class TicketVehicleData
+{
+    public string LicensePlate { get; set; } = string.Empty;
+    public string VehicleType { get; set; } = string.Empty;
+}
+
+public class TicketPendingWashData
+{
+    public string LicensePlate { get; set; } = string.Empty;
+    public string Service { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
 }
 
 public class TicketService
@@ -46,20 +64,11 @@ public class TicketService
 
     public string GenerateTicketText(TicketData data)
     {
-        var ticketType = data.Type switch
-        {
-            TicketType.Entry => "TICKET DE ENTRADA",
-            TicketType.Exit => "TICKET DE SALIDA",
-            TicketType.Payment => "COMPROBANTE DE PAGO",
-            TicketType.Wash => "TICKET DE LAVADO",
-            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
-            _ => "TICKET"
-        };
+        var ticketType = GetTicketTitle(data.Type);
         var ticketNo = data.TicketNumber ?? GenerateTicketNumber();
 
         var sb = new System.Text.StringBuilder();
 
-        // BLACK HEADER
         sb.AppendLine("[HEADER]");
         sb.AppendLine($"[CENTER-SMALL]:{data.CarparkName}");
         sb.AppendLine("[CENTER-TINY]:NIT: 900.123.456-7 | Bogota D.C.");
@@ -70,25 +79,43 @@ public class TicketService
         sb.AppendLine("[DASHED]");
 
         // DATE & TICKET NO
-        sb.AppendLine($"[ROW]:{data.DateTime:dd/MM/yyyy HH:mm}|No: {ticketNo}");
+        sb.AppendLine($"[ROW]:{FormatDateTime(data.DateTime)}|No: {ticketNo}");
+        var direction = GetParkingDirection(data.Type);
+        if (!string.IsNullOrEmpty(direction))
+            sb.AppendLine($"[ROW]:Movimiento:|{direction}");
+        if (data.Type == TicketType.Wash && data.IsPaid.HasValue)
+        {
+            sb.AppendLine($"[CENTER]:{GetPaymentStatusText(data)}");
+        }
 
         // ENTRY/EXIT TIMES in AM/PM
         if (data.EntryTime.HasValue && data.Type == TicketType.Exit)
         {
-            var entrada = data.EntryTime.Value.ToString("hh:mm tt");
-            var salida = data.DateTime.ToString("hh:mm tt");
+            var entrada = FormatTime(data.EntryTime.Value);
+            var salida = FormatTime(data.DateTime);
             sb.AppendLine($"[ROW]:Entrada: {entrada}|Salida: {salida}");
+            if (data.Duration.HasValue)
+                sb.AppendLine($"[ROW]:Tiempo total:|{FormatDuration(data.Duration.Value)}");
         }
         if (!string.IsNullOrEmpty(data.VehicleType))
             sb.AppendLine($"[ROW]:Tipo:|{data.VehicleType}");
-        if (!string.IsNullOrEmpty(data.OperatorName))
+        if (!string.IsNullOrEmpty(data.OperatorName) && data.Type != TicketType.Wash)
             sb.AppendLine($"[ROW]:Operador:|{data.OperatorName}");
 
         sb.AppendLine("[DASHED]");
 
-        // HUGE LICENSE PLATE
-        sb.AppendLine("[CENTER-SMALL]:PLACA");
-        sb.AppendLine($"[HUGE]:{data.LicensePlate}");
+        var ticketVehicles = GetTicketVehicles(data);
+        if (data.Type == TicketType.Monthly && ticketVehicles.Count > 1)
+        {
+            sb.AppendLine("[CENTER-SMALL]:PLACAS");
+            foreach (var vehicle in ticketVehicles)
+                sb.AppendLine($"[CENTER]:{FormatVehicleLine(vehicle)}");
+        }
+        else
+        {
+            sb.AppendLine("[CENTER-SMALL]:PLACA");
+            sb.AppendLine($"[HUGE]:{GetPrimaryLicensePlate(data, ticketVehicles)}");
+        }
 
         if (!string.IsNullOrEmpty(data.VehicleType))
             sb.AppendLine($"[CENTER-SMALL]:Vehiculo: {data.VehicleType}");
@@ -106,12 +133,6 @@ public class TicketService
         // EXIT
         if (data.Type == TicketType.Exit && data.Amount.HasValue)
         {
-            if (data.Duration.HasValue)
-            {
-                var d = data.Duration.Value;
-                var t = d.TotalHours >= 1 ? $"{(int)d.TotalHours}h {d.Minutes}m" : $"{d.Minutes} min";
-                sb.AppendLine($"[ROW]:Tiempo total:|{t}");
-            }
             if (data.HourlyRate.HasValue && data.HourlyRate > 0)
                 sb.AppendLine($"[ROW]:Valor hora:|$ {data.HourlyRate.Value:N0}");
             sb.AppendLine("[DOUBLE]");
@@ -129,6 +150,7 @@ public class TicketService
                 sb.AppendLine($"[CENTER]:COLA #{data.QueueNumber.Value}");
             if (!string.IsNullOrEmpty(data.WashServiceType))
                 sb.AppendLine($"[CENTER]:Servicio: {data.WashServiceType}");
+            AppendAdditionalServicesText(sb, data.Notes);
             if (data.Amount.HasValue)
             {
                 sb.AppendLine("[DASHED]");
@@ -141,10 +163,23 @@ public class TicketService
                 sb.AppendLine("[DASHED]");
                 sb.AppendLine($"[HUGE]:$ {data.Amount:N0}");
                 if (!string.IsNullOrEmpty(data.PaymentMethod))
-                    sb.AppendLine($"[CENTER]:Pago: {data.PaymentMethod}");
-                var op = data.OperatorName ?? "Operador";
-                sb.AppendLine($"[CENTER-SMALL]:Operario(s): {op}");
+                    sb.AppendLine($"[CENTER]:Metodo de pago: {data.PaymentMethod}");
+                if (!string.IsNullOrEmpty(data.OperatorName))
+                    sb.AppendLine($"[CENTER-SMALL]:{GetWasherLabel(data.OperatorName)}: {data.OperatorName}");
             }
+        }
+
+        if (data.Type == TicketType.Monthly && data.Amount.HasValue)
+        {
+            sb.AppendLine("[DASHED]");
+            if (!string.IsNullOrEmpty(data.MemberName))
+                sb.AppendLine($"[ROW]:Miembro:|{data.MemberName}");
+            if (!string.IsNullOrEmpty(data.BillingPeriod))
+                sb.AppendLine($"[ROW]:Mes pagado:|{data.BillingPeriod}");
+            sb.AppendLine($"[ROW]:Valor alquiler:|$ {data.Amount.Value:N0}");
+            if (!string.IsNullOrEmpty(data.PaymentMethod))
+                sb.AppendLine($"[ROW]:Metodo de pago:|{data.PaymentMethod}");
+            AppendPendingWashesText(sb, data.PendingWashes);
         }
 
         // BARCODE LINE
@@ -153,7 +188,7 @@ public class TicketService
 
         // FOOTER
         sb.AppendLine("[DASHED]");
-        sb.AppendLine($"[CENTER-SMALL]:Impreso: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+        sb.AppendLine($"[CENTER-SMALL]:Impreso: {FormatDateTime(DateTime.Now, includeSeconds: true)}");
         sb.AppendLine("[DASHED]");
         sb.AppendLine("[CENTER-TINY]:GRACIAS POR SU VISITA");
         sb.AppendLine("[CENTER-TINY]:POLIEDRO SOFTWARE | Soluciones de Parqueo");
@@ -164,7 +199,10 @@ public class TicketService
 
     private static string FormatDuration(TimeSpan d)
     {
-        if (d.TotalHours >= 1) return $"{(int)d.TotalHours}h {d.Minutes}m";
+        if (d.TotalDays >= 1)
+            return $"{d.Days}d {d.Hours}h {d.Minutes}m";
+        if (d.TotalHours >= 1)
+            return $"{(int)d.TotalHours}h {d.Minutes}m";
         return $"{d.Minutes} min";
     }
 
@@ -180,32 +218,21 @@ public class TicketService
 
     public string GenerateTicketHtml(TicketData data)
     {
-        var ticketType = data.Type switch
-        {
-            TicketType.Entry => "TICKET DE ENTRADA",
-            TicketType.Exit => "TICKET DE SALIDA",
-            TicketType.Payment => "COMPROBANTE DE PAGO",
-            TicketType.Wash => "TICKET DE LAVADO",
-            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
-            _ => "TICKET"
-        };
+        var ticketType = GetTicketTitle(data.Type);
 
         var ticketNo = data.TicketNumber ?? GenerateTicketNumber();
         var carparkName = string.IsNullOrWhiteSpace(data.CarparkName) ? "POLIEDRO PARKING" : data.CarparkName;
-        var barcodeValue = JsonSerializer.Serialize(ticketNo);
 
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
         sb.AppendLine($"<html><head><meta charset='{Charset}'>");
         sb.AppendLine("<meta name='viewport' content='width=device-width,initial-scale=1'>");
-        sb.AppendLine("<script src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js'></script>");
         sb.AppendLine("<style>");
         sb.AppendLine("* { margin: 0; padding: 0; box-sizing: border-box; }");
-        sb.AppendLine($"html {{ width: {PageWidthMm}mm; background: #fff; }}");
+        sb.AppendLine($"html {{ width: {PageWidthMm}mm; }}");
         sb.AppendLine("@media print {");
         sb.AppendLine($"  @page {{ size: {PageWidthMm}mm {PreviewHeightMm}mm; margin: 0; }}");
         sb.AppendLine($"  html, body {{ width: {PageWidthMm}mm; min-width: {PageWidthMm}mm; }}");
-        sb.AppendLine("  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }");
         sb.AppendLine("  .no-print { display: none !important; }");
         sb.AppendLine("}");
         AppendStyle(sb, "body",
@@ -217,8 +244,7 @@ public class TicketService
             $"font-size: {FontSize}px;",
             "font-weight: 800;",
             "line-height: 1.28;",
-            "color: #000;",
-            "background: #fff;");
+            "color: #000;");
         AppendStyle(sb, ".ticket",
             $"width: {ContentWidthMm}mm;",
             $"max-width: {ContentWidthMm}mm;",
@@ -275,6 +301,8 @@ public class TicketService
             $"font-size: {HugeSize}px;",
             "line-height: 1;",
             "font-weight: 900;");
+        AppendStyle(sb, ".plate-list", "margin-top: 3px;");
+        AppendStyle(sb, ".plate-list-item", "font-size: 12px;", "font-weight: 900;", "line-height: 1.2;");
         AppendStyle(sb, ".details", "margin-top: 4px;");
         AppendStyle(sb, ".notice",
             "margin: 5px 0;",
@@ -298,9 +326,18 @@ public class TicketService
             "font-size: 22px;",
             "line-height: 1.05;",
             "font-weight: 900;");
+        AppendStyle(sb, ".payment-status",
+            "margin: 5px 0;",
+            "padding: 2px 0;",
+            "text-align: center;",
+            "font-size: 13px;",
+            "font-weight: 900;");
+        AppendStyle(sb, ".payment-status.paid", "color: #000;");
+        AppendStyle(sb, ".payment-status.unpaid", "color: #000;");
+        AppendStyle(sb, ".additional-list", "margin: 3px 0 5px;");
+        AppendStyle(sb, ".additional-title", "font-size: 10px;", "font-weight: 900;", "text-transform: uppercase;");
+        AppendStyle(sb, ".additional-item", "font-size: 9px;", "font-weight: 900;", "padding-left: 3px;");
         AppendStyle(sb, ".small", $"font-size: {SmallSize}px;", "font-weight: 900;");
-        AppendStyle(sb, ".barcode-container", "text-align: center;", "margin: 7px 0 4px;");
-        AppendStyle(sb, ".barcode-container svg", "max-width: 66mm;", "height: auto;");
         AppendStyle(sb, ".footer", "text-align: center;", "font-size: 9px;", "font-weight: 900;");
         sb.AppendLine("</style></head><body><div class='ticket'>");
 
@@ -310,22 +347,42 @@ public class TicketService
         sb.AppendLine("<div class='brand-sub'>NIT: 900.123.456-7 - Bogota D.C.</div>");
         sb.AppendLine("</div>");
         sb.AppendLine($"<div class='doc-title'>{Html(ticketType)}</div>");
-        AppendRow(sb, "Fecha", data.DateTime.ToString("dd/MM/yyyy HH:mm"));
+        AppendRow(sb, "Fecha", FormatDateTime(data.DateTime));
         AppendRow(sb, "Ticket", ticketNo);
+        AppendRow(sb, "Movimiento", GetParkingDirection(data.Type));
+        if (data.Type == TicketType.Wash && data.IsPaid.HasValue)
+        {
+            var paymentClass = data.IsPaid.Value ? "paid" : "unpaid";
+            sb.AppendLine($"<div class='payment-status {paymentClass}'>{GetPaymentStatusText(data)}</div>");
+        }
         if (!string.IsNullOrWhiteSpace(data.ZoneName))
             AppendRow(sb, "Zona", data.ZoneName);
-        if (!string.IsNullOrWhiteSpace(data.OperatorName))
+        if (!string.IsNullOrWhiteSpace(data.OperatorName) && data.Type != TicketType.Wash)
             AppendRow(sb, "Operador", data.OperatorName);
         sb.AppendLine("<div class='line'></div>");
         if (data.EntryTime.HasValue && (data.Type == TicketType.Exit || data.Type == TicketType.Payment))
         {
-            AppendRow(sb, "Entrada", data.EntryTime.Value.ToString("dd/MM/yyyy HH:mm"));
-            AppendRow(sb, "Salida", data.DateTime.ToString("dd/MM/yyyy HH:mm"));
+            AppendRow(sb, "Entrada", FormatDateTime(data.EntryTime.Value));
+            AppendRow(sb, "Salida", FormatDateTime(data.DateTime));
+            if (data.Duration.HasValue)
+                AppendRow(sb, "Tiempo total", FormatDuration(data.Duration.Value));
         }
 
+        var ticketVehicles = GetTicketVehicles(data);
         sb.AppendLine("<div class='plate-box'>");
-        sb.AppendLine("<div class='plate-label'>Placa</div>");
-        sb.AppendLine($"<div class='plate-number'>{Html(data.LicensePlate)}</div>");
+        if (data.Type == TicketType.Monthly && ticketVehicles.Count > 1)
+        {
+            sb.AppendLine("<div class='plate-label'>Placas</div>");
+            sb.AppendLine("<div class='plate-list'>");
+            foreach (var vehicle in ticketVehicles)
+                sb.AppendLine($"<div class='plate-list-item'>{Html(FormatVehicleLine(vehicle))}</div>");
+            sb.AppendLine("</div>");
+        }
+        else
+        {
+            sb.AppendLine("<div class='plate-label'>Placa</div>");
+            sb.AppendLine($"<div class='plate-number'>{Html(GetPrimaryLicensePlate(data, ticketVehicles))}</div>");
+        }
         sb.AppendLine("</div>");
 
         sb.AppendLine("<div class='details'>");
@@ -344,12 +401,6 @@ public class TicketService
 
         if (data.Type == TicketType.Exit || data.Type == TicketType.Payment)
         {
-            if (data.Duration.HasValue)
-            {
-                var d = data.Duration.Value;
-                var tiempo = d.TotalHours >= 1 ? $"{(int)d.TotalHours}h {d.Minutes}m" : $"{d.Minutes} min";
-                AppendRow(sb, "Tiempo total", tiempo);
-            }
             if (data.Amount.HasValue)
             {
                 if (data.HourlyRate.HasValue && data.HourlyRate > 0)
@@ -358,7 +409,7 @@ public class TicketService
                 sb.AppendLine("<div class='total-label'>Total pagado</div>");
                 sb.AppendLine($"<div class='total-amount'>{Money(data.Amount.Value)}</div>");
                 if (!string.IsNullOrWhiteSpace(data.PaymentMethod))
-                    sb.AppendLine($"<div class='small'>Metodo: {Html(data.PaymentMethod)}</div>");
+                    sb.AppendLine($"<div class='small'>Metodo de pago: {Html(data.PaymentMethod)}</div>");
                 sb.AppendLine("</div>");
             }
         }
@@ -370,8 +421,7 @@ public class TicketService
                 sb.AppendLine($"<div class='center bold'>TURNO #{data.QueueNumber.Value}</div>");
             if (!string.IsNullOrWhiteSpace(data.WashServiceType))
                 AppendRow(sb, "Servicio", data.WashServiceType);
-            if (!string.IsNullOrWhiteSpace(data.Notes))
-                AppendRow(sb, "Incluye", data.Notes);
+            AppendAdditionalServicesHtml(sb, data.Notes);
             if (data.Amount.HasValue)
             {
                 if (data.BasePrice.HasValue && data.BasePrice > 0)
@@ -384,23 +434,26 @@ public class TicketService
                 sb.AppendLine("<div class='total-label'>Total servicio</div>");
                 sb.AppendLine($"<div class='total-amount'>{Money(data.Amount.Value)}</div>");
                 if (!string.IsNullOrWhiteSpace(data.PaymentMethod))
-                    sb.AppendLine($"<div class='small'>Metodo: {Html(data.PaymentMethod)}</div>");
+                    sb.AppendLine($"<div class='small'>Metodo de pago: {Html(data.PaymentMethod)}</div>");
                 sb.AppendLine("</div>");
                 if (!string.IsNullOrWhiteSpace(data.CustomerName))
                     AppendRow(sb, "Cliente", data.CustomerName);
                 else
                     AppendRow(sb, "Cliente", "Consumidor Final");
                 if (!string.IsNullOrWhiteSpace(data.OperatorName))
-                    AppendRow(sb, "Operario", data.OperatorName);
+                    AppendRow(sb, GetWasherLabel(data.OperatorName), data.OperatorName);
             }
         }
 
         if (data.Type == TicketType.Monthly && data.Amount.HasValue)
         {
             sb.AppendLine("<div class='line'></div>");
+            if (!string.IsNullOrWhiteSpace(data.BillingPeriod))
+                AppendRow(sb, "Mes pagado", data.BillingPeriod);
             AppendRow(sb, "Valor alquiler", Money(data.Amount.Value));
             if (!string.IsNullOrWhiteSpace(data.PaymentMethod))
-                AppendRow(sb, "Metodo", data.PaymentMethod);
+                AppendRow(sb, "Metodo de pago", data.PaymentMethod);
+            AppendPendingWashesHtml(sb, data.PendingWashes);
         }
 
         if (!string.IsNullOrWhiteSpace(data.Notes) && data.Type != TicketType.Wash)
@@ -410,11 +463,10 @@ public class TicketService
         }
 
         sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine("<div class='barcode-container'><svg id='barcode'></svg></div>");
         sb.AppendLine($"<div class='center small'>{ticketNo}</div>");
         sb.AppendLine("<div class='line'></div>");
         sb.AppendLine("<div class='footer'>");
-        sb.AppendLine($"<div>Impreso: {DateTime.Now:dd/MM/yyyy HH:mm:ss}</div>");
+        sb.AppendLine($"<div>Impreso: {FormatDateTime(DateTime.Now, includeSeconds: true)}</div>");
         if (!string.IsNullOrWhiteSpace(data.CustomerName))
             sb.AppendLine($"<div>Cliente: {Html(data.CustomerName)}</div>");
         else if (data.Type == TicketType.Exit || data.Type == TicketType.Payment)
@@ -425,14 +477,7 @@ public class TicketService
         sb.AppendLine("<div>Tel: +57 (601) 123 4567 - Bogota, Colombia</div>");
         sb.AppendLine("</div>");
         sb.AppendLine("<script>");
-        sb.AppendLine("try {");
-        sb.AppendLine($"  JsBarcode('#barcode', {barcodeValue}, {{");
-        sb.AppendLine("    format: 'CODE128', width: 1.5, height: 40,");
-        sb.AppendLine("    displayValue: false, margin: 2,");
-        sb.AppendLine("    background: '#ffffff', lineColor: '#000000'");
-        sb.AppendLine("  });");
-        sb.AppendLine("} catch(e) { console.error('Barcode error:', e); }");
-        sb.AppendLine("window.onload = function() { setTimeout(function() { window.print(); }, 150); };");
+        sb.AppendLine("window.onload = function() { setTimeout(function() { window.print(); }, 250); };");
         sb.AppendLine("window.onafterprint = function() { setTimeout(function() { window.close(); }, 150); };");
         sb.AppendLine("</script></div></body></html>");
         return sb.ToString();
@@ -465,4 +510,142 @@ public class TicketService
     private static string Html(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
 
     private static string Money(decimal amount) => $"$ {amount:N0}";
+
+    private static IReadOnlyList<TicketVehicleData> GetTicketVehicles(TicketData data)
+    {
+        if (data.Vehicles.Count > 0)
+            return data.Vehicles;
+
+        return string.IsNullOrWhiteSpace(data.LicensePlate)
+            ? Array.Empty<TicketVehicleData>()
+            : new[] { new TicketVehicleData { LicensePlate = data.LicensePlate, VehicleType = data.VehicleType } };
+    }
+
+    private static string GetPrimaryLicensePlate(TicketData data, IReadOnlyList<TicketVehicleData> vehicles)
+    {
+        return vehicles.Count > 0 ? vehicles[0].LicensePlate : data.LicensePlate;
+    }
+
+    private static string FormatVehicleLine(TicketVehicleData vehicle)
+    {
+        return string.IsNullOrWhiteSpace(vehicle.VehicleType)
+            ? vehicle.LicensePlate
+            : $"{vehicle.LicensePlate} - {vehicle.VehicleType}";
+    }
+
+    private static string FormatPendingWashLine(TicketPendingWashData wash)
+    {
+        var service = string.IsNullOrWhiteSpace(wash.Service) ? "Lavado" : wash.Service;
+        var status = string.IsNullOrWhiteSpace(wash.Status) ? "Pendiente" : wash.Status;
+        return $"{wash.LicensePlate} - {service} - {status} - {Money(wash.Amount)}";
+    }
+
+    private static void AppendPendingWashesText(
+        System.Text.StringBuilder sb,
+        IReadOnlyCollection<TicketPendingWashData> pendingWashes)
+    {
+        if (pendingWashes.Count == 0)
+            return;
+
+        sb.AppendLine("[DASHED]");
+        sb.AppendLine("[CENTER-SMALL]:Lavados pendientes:");
+        foreach (var wash in pendingWashes)
+            sb.AppendLine($"[CENTER-SMALL]:- {FormatPendingWashLine(wash)}");
+    }
+
+    private static void AppendPendingWashesHtml(
+        System.Text.StringBuilder sb,
+        IReadOnlyCollection<TicketPendingWashData> pendingWashes)
+    {
+        if (pendingWashes.Count == 0)
+            return;
+
+        sb.AppendLine("<div class='line'></div>");
+        sb.AppendLine("<div class='additional-list'>");
+        sb.AppendLine("<div class='additional-title'>Lavados pendientes:</div>");
+        foreach (var wash in pendingWashes)
+            sb.AppendLine($"<div class='additional-item'>- {Html(FormatPendingWashLine(wash))}</div>");
+        sb.AppendLine("</div>");
+    }
+
+    private static string FormatDateTime(DateTime value, bool includeSeconds = false)
+    {
+        var format = includeSeconds ? "dd/MM/yyyy hh:mm:ss tt" : "dd/MM/yyyy hh:mm tt";
+        return value.ToString(format, CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatTime(DateTime value)
+    {
+        return value.ToString("hh:mm tt", CultureInfo.InvariantCulture);
+    }
+
+    private static string GetTicketTitle(TicketType type)
+    {
+        return type switch
+        {
+            TicketType.Entry => "PARQUEO",
+            TicketType.Exit => "PARQUEO",
+            TicketType.Payment => "COMPROBANTE DE PAGO",
+            TicketType.Wash => "LAVADO",
+            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
+            _ => "TICKET"
+        };
+    }
+
+    private static string? GetParkingDirection(TicketType type)
+    {
+        return type switch
+        {
+            TicketType.Entry => "Entrada",
+            TicketType.Exit => "Salida",
+            TicketType.Payment => "Salida",
+            _ => null
+        };
+    }
+
+    private static string GetPaymentStatusText(TicketData data)
+    {
+        return data.IsPaid == true ? "PAGADO" : "NO PAGADO";
+    }
+
+    private static void AppendAdditionalServicesText(System.Text.StringBuilder sb, string? notes)
+    {
+        var items = SplitAdditionalServices(notes);
+        if (items.Length == 0)
+            return;
+
+        sb.AppendLine("[CENTER-SMALL]:Incluye:");
+        foreach (var item in items)
+            sb.AppendLine($"[CENTER-SMALL]:- {item}");
+    }
+
+    private static void AppendAdditionalServicesHtml(System.Text.StringBuilder sb, string? notes)
+    {
+        var items = SplitAdditionalServices(notes);
+        if (items.Length == 0)
+            return;
+
+        sb.AppendLine("<div class='additional-list'>");
+        sb.AppendLine("<div class='additional-title'>Incluye:</div>");
+        foreach (var item in items)
+            sb.AppendLine($"<div class='additional-item'>- {Html(item)}</div>");
+        sb.AppendLine("</div>");
+    }
+
+    private static string[] SplitAdditionalServices(string? notes)
+    {
+        return (notes ?? string.Empty)
+            .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToArray();
+    }
+
+    private static string GetWasherLabel(string? operatorName)
+    {
+        var count = operatorName?
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Length ?? 0;
+
+        return count == 1 ? "Lavador" : "Lavadores";
+    }
 }

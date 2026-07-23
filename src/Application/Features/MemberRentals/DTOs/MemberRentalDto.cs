@@ -12,6 +12,7 @@
 
 
 using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
+using System.Globalization;
 
 namespace CleanArchitecture.Blazor.Application.Features.MemberRentals.DTOs;
 
@@ -46,6 +47,10 @@ public class MemberRentalDto
     public PaymentMethods? PaymentMethodId { get; set; }
     [Description("Notes")]
     public string? Notes { get; set; }
+    [Description("Paid month")]
+    public string PaidMonth => StartDate.HasValue
+        ? CultureInfo.GetCultureInfo("es-CO").TextInfo.ToTitleCase(StartDate.Value.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("es-CO")))
+        : string.Empty;
 
 
     private class Mapping : Profile

@@ -51,6 +51,12 @@ public class CarWashDto
     public MemberDto? Member { get; set; }
     [Description("Cobrar a mensualidad")]
     public bool ChargeToMonthly { get; set; }
+    [Description("Tiene mensualidad")]
+    public bool HasMonthlyMembership { get; set; }
+    [Description("Mensualista")]
+    public int? MonthlyMemberId { get; set; }
+    [Description("Mensualista")]
+    public string? MonthlyMemberName { get; set; }
     [Description("Adicionales")]
     public List<CarWashAdditionalDto> Additionals { get; set; } = new();
     [Description("Operarios")]

@@ -28,7 +28,7 @@
                     <MudItem xs="12" md="4">
                         <MudAutocomplete T="string" Label="Placa" @bind-Value="_model.LicensePlate" Required="true"
                                          RequiredError="La placa es requerida" SearchFunc="SearchPlates"
-                                         OnBlur="OnPlateBlur" CoerceText="false" CoerceValue="false"
+                                         OnBlur="OnPlateBlur" CoerceText="false" CoerceValue="true"
                                          AdornmentIcon="@Icons.Material.Filled.Search" Adornment="Adornment.End">
                         </MudAutocomplete>
                     </MudItem>
@@ -62,9 +62,9 @@
                         </MudPaper>
                     </MudItem>
                     <MudItem xs="12" md="6">
-                        <MudText Typo="Typo.subtitle2" Class="mb-2">Operarios</MudText>
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Lavadores</MudText>
                         <MudStack Row Spacing="2" AlignItems="AlignItems.Center" Class="mb-2" Style="flex-wrap:wrap;">
-                            <MudAutocomplete T="string" Placeholder="Nombre operario" @bind-Value="_newOperatorName"
+                            <MudAutocomplete T="string" Placeholder="Buscar lavador" @bind-Value="_newOperatorName"
                                              SearchFunc="SearchOperators" CoerceText="false" CoerceValue="false"
                                              Style="flex:1;min-width:140px;"></MudAutocomplete>
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
@@ -77,7 +77,7 @@
                             </MudText>
                             <MudTable Items="@_operators" Dense="true" Elevation="0">
                                 <HeaderContent>
-                                    <MudTh>Operario</MudTh>
+                                    <MudTh>Lavador</MudTh>
                                     <MudTh Style="text-align:right;">Comision</MudTh>
                                     <MudTh></MudTh>
                                 </HeaderContent>
@@ -209,25 +209,116 @@ else
     {
         if (string.IsNullOrWhiteSpace(search) || search.Length < 2) return Array.Empty<string>();
         await using var db = await DbFactory.CreateAsync(ct);
-        var m = await db.Members.Where(x => x.LicensePlate != null && x.LicensePlate.Contains(search)).Select(x => x.LicensePlate).Distinct().Take(5).ToListAsync(ct);
-        var w = await db.CarWashes.Where(x => x.LicensePlate != null && x.LicensePlate.Contains(search)).Select(x => x.LicensePlate).Distinct().Take(5).ToListAsync(ct);
-        return m.Union(w).Distinct().Take(8);
+        var term = search.Trim().ToUpperInvariant();
+        var members = await db.Members
+            .AsNoTracking()
+            .Where(x => x.LicensePlate != null && x.LicensePlate.ToUpper().Contains(term))
+            .Select(x => x.LicensePlate!)
+            .Distinct()
+            .Take(8)
+            .ToListAsync(ct);
+        var washes = await db.CarWashes
+            .AsNoTracking()
+            .Where(x => x.LicensePlate != null && x.LicensePlate.ToUpper().Contains(term))
+            .Select(x => x.LicensePlate)
+            .Distinct()
+            .Take(8)
+            .ToListAsync(ct);
+        var parkingRecords = await db.ParkingRecords
+            .AsNoTracking()
+            .Where(x => x.LicensePlate != null && x.LicensePlate.ToUpper().Contains(term))
+            .Select(x => x.LicensePlate)
+            .Distinct()
+            .Take(8)
+            .ToListAsync(ct);
+
+        return members
+            .Union(washes)
+            .Union(parkingRecords)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim().ToUpperInvariant())
+            .Distinct()
+            .OrderBy(x => x)
+            .Take(12);
     }
 
     private async Task<IEnumerable<string>> SearchOperators(string search, CancellationToken ct)
     {
         await using var db = await DbFactory.CreateAsync(ct);
-        if (string.IsNullOrWhiteSpace(search)) return await db.CarWashOperators.Select(o => o.OperatorName).Distinct().Take(10).ToListAsync(ct);
-        return await db.CarWashOperators.Where(o => o.OperatorName.Contains(search)).Select(o => o.OperatorName).Distinct().Take(10).ToListAsync(ct);
+        var query = db.WashOperators.AsNoTracking().Where(o => o.IsActive);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToUpperInvariant();
+            query = query.Where(o => o.Name.ToUpper().Contains(term));
+        }
+
+        return await query
+            .OrderBy(o => o.Name)
+            .Select(o => o.Name)
+            .Distinct()
+            .Take(10)
+            .ToListAsync(ct);
     }
 
-    private async Task OnPlateBlur() { if (_model.ChargeToMonthly && !string.IsNullOrWhiteSpace(_model.LicensePlate)) await SearchMember(); }
-    private async Task SearchMember() { await using var db = await DbFactory.CreateAsync(); var m = await db.Members.Where(x => x.LicensePlate == _model.LicensePlate && x.IsActive).FirstOrDefaultAsync(); if (m != null) { _memberFound = new MemberDto { Id = m.Id, Name = m.Name, LicensePlate = m.LicensePlate }; _model.MemberId = m.Id; } else _memberFound = null; }
+    private async Task OnPlateBlur()
+    {
+        _model.LicensePlate = _model.LicensePlate?.Trim().ToUpperInvariant() ?? string.Empty;
+        if (_model.ChargeToMonthly && !string.IsNullOrWhiteSpace(_model.LicensePlate))
+            await SearchMember();
+    }
+
+    private async Task SearchMember()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var plate = _model.LicensePlate?.Trim().ToUpperInvariant();
+        var m = await db.Members
+            .Where(x => x.LicensePlate != null && x.LicensePlate.ToUpper() == plate && x.IsActive)
+            .FirstOrDefaultAsync();
+
+        _memberSearched = true;
+        if (m != null)
+        {
+            _memberFound = new MemberDto { Id = m.Id, Name = m.Name, LicensePlate = m.LicensePlate };
+            _model.MemberId = m.Id;
+        }
+        else
+        {
+            _memberFound = null;
+            _model.MemberId = null;
+        }
+    }
     private void OnVehicleTypeChanged(VehicleTypes? v) { _model.VehicleType = v; RecalculateBasePrice(); StateHasChanged(); }
     private void OnWashServiceSelected(WashServiceType t) { _model.WashServiceType = t; RecalculateBasePrice(); }
     private void RecalculateBasePrice() { if (_model.VehicleType != null && _model.WashServiceType != null) { var m = _availablePrices.FirstOrDefault(p => p.ServiceType == _model.WashServiceType && p.VehicleType == _model.VehicleType); if (m != null) _basePrice = m.BasePrice; } RecalculateTotal(); }
     private void ToggleAdditional(string n, bool a) { if (a) _selectedAdditionals.Add(n); else _selectedAdditionals.Remove(n); RecalculateTotal(); }
-    private void AddOperator() { if (string.IsNullOrWhiteSpace(_newOperatorName)) return; _operators.Add(new CarWashOperatorDto { OperatorName = _newOperatorName.Trim(), Commission = 0 }); _newOperatorName = string.Empty; OnCommissionBlur(); }
+    private async Task AddOperator()
+    {
+        if (string.IsNullOrWhiteSpace(_newOperatorName))
+            return;
+
+        var operatorName = _newOperatorName.Trim();
+        if (_operators.Any(x => x.OperatorName.Equals(operatorName, StringComparison.OrdinalIgnoreCase)))
+        {
+            Snackbar.Add("Ese lavador ya fue agregado.", Severity.Warning);
+            return;
+        }
+
+        await using var db = await DbFactory.CreateAsync();
+        var normalizedName = operatorName.ToUpperInvariant();
+        var exists = await db.WashOperators
+            .AsNoTracking()
+            .AnyAsync(x => x.IsActive && x.Name.ToUpper() == normalizedName);
+
+        if (!exists)
+        {
+            Snackbar.Add("Seleccione un lavador activo del maestro.", Severity.Warning);
+            return;
+        }
+
+        _operators.Add(new CarWashOperatorDto { OperatorName = operatorName, Commission = 0 });
+        _newOperatorName = string.Empty;
+        OnCommissionBlur();
+    }
     private void OnCommissionBlur() { if (decimal.TryParse(_commissionText, out var v)) { _model.CommissionTotal = v; DistributeCommission(); } RecalculateTotal(); }
     private void DistributeCommission() { if (_operators.Any()) { var e = _model.CommissionTotal / _operators.Count; for (int i = 0; i < _operators.Count; i++) _operators[i].Commission = e; } }
     private void RecalculateTotal() { _additionalsTotal = _availableAdditionals.Where(a => _selectedAdditionals.Contains(a.Name)).Sum(a => a.Price); _model.Price = _basePrice + _additionalsTotal + _model.WeekendSurcharge; }

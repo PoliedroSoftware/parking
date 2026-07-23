@@ -73,7 +73,7 @@ public class AddEditCarWashCommandHandler : IRequestHandler<AddEditCarWashComman
                 return await Result<int>.FailureAsync($"Lavado con id: [{request.Id}] no encontrado.");
             
             item = _mapper.Map(request, item);
-            item.MemberId = request.ChargeToMonthly && request.Member != null ? request.Member.Id : null;
+            item.MemberId = ResolveMonthlyMemberId(request);
             await SyncAdditionals(db, item, request.Additionals, cancellationToken);
             await SyncOperators(db, item, request.Operators, cancellationToken);
             item.AddDomainEvent(new CarWashUpdatedEvent(item));
@@ -84,7 +84,7 @@ public class AddEditCarWashCommandHandler : IRequestHandler<AddEditCarWashComman
         {
             var item = _mapper.Map<CarWash>(request);
             item.StartTime = request.StartTime ?? DateTime.Now;
-            item.MemberId = request.ChargeToMonthly && request.Member != null ? request.Member.Id : null;
+            item.MemberId = ResolveMonthlyMemberId(request);
             item.Additionals = request.Additionals.Select(a => new CarWashAdditional { AdditionalName = a.AdditionalName, Price = a.Price }).ToList();
             item.Operators = request.Operators.Select(o => new CarWashOperator { OperatorName = o.OperatorName, Commission = o.Commission }).ToList();
 
@@ -115,6 +115,13 @@ public class AddEditCarWashCommandHandler : IRequestHandler<AddEditCarWashComman
             if (!existing.Any(e => e.AdditionalName == dto.AdditionalName))
                 db.CarWashAdditionals.Add(new CarWashAdditional { CarWashId = item.Id, AdditionalName = dto.AdditionalName, Price = dto.Price });
         }
+    }
+
+    private static int? ResolveMonthlyMemberId(AddEditCarWashCommand request)
+    {
+        return request.ChargeToMonthly
+            ? request.Member?.Id ?? request.MemberId
+            : null;
     }
 
     private static async Task SyncOperators(IApplicationDbContext db, CarWash item, List<CarWashOperatorDto> dtos, CancellationToken ct)

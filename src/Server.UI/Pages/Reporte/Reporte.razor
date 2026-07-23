@@ -2,6 +2,7 @@
 
 @using CleanArchitecture.Blazor.Server.UI.Services
 @using CleanArchitecture.Blazor.Domain.Entities
+@using System.Globalization
 
 @inject IApplicationDbContextFactory DbFactory
 @inject TicketService TicketService
@@ -187,6 +188,7 @@
         sb.AppendLine("<style>@media print{@page{size:80mm 250mm;margin:0}}body{width:72mm;margin:4mm;font-family:'Courier New',monospace;font-size:9px;}.center{text-align:center;}.bold{font-weight:bold;}.line{border-top:1px dashed #000;margin:3px 0;}</style></head><body>");
         sb.AppendLine("<div class='center bold'>REPORTE MENSUAL</div>");
         sb.AppendLine($"<div class='center'>{_reportDate:MMMM yyyy}</div>");
+        sb.AppendLine($"<div class='center'>Emitido: {FormatDateTime(DateTime.Now)}</div>");
         sb.AppendLine("<div class='line'></div>");
         sb.AppendLine($"<div>Parqueo:<span style='float:right'>$ {_ingresosParqueo:N0}</span></div>");
         sb.AppendLine($"<div>Lavado:<span style='float:right'>$ {_ingresosLavado:N0}</span></div>");
@@ -198,6 +200,11 @@
         sb.AppendLine("<div class='center small'>POLIEDRO SOFTWARE</div>");
         sb.AppendLine("<script>window.onload=function(){window.print();}</script></body></html>");
         await JSRuntime.InvokeVoidAsync("openTicketWindow", sb.ToString());
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
     }
 
     public class DayRevenue

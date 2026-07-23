@@ -31,6 +31,7 @@ public class ApplicationDbContext : IdentityDbContext<
     public DbSet<CarWash> CarWashes { get; set; }
     public DbSet<CarWashAdditional> CarWashAdditionals { get; set; }
     public DbSet<CarWashOperator> CarWashOperators { get; set; }
+    public DbSet<WashOperator> WashOperators { get; set; }
     public DbSet<WashServicePrice> WashServicePrices { get; set; }
     public DbSet<WashAdditional> WashAdditionals { get; set; }
     public DbSet<Expense> Expenses { get; set; }

@@ -3,12 +3,13 @@
 @using CleanArchitecture.Blazor.Server.UI.Services
 @using CleanArchitecture.Blazor.Domain.Enums
 @using System.Collections.Concurrent
+@using System.Globalization
 
 @inject IStringLocalizer<Tickets> L
 @inject TicketService TicketService
+@inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
 @inject ParkingSessionService ParkingService
-@inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject IApplicationDbContextFactory DbFactory
 @inject BlazorDownloadFileService BlazorDownloadFileService
@@ -128,7 +129,7 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd><strong class="plate-cell">@context.LicensePlate</strong></MudTd>
-                        <MudTd>@context.EntryTime.ToString("HH:mm")</MudTd>
+                        <MudTd>@FormatTime(context.EntryTime)</MudTd>
                         <MudTd>@FormatDuration(DateTime.Now - context.EntryTime)</MudTd>
                         <MudTd Class="amount-cell">$ @context.EstimatedAmount.ToString("N0")</MudTd>
                         <MudTd Style="text-align:center;">
@@ -174,8 +175,8 @@
                         <MudTh></MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>@context.Time.ToString("HH:mm")</MudTd>
-                        <MudTd>@(context.ExitTime?.ToString("HH:mm") ?? "--")</MudTd>
+                        <MudTd>@FormatTime(context.Time)</MudTd>
+                        <MudTd>@(context.ExitTime.HasValue ? FormatTime(context.ExitTime.Value) : "--")</MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context)">
                                 @GetStatusLabel(context)
@@ -676,13 +677,9 @@
             VehicleType = _vehicleType.GetDescription()
         };
 
-        if (await EnsurePrinterQueueReady())
-        {
-            await JSRuntime.InvokeVoidAsync("openTicketWindow",
-                TicketService.GenerateTicketHtmlForWindow(ticketData));
-        }
+        await PrintPosTicket(ticketData);
 
-        _lastMessage = $"ENTRADA: {plate} - {entryTime:HH:mm:ss}";
+        _lastMessage = $"ENTRADA: {plate} - {FormatTime(entryTime, includeSeconds: true)}";
         _lastSeverity = Severity.Info;
         Snackbar.Add($"Entrada: {plate}", Severity.Success);
 
@@ -735,11 +732,7 @@
             VehicleType = ParseVehicleType(record.Notes)
         };
 
-        if (await EnsurePrinterQueueReady())
-        {
-            await JSRuntime.InvokeVoidAsync("openTicketWindow",
-                TicketService.GenerateTicketHtmlForWindow(exitTicketData));
-        }
+        await PrintPosTicket(exitTicketData);
 
         _lastMessage = $"SALIDA: {plate} - {formattedDuration} - $ {amount:N0}";
         _lastSeverity = Severity.Success;
@@ -871,12 +864,7 @@
             OperatorName = "Operador"
         };
 
-        if (await EnsurePrinterQueueReady())
-        {
-            await JSRuntime.InvokeVoidAsync("openTicketWindow",
-                TicketService.GenerateTicketHtmlForWindow(ticketData));
-            Snackbar.Add("Vista previa de impresion abierta", Severity.Info);
-        }
+        await PrintPosTicket(ticketData);
     }
 
     private async Task DownloadPdf(MovementRecord m)
@@ -906,55 +894,63 @@
     {
         try
         {
+            var days = 0;
+            if (formatted.Contains('d'))
+            {
+                var dayParts = formatted.Split('d', 2);
+                days = int.Parse(dayParts[0].Trim());
+                formatted = dayParts.Length > 1 ? dayParts[1].Trim() : string.Empty;
+            }
+
             if (formatted.Contains('h'))
             {
                 var parts = formatted.Split('h', 'm');
                 var hours = int.Parse(parts[0].Trim());
                 var mins = parts.Length > 1 && parts[1].Trim().Length > 0 ? int.Parse(parts[1].Trim()) : 0;
-                return new TimeSpan(hours, mins, 0);
+                return new TimeSpan(days, hours, mins, 0);
             }
             if (formatted.EndsWith("min"))
             {
                 var mins = int.Parse(formatted.Replace("min", "").Trim());
-                return new TimeSpan(0, mins, 0);
+                return new TimeSpan(days, 0, mins, 0);
             }
+
+            if (days > 0)
+                return new TimeSpan(days, 0, 0, 0);
         }
         catch { }
         return null;
     }
 
-    private async Task<bool> EnsurePrinterQueueReady()
+    private async Task PrintPosTicket(TicketData ticketData)
     {
-        try
-        {
-            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
-            if (repairedJobs < 0)
-            {
-                Snackbar.Add("Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.", Severity.Warning);
-                return true;
-            }
+        var result = await PosTicketPrintService.PrintAsync(ticketData);
+        ShowPrintResult(result);
+    }
 
-            if (repairedJobs > 0)
-            {
-                Snackbar.Add($"Cola de impresion limpiada: {repairedJobs} trabajo(s).", Severity.Warning);
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"No se pudo limpiar la cola de impresion: {ex.Message}", Severity.Error);
-            return false;
-        }
+    private void ShowPrintResult(PosTicketPrintResult result)
+    {
+        var severity = result.PrintedDirectly
+            ? Severity.Success
+            : result.PreviewOpened ? Severity.Warning : Severity.Error;
+        Snackbar.Add(result.Message, severity);
     }
 
     private static string FormatDuration(TimeSpan? duration)
     {
         if (duration == null) return "--";
         var d = duration.Value;
+        if (d.TotalDays >= 1)
+            return $"{d.Days}d {d.Hours}h {d.Minutes}m";
         if (d.TotalHours >= 1)
             return $"{(int)d.TotalHours}h {d.Minutes}m";
         return $"{d.Minutes} min";
+    }
+
+    private static string FormatTime(DateTime value, bool includeSeconds = false)
+    {
+        var format = includeSeconds ? "hh:mm:ss tt" : "hh:mm tt";
+        return value.ToString(format, CultureInfo.InvariantCulture);
     }
 
     private Color GetStatusColor(MovementRecord m)

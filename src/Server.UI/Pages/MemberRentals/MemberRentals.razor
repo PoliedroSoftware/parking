@@ -7,6 +7,7 @@
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.Import
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.Export
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.Pagination
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.PrintDetails
 @using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
 @using CleanArchitecture.Blazor.Server.UI.Pages.MemberRentals.Components
 
@@ -15,9 +16,8 @@
 @inject IStringLocalizer<MemberRentals> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @inject TicketService TicketService
+@inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
-@inject IJSRuntime JSRuntime
-@inject IPrinterService PrinterService
 
 @attribute [Authorize(Policy = Permissions.MemberRentals.View)]
 <PageTitle>@Title</PageTitle>
@@ -85,16 +85,20 @@
 	</ToolBarContent>
 	<Columns>
 		<SelectColumn ShowInFooter="false"></SelectColumn>
-		<TemplateColumn HeaderStyle="width:80px" Title="@AppStrings.Actions" Sortable="false">
+		<TemplateColumn HeaderStyle="width:170px" Title="@AppStrings.Actions" Sortable="false">
 			<CellTemplate>
-				<MudIconButton Variant="Variant.Outlined" Size="Size.Small"
-							   Icon="@Icons.Material.Filled.Print"
+				<MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+					<MudButton Variant="Variant.Filled" Size="Size.Small"
 							   Color="Color.Info"
-							   OnClick="@(() => OnPrintMonthlyReceipt(context.Item))" />
-				<MudIconButton Variant="Variant.Outlined" Size="Size.Small"
-							   Icon="@Icons.Material.Filled.PictureAsPdf"
-							   Color="Color.Error"
-							   OnClick="@(() => DownloadMonthlyPdf(context.Item))" />
+							   StartIcon="@Icons.Material.Filled.Print"
+							   OnClick="@(() => OnPrintMonthlyReceipt(context.Item))">
+						Imprimir
+					</MudButton>
+					<MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+								   Icon="@Icons.Material.Filled.PictureAsPdf"
+								   Color="Color.Error"
+								   OnClick="@(() => DownloadMonthlyPdf(context.Item))" />
+				</MudStack>
 			</CellTemplate>
 		</TemplateColumn>
 
@@ -105,6 +109,13 @@
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.LicensePlate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.LicensePlate)]" />
 		<PropertyColumn Property="x => x.CardId" Title="@L[_memberrentalDto.GetMemberDescription(x => x.CardId)]" />
+		<TemplateColumn Title="Mes pagado">
+			<CellTemplate>
+				<MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+					@context.Item.PaidMonth
+				</MudChip>
+			</CellTemplate>
+		</TemplateColumn>
 		<PropertyColumn Property="x => x.StartDate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.StartDate)]" Format="d" />
 		<PropertyColumn Property="x => x.ExpiryDate" Title="@L[_memberrentalDto.GetMemberDescription(x => x.ExpiryDate)]" Format="d" />
 		<PropertyColumn Property="x => x.RentalFee" Title="@L[_memberrentalDto.GetMemberDescription(x => x.RentalFee)]" />
@@ -321,73 +332,92 @@
 
 	private async Task OnPrintMonthlyReceipt(MemberRentalDto dto)
 	{
-		var ticketHtml = TicketService.GenerateTicketHtml(new TicketData
-		{
-			Type = TicketType.Monthly,
-			LicensePlate = dto.LicensePlate ?? "",
-			DateTime = dto.PaymentTime ?? DateTime.Now,
-			TicketNumber = TicketService.GenerateTicketNumber(),
-			Amount = dto.AmountPaid,
-			PaymentMethod = dto.PaymentMethodId?.GetDescription(),
-			MemberName = dto.Member?.Name,
-			Duration = dto.StartDate.HasValue && dto.ExpiryDate.HasValue
-				? dto.ExpiryDate.Value - dto.StartDate.Value
-				: null,
-			OperatorName = UserProfile?.DisplayName ?? "Operador"
-		});
+		var details = await GetMonthlyReceiptPrintDetails(dto.Id);
+		if (details is null)
+			return;
+
+		var ticketData = BuildMonthlyTicketData(details);
 
 		MovementTracker.AddMovement(new MovementRecord
 		{
 			Time = DateTime.Now,
 			Type = "Mensualidad",
-			LicensePlate = dto.LicensePlate ?? "",
-			CustomerName = dto.Member?.Name ?? "",
-			Amount = (int)dto.AmountPaid
+			LicensePlate = ticketData.LicensePlate,
+			CustomerName = details.MemberName ?? "",
+			Amount = (int)details.AmountPaid
 		});
 
-		if (await EnsurePrinterQueueReady())
-		{
-			await JSRuntime.InvokeVoidAsync("openTicketWindow", ticketHtml);
-			Snackbar.Add(L["Ticket de mensualidad generado"], Severity.Success);
-		}
+		await PrintPosTicket(ticketData);
 	}
 
 	private async Task DownloadMonthlyPdf(MemberRentalDto dto)
 	{
-		var pdf = TicketPdfService.GenerateTicketPdf(new TicketData
-		{
-			Type = TicketType.Monthly, LicensePlate = dto.LicensePlate ?? "",
-			DateTime = dto.PaymentTime ?? DateTime.Now,
-			TicketNumber = TicketService.GenerateTicketNumber(), Amount = dto.AmountPaid,
-			PaymentMethod = dto.PaymentMethodId?.GetDescription(), MemberName = dto.Member?.Name
-		});
+		var details = await GetMonthlyReceiptPrintDetails(dto.Id);
+		if (details is null)
+			return;
+
+		var pdf = TicketPdfService.GenerateTicketPdf(BuildMonthlyTicketData(details));
 		await BlazorDownloadFileService.DownloadFileAsync($"Mensualidad_{dto.LicensePlate}.pdf", pdf, "application/pdf");
 		Snackbar.Add("PDF descargado", Severity.Success);
 	}
 
-	private async Task<bool> EnsurePrinterQueueReady()
+	private async Task PrintPosTicket(TicketData ticketData)
 	{
-		try
-		{
-			var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
-			if (repairedJobs < 0)
-			{
-				Snackbar.Add("Windows no permitio limpiar la cola. Se abre la vista previa; si no imprime, ejecute la app como administrador.", Severity.Warning);
-				return true;
-			}
+		var result = await PosTicketPrintService.PrintAsync(ticketData);
+		var severity = result.PrintedDirectly
+			? Severity.Success
+			: result.PreviewOpened ? Severity.Warning : Severity.Error;
+		Snackbar.Add(result.Message, severity);
+	}
 
-			if (repairedJobs > 0)
-			{
-				Snackbar.Add($"Cola de impresion limpiada: {repairedJobs} trabajo(s).", Severity.Warning);
-			}
+	private async Task<MonthlyReceiptPrintDetailsDto?> GetMonthlyReceiptPrintDetails(int memberRentalId)
+	{
+		var result = await Mediator.Send(new GetMonthlyReceiptPrintDetailsQuery { MemberRentalId = memberRentalId });
+		if (result.Succeeded && result.Data is not null)
+			return result.Data;
 
-			return true;
-		}
-		catch (Exception ex)
+		Snackbar.Add(result.Errors.FirstOrDefault() ?? "No se pudo cargar la mensualidad para imprimir.", Severity.Error);
+		return null;
+	}
+
+	private TicketData BuildMonthlyTicketData(MonthlyReceiptPrintDetailsDto details)
+	{
+		var vehicles = details.Vehicles
+			.Select(x => new TicketVehicleData
+			{
+				LicensePlate = x.LicensePlate,
+				VehicleType = x.VehicleTypeDescription
+			})
+			.ToList();
+
+		var primaryPlate = vehicles.Count > 0
+			? vehicles[0].LicensePlate
+			: details.LicensePlate ?? "";
+
+		return new TicketData
 		{
-			Snackbar.Add($"No se pudo limpiar la cola de impresion: {ex.Message}", Severity.Error);
-			return false;
-		}
+			Type = TicketType.Monthly,
+			LicensePlate = primaryPlate,
+			VehicleType = vehicles.Count == 1 ? vehicles[0].VehicleType : "",
+			DateTime = details.PaymentTime ?? DateTime.Now,
+			TicketNumber = TicketService.GenerateTicketNumber(),
+			Amount = details.AmountPaid,
+			PaymentMethod = details.PaymentMethodId?.GetDescription(),
+			BillingPeriod = string.IsNullOrWhiteSpace(details.PaidMonth) ? "Periodo no definido" : details.PaidMonth,
+			MemberName = details.MemberName,
+			Duration = details.StartDate.HasValue && details.ExpiryDate.HasValue
+				? details.ExpiryDate.Value - details.StartDate.Value
+				: null,
+			OperatorName = UserProfile?.DisplayName ?? "Operador",
+			Vehicles = vehicles,
+			PendingWashes = details.PendingWashes.Select(x => new TicketPendingWashData
+			{
+				LicensePlate = x.LicensePlate,
+				Service = x.WashServiceDescription,
+				Status = x.StatusDescription,
+				Amount = x.Price
+			}).ToList()
+		};
 	}
 
 }

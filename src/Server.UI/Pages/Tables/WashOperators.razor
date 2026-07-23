@@ -1,0 +1,253 @@
+@page "/tables/wash-operators"
+@using CleanArchitecture.Blazor.Domain.Entities
+
+@inject IApplicationDbContextFactory DbFactory
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Lavadores</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+        <div>
+            <MudText Typo="Typo.h4" Style="font-weight:800;">Lavadores</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Maestro de operarios disponibles para el formulario de lavado.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadData">
+            Actualizar
+        </MudButton>
+    </MudStack>
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="5">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@(_editingOperatorId.HasValue ? "Editar lavador" : "Nuevo lavador")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12">
+                            <MudTextField T="string" Label="Nombre" @bind-Value="_operatorEditor.Name"
+                                          Required="true" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudCheckBox T="bool" Label="Activo" @bind-Value="_operatorEditor.IsActive"
+                                         Color="Color.Primary" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" OnClick="ResetOperatorEditor">Limpiar</MudButton>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveOperator"
+                               Disabled="@_saving">
+                        Guardar lavador
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="7">
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                            <MudText Typo="Typo.h6">Lavadores registrados</MudText>
+                            <MudTextField T="string" Placeholder="Buscar" Value="_searchText"
+                                          ValueChanged="OnSearchChanged" Immediate="true"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          Margin="Margin.Dense" Style="max-width:240px;" />
+                        </MudStack>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@_operators" Hover="true" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Nombre</MudTh>
+                            <MudTh>Estado</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Name</MudTd>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)">
+                                    @(context.IsActive ? "Activo" : "Inactivo")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd Style="text-align:right;">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit"
+                                               OnClick="@(() => EditOperator(context))" />
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(() => DeleteOperator(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Color="Color.Secondary">No hay lavadores registrados.</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private List<WashOperator> _operators = new();
+    private WashOperator _operatorEditor = NewOperatorEditor();
+    private int? _editingOperatorId;
+    private string _searchText = string.Empty;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        await ImportMissingOperatorsFromHistoryAsync(db);
+
+        var query = db.WashOperators.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(_searchText))
+        {
+            var term = _searchText.Trim().ToUpperInvariant();
+            query = query.Where(x => x.Name.ToUpper().Contains(term));
+        }
+
+        _operators = await query
+            .OrderByDescending(x => x.IsActive)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _searchText = value;
+        await LoadData();
+    }
+
+    private async Task SaveOperator()
+    {
+        if (string.IsNullOrWhiteSpace(_operatorEditor.Name))
+        {
+            Snackbar.Add("El nombre del lavador es requerido.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await using var db = await DbFactory.CreateAsync();
+            var normalizedName = _operatorEditor.Name.Trim().ToUpperInvariant();
+            var duplicated = await db.WashOperators.AnyAsync(x =>
+                x.Id != (_editingOperatorId ?? 0) &&
+                x.Name.ToUpper() == normalizedName);
+
+            if (duplicated)
+            {
+                Snackbar.Add("Ya existe un lavador con ese nombre.", Severity.Warning);
+                return;
+            }
+
+            if (_editingOperatorId.HasValue)
+            {
+                var existing = await db.WashOperators.FindAsync(_editingOperatorId.Value);
+                if (existing is null)
+                {
+                    Snackbar.Add("El lavador ya no existe.", Severity.Error);
+                    return;
+                }
+
+                existing.Name = _operatorEditor.Name.Trim();
+                existing.IsActive = _operatorEditor.IsActive;
+            }
+            else
+            {
+                db.WashOperators.Add(new WashOperator
+                {
+                    Name = _operatorEditor.Name.Trim(),
+                    IsActive = _operatorEditor.IsActive
+                });
+            }
+
+            await db.SaveChangesAsync(CancellationToken.None);
+            Snackbar.Add("Lavador guardado.", Severity.Success);
+            ResetOperatorEditor();
+            await LoadData();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void EditOperator(WashOperator washOperator)
+    {
+        _editingOperatorId = washOperator.Id;
+        _operatorEditor = new WashOperator
+        {
+            Id = washOperator.Id,
+            Name = washOperator.Name,
+            IsActive = washOperator.IsActive
+        };
+    }
+
+    private async Task DeleteOperator(WashOperator washOperator)
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var existing = await db.WashOperators.FindAsync(washOperator.Id);
+        if (existing is null)
+            return;
+
+        db.WashOperators.Remove(existing);
+        await db.SaveChangesAsync(CancellationToken.None);
+        Snackbar.Add("Lavador eliminado. Los lavados historicos conservan el nombre registrado.", Severity.Info);
+        ResetOperatorEditor();
+        await LoadData();
+    }
+
+    private static async Task ImportMissingOperatorsFromHistoryAsync(IApplicationDbContext db)
+    {
+        var existingNames = await db.WashOperators
+            .Select(x => x.Name.ToUpper())
+            .ToListAsync();
+        var existingSet = existingNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var historicalNames = await db.CarWashOperators
+            .AsNoTracking()
+            .Where(x => x.OperatorName != "")
+            .Select(x => x.OperatorName)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var name in historicalNames.Select(x => x.Trim()).Where(x => x.Length > 0))
+        {
+            if (existingSet.Contains(name))
+                continue;
+
+            db.WashOperators.Add(new WashOperator { Name = name, IsActive = true });
+            existingSet.Add(name);
+        }
+
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private void ResetOperatorEditor()
+    {
+        _editingOperatorId = null;
+        _operatorEditor = NewOperatorEditor();
+    }
+
+    private static WashOperator NewOperatorEditor() => new()
+    {
+        IsActive = true
+    };
+}

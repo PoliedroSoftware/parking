@@ -10,11 +10,16 @@
 @using CleanArchitecture.Blazor.Application.Features.Members.Queries.Export
 @using CleanArchitecture.Blazor.Application.Features.Members.Queries.Pagination
 @using CleanArchitecture.Blazor.Application.Features.Members.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.DTOs
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.PrintDetails
 @using CleanArchitecture.Blazor.Server.UI.Pages.Members.Components
+@using CleanArchitecture.Blazor.Server.UI.Services
 
 @inject IStringLocalizer<Members> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @inject ICarparkService CarparkService
+@inject TicketService TicketService
+@inject PosTicketPrintService PosTicketPrintService
 @attribute [Authorize(Policy = Permissions.Members.View)]
 <PageTitle>@Title</PageTitle>
 
@@ -94,35 +99,31 @@
 	</ToolBarContent>
 	<Columns>
 		<SelectColumn ShowInFooter="false"></SelectColumn>
-		<TemplateColumn HeaderStyle="width:60px" Title="@AppStrings.Actions" Sortable="false">
+		<TemplateColumn HeaderStyle="width:190px" Title="@AppStrings.Actions" Sortable="false">
 			<CellTemplate>
-				@if (_accessRights.Edit || _accessRights.Delete)
-				{
-					<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Size="Size.Small"
-							 Dense="true"
-							 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
-						@if (_accessRights.Edit)
-						{
-							<MudMenuItem OnClick="@(() => OnEditMember(context.Item))">@AppStrings.Edit</MudMenuItem>
-						}
-						@if (_accessRights.Delete)
-						{
-							<MudMenuItem OnClick="@(() => OnDeleteMember(context.Item))">@AppStrings.Delete</MudMenuItem>
-						}
-					</MudMenu>
-				}
-				else
-				{
-					<MudTooltip Text="@AppStrings.NoAllowed" Delay="300">
-						<MudIconButton Variant="Variant.Outlined"
-									   Disabled="true"
-									   Icon="@Icons.Material.Filled.DoNotTouch"
-									   Size="Size.Small"
-									   Color="Color.Surface">
-							@AppStrings.NoAllowed
-						</MudIconButton>
-					</MudTooltip>
-				}
+				<MudStack Row Spacing="1" AlignItems="AlignItems.Center">
+					<MudButton Variant="Variant.Filled" Size="Size.Small"
+							   Color="Color.Info"
+							   StartIcon="@Icons.Material.Filled.Print"
+							   OnClick="@(() => OnPrintMonthlyReceipt(context.Item))">
+						Imprimir
+					</MudButton>
+					@if (_accessRights.Edit || _accessRights.Delete)
+					{
+						<MudMenu Icon="@Icons.Material.Filled.Edit" Variant="Variant.Outlined" Size="Size.Small"
+								 Dense="true"
+								 EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="Color.Info" AnchorOrigin="Origin.CenterLeft">
+							@if (_accessRights.Edit)
+							{
+								<MudMenuItem OnClick="@(() => OnEditMember(context.Item))">@AppStrings.Edit</MudMenuItem>
+							}
+							@if (_accessRights.Delete)
+							{
+								<MudMenuItem OnClick="@(() => OnDeleteMember(context.Item))">@AppStrings.Delete</MudMenuItem>
+							}
+						</MudMenu>
+					}
+				</MudStack>
 			</CellTemplate>
 		</TemplateColumn>
         <PropertyColumn Property="x => x.Name" Title="@L[_memberDto.GetMemberDescription(x => x.Name)]">
@@ -136,6 +137,19 @@
         <PropertyColumn Property="x => x.PhoneNumber" Title="@L[_memberDto.GetMemberDescription(x => x.PhoneNumber)]" />
         <PropertyColumn Property="x => x.StartDate" Title="@L[_memberDto.GetMemberDescription(x => x.StartDate)]" Format="d" />
         <PropertyColumn Property="x => x.ExpiryDate" Title="@L[_memberDto.GetMemberDescription(x => x.ExpiryDate)]" Format="d" />
+        <TemplateColumn Title="Estado pago">
+            <CellTemplate>
+                <MudStack Spacing="0">
+                    <MudChip T="string" Size="Size.Small" Color="@GetPaymentStatusColor(context.Item)" Variant="Variant.Filled">
+                        @(string.IsNullOrWhiteSpace(context.Item.PaymentStatus) ? "Sin estado" : context.Item.PaymentStatus)
+                    </MudChip>
+                    @if (!string.IsNullOrWhiteSpace(context.Item.LastPaidMonth))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Pagado hasta @context.Item.LastPaidMonth</MudText>
+                    }
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
         <PropertyColumn Property="x => x.IsActive" Title="@L[_memberDto.GetMemberDescription(x => x.IsActive)]">
             <CellTemplate>
                 @if (context.Item.IsActive)
@@ -315,6 +329,93 @@
 				await _membersGrid.ReloadServerData();
 				_selectedMembers.Clear();
 			});
+	}
+
+    private static Color GetPaymentStatusColor(MemberDto member)
+    {
+        if (member.MonthsOverdue <= 0)
+            return Color.Success;
+
+        return member.MonthsOverdue == 1 ? Color.Warning : Color.Error;
+    }
+
+	private async Task OnPrintMonthlyReceipt(MemberDto dto)
+	{
+		var details = await GetMonthlyReceiptPrintDetails(dto.Id);
+		if (details is null)
+			return;
+
+		var ticketData = BuildMonthlyTicketData(details);
+
+		MovementTracker.AddMovement(new MovementRecord
+		{
+			Time = DateTime.Now,
+			Type = "Mensualidad",
+			LicensePlate = ticketData.LicensePlate,
+			CustomerName = details.MemberName ?? "",
+			Amount = (int)details.AmountPaid
+		});
+
+		await PrintPosTicket(ticketData);
+	}
+
+	private async Task<MonthlyReceiptPrintDetailsDto?> GetMonthlyReceiptPrintDetails(int memberId)
+	{
+		var result = await Mediator.Send(new GetMonthlyReceiptPrintDetailsQuery { MemberId = memberId });
+		if (result.Succeeded && result.Data is not null)
+			return result.Data;
+
+		Snackbar.Add(result.Errors.FirstOrDefault() ?? "No se pudo cargar la mensualidad para imprimir.", Severity.Error);
+		return null;
+	}
+
+	private TicketData BuildMonthlyTicketData(MonthlyReceiptPrintDetailsDto details)
+	{
+		var vehicles = details.Vehicles
+			.Select(x => new TicketVehicleData
+			{
+				LicensePlate = x.LicensePlate,
+				VehicleType = x.VehicleTypeDescription
+			})
+			.ToList();
+
+		var primaryPlate = vehicles.Count > 0
+			? vehicles[0].LicensePlate
+			: details.LicensePlate ?? "";
+
+		return new TicketData
+		{
+			Type = TicketType.Monthly,
+			LicensePlate = primaryPlate,
+			VehicleType = vehicles.Count == 1 ? vehicles[0].VehicleType : "",
+			DateTime = details.PaymentTime ?? DateTime.Now,
+			TicketNumber = TicketService.GenerateTicketNumber(),
+			Amount = details.AmountPaid,
+			PaymentMethod = details.PaymentMethodId?.GetDescription(),
+			BillingPeriod = string.IsNullOrWhiteSpace(details.PaidMonth) ? "Periodo no definido" : details.PaidMonth,
+			MemberName = details.MemberName,
+			Duration = details.StartDate.HasValue && details.ExpiryDate.HasValue
+				? details.ExpiryDate.Value - details.StartDate.Value
+				: null,
+			OperatorName = UserProfile?.DisplayName ?? "Operador",
+			Vehicles = vehicles,
+			PendingWashes = details.PendingWashes.Select(x => new TicketPendingWashData
+			{
+				LicensePlate = x.LicensePlate,
+				Service = x.WashServiceDescription,
+				Status = x.StatusDescription,
+				Amount = x.Price
+			}).ToList()
+		};
+	}
+
+	private async Task PrintPosTicket(TicketData ticketData)
+	{
+		var result = await PosTicketPrintService.PrintAsync(ticketData);
+		var severity = result.PrintedDirectly
+			? Severity.Success
+			: result.PreviewOpened ? Severity.Warning : Severity.Error;
+		Snackbar.Add(result.Message, severity);
 	}
 
 

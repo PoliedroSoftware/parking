@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -13,23 +14,16 @@ public class TicketPdfService
 
     public byte[] GenerateTicketPdf(TicketData data)
     {
-        var ticketType = data.Type switch
-        {
-            TicketType.Entry => "TICKET DE ENTRADA",
-            TicketType.Exit => "TICKET DE SALIDA",
-            TicketType.Payment => "COMPROBANTE DE PAGO",
-            TicketType.Wash => "TICKET DE LAVADO",
-            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
-            _ => "TICKET"
-        };
+        var ticketType = GetTicketTitle(data.Type);
 
         var ticketNo = data.TicketNumber ?? $"TK{DateTime.Now:yyMMddHHmmss}{Random.Shared.Next(100, 999)}";
+        var ticketVehicles = GetTicketVehicles(data);
 
         return Document.Create(container =>
         {
             container.Page(page =>
             {
-                page.Size(80, 200, Unit.Millimetre);
+                page.Size(80, 297, Unit.Millimetre);
                 page.Margin(3, Unit.Millimetre);
                 page.DefaultTextStyle(s => s.FontFamily("Courier New").FontSize(8));
 
@@ -41,12 +35,24 @@ public class TicketPdfService
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
                     col.Item().AlignCenter().Text(ticketType).Bold().FontSize(9);
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
+                    if (data.Type == TicketType.Wash && data.IsPaid.HasValue)
+                    {
+                        col.Item()
+                            .PaddingVertical(2)
+                            .AlignCenter()
+                            .Text(data.IsPaid.Value ? "PAGADO" : "NO PAGADO")
+                            .Bold()
+                            .FontSize(12);
+                    }
 
                     col.Item().Row(r =>
                     {
-                        r.RelativeItem().Text(data.DateTime.ToString("dd/MM/yyyy HH:mm")).FontSize(7);
+                        r.RelativeItem().Text(FormatDateTime(data.DateTime)).FontSize(7);
                         r.RelativeItem().AlignRight().Text($"No: {ticketNo}").FontSize(7);
                     });
+                    var direction = GetParkingDirection(data.Type);
+                    if (!string.IsNullOrEmpty(direction))
+                        col.Item().Row(r => { r.RelativeItem().Text("Movimiento:").FontSize(7); r.RelativeItem().AlignRight().Text(direction).FontSize(7).Bold(); });
 
                     if (!string.IsNullOrEmpty(data.ZoneName))
                         col.Item().Text($"Zona: {data.ZoneName}").FontSize(7);
@@ -54,15 +60,26 @@ public class TicketPdfService
                     // Entry/Exit times
                     if (data.EntryTime.HasValue && (data.Type == TicketType.Exit || data.Type == TicketType.Payment))
                     {
-                        col.Item().Row(r => { r.RelativeItem().Text("Entrada:").FontSize(7); r.RelativeItem().AlignRight().Text(data.EntryTime.Value.ToString("dd/MM/yyyy HH:mm")).FontSize(7); });
-                        col.Item().Row(r => { r.RelativeItem().Text("Salida:").FontSize(7); r.RelativeItem().AlignRight().Text(data.DateTime.ToString("dd/MM/yyyy HH:mm")).FontSize(7); });
+                        col.Item().Row(r => { r.RelativeItem().Text("Entrada:").FontSize(7); r.RelativeItem().AlignRight().Text(FormatDateTime(data.EntryTime.Value)).FontSize(7); });
+                        col.Item().Row(r => { r.RelativeItem().Text("Salida:").FontSize(7); r.RelativeItem().AlignRight().Text(FormatDateTime(data.DateTime)).FontSize(7); });
+                        if (data.Duration.HasValue)
+                            col.Item().Row(r => { r.RelativeItem().Text("Tiempo total:").FontSize(7); r.RelativeItem().AlignRight().Text(FormatDuration(data.Duration.Value)).Bold(); });
                     }
 
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
 
                     // Plate
-                    col.Item().AlignCenter().Text("PLACA").FontSize(6);
-                    col.Item().AlignCenter().Text(data.LicensePlate).Bold().FontSize(16);
+                    if (data.Type == TicketType.Monthly && ticketVehicles.Count > 1)
+                    {
+                        col.Item().AlignCenter().Text("PLACAS").FontSize(6);
+                        foreach (var vehicle in ticketVehicles)
+                            col.Item().AlignCenter().Text(FormatVehicleLine(vehicle)).Bold().FontSize(8);
+                    }
+                    else
+                    {
+                        col.Item().AlignCenter().Text("PLACA").FontSize(6);
+                        col.Item().AlignCenter().Text(GetPrimaryLicensePlate(data, ticketVehicles)).Bold().FontSize(16);
+                    }
 
                     if (!string.IsNullOrEmpty(data.VehicleType))
                         col.Item().AlignCenter().Text($"Vehiculo: {data.VehicleType}").FontSize(7);
@@ -86,12 +103,6 @@ public class TicketPdfService
                     // Exit / Payment
                     if (data.Type == TicketType.Exit || data.Type == TicketType.Payment)
                     {
-                        if (data.Duration.HasValue)
-                        {
-                            var d = data.Duration.Value;
-                            var tiempo = d.TotalHours >= 1 ? $"{(int)d.TotalHours}h {d.Minutes}m" : $"{d.Minutes} min";
-                            col.Item().Row(r => { r.RelativeItem().Text("Tiempo total:").FontSize(7); r.RelativeItem().AlignRight().Text(tiempo).Bold(); });
-                        }
                         if (data.HourlyRate.HasValue && data.HourlyRate > 0)
                             col.Item().Row(r => { r.RelativeItem().Text("Valor hora:").FontSize(7); r.RelativeItem().AlignRight().Text($"$ {data.HourlyRate.Value:N0}").FontSize(7).Bold(); });
                         if (data.Amount.HasValue)
@@ -110,8 +121,7 @@ public class TicketPdfService
                             col.Item().AlignCenter().Text($"COLA #{data.QueueNumber.Value}").Bold().FontSize(9);
                         if (!string.IsNullOrEmpty(data.WashServiceType))
                             col.Item().AlignCenter().Text($"Servicio: {data.WashServiceType}").Bold();
-                        if (!string.IsNullOrEmpty(data.Notes))
-                            col.Item().AlignCenter().Text($"Incluye: {data.Notes}").FontSize(6);
+                        AddAdditionalServices(col, data.Notes);
                         col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
 
                         if (data.Amount.HasValue)
@@ -124,9 +134,9 @@ public class TicketPdfService
                                 col.Item().Row(r => { r.RelativeItem().Text("Recargo fin sem.:").FontSize(7); r.RelativeItem().AlignRight().Text($"$ {data.Surcharge.Value:N0}").FontSize(7); });
                             col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000").AlignCenter().Text($"$ {data.Amount.Value:N0}").Bold().FontSize(20);
                             if (!string.IsNullOrEmpty(data.PaymentMethod))
-                                col.Item().AlignCenter().Text($"Pago: {data.PaymentMethod}").FontSize(7);
+                                col.Item().AlignCenter().Text($"Metodo de pago: {data.PaymentMethod}").FontSize(7);
                             if (!string.IsNullOrEmpty(data.OperatorName))
-                                col.Item().AlignCenter().Text($"Operario(s): {data.OperatorName}").FontSize(6);
+                                col.Item().AlignCenter().Text($"{GetWasherLabel(data.OperatorName)}: {data.OperatorName}").FontSize(6);
                         }
                     }
 
@@ -134,12 +144,15 @@ public class TicketPdfService
                     if (data.Type == TicketType.Monthly)
                     {
                         col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
+                        if (!string.IsNullOrEmpty(data.BillingPeriod))
+                            col.Item().Row(r => { r.RelativeItem().Text("Mes pagado:").FontSize(7); r.RelativeItem().AlignRight().Text(data.BillingPeriod).Bold(); });
                         if (data.Amount.HasValue)
                         {
                             col.Item().Row(r => { r.RelativeItem().Text("Valor alquiler:").FontSize(7); r.RelativeItem().AlignRight().Text($"$ {data.Amount.Value:N0}").Bold(); });
                             if (!string.IsNullOrEmpty(data.PaymentMethod))
-                                col.Item().Text($"Metodo: {data.PaymentMethod}").FontSize(7);
+                                col.Item().Text($"Metodo de pago: {data.PaymentMethod}").FontSize(7);
                         }
+                        AddPendingWashes(col, data.PendingWashes);
                     }
 
                     // Notes
@@ -151,7 +164,7 @@ public class TicketPdfService
 
                     // Footer
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
-                    col.Item().AlignCenter().Text($"Impreso: {DateTime.Now:dd/MM/yyyy HH:mm:ss}").FontSize(6);
+                    col.Item().AlignCenter().Text($"Impreso: {FormatDateTime(DateTime.Now, includeSeconds: true)}").FontSize(6);
                     if (!string.IsNullOrEmpty(data.OperatorName) && data.Type != TicketType.Wash)
                         col.Item().AlignCenter().Text($"Operador: {data.OperatorName}").FontSize(6);
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
@@ -161,5 +174,115 @@ public class TicketPdfService
                 });
             });
         }).GeneratePdf();
+    }
+
+    private static string GetWasherLabel(string? operatorName)
+    {
+        var count = operatorName?
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Length ?? 0;
+
+        return count == 1 ? "Lavador" : "Lavadores";
+    }
+
+    private static string GetTicketTitle(TicketType type)
+    {
+        return type switch
+        {
+            TicketType.Entry => "PARQUEO",
+            TicketType.Exit => "PARQUEO",
+            TicketType.Payment => "COMPROBANTE DE PAGO",
+            TicketType.Wash => "LAVADO",
+            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
+            _ => "TICKET"
+        };
+    }
+
+    private static string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalDays >= 1)
+            return $"{duration.Days}d {duration.Hours}h {duration.Minutes}m";
+
+        return duration.TotalHours >= 1
+            ? $"{(int)duration.TotalHours}h {duration.Minutes}m"
+            : $"{duration.Minutes} min";
+    }
+
+    private static string FormatDateTime(DateTime value, bool includeSeconds = false)
+    {
+        var format = includeSeconds ? "dd/MM/yyyy hh:mm:ss tt" : "dd/MM/yyyy hh:mm tt";
+        return value.ToString(format, CultureInfo.InvariantCulture);
+    }
+
+    private static void AddAdditionalServices(ColumnDescriptor col, string? notes)
+    {
+        var items = SplitAdditionalServices(notes);
+        if (items.Length == 0)
+            return;
+
+        col.Item().Text("Incluye:").Bold().FontSize(6);
+        foreach (var item in items)
+            col.Item().Text($"- {item}").FontSize(6);
+    }
+
+    private static IReadOnlyList<TicketVehicleData> GetTicketVehicles(TicketData data)
+    {
+        if (data.Vehicles.Count > 0)
+            return data.Vehicles;
+
+        return string.IsNullOrWhiteSpace(data.LicensePlate)
+            ? Array.Empty<TicketVehicleData>()
+            : new[] { new TicketVehicleData { LicensePlate = data.LicensePlate, VehicleType = data.VehicleType } };
+    }
+
+    private static string GetPrimaryLicensePlate(TicketData data, IReadOnlyList<TicketVehicleData> vehicles)
+    {
+        return vehicles.Count > 0 ? vehicles[0].LicensePlate : data.LicensePlate;
+    }
+
+    private static string FormatVehicleLine(TicketVehicleData vehicle)
+    {
+        return string.IsNullOrWhiteSpace(vehicle.VehicleType)
+            ? vehicle.LicensePlate
+            : $"{vehicle.LicensePlate} - {vehicle.VehicleType}";
+    }
+
+    private static string FormatPendingWashLine(TicketPendingWashData wash)
+    {
+        var service = string.IsNullOrWhiteSpace(wash.Service) ? "Lavado" : wash.Service;
+        var status = string.IsNullOrWhiteSpace(wash.Status) ? "Pendiente" : wash.Status;
+        return $"{wash.LicensePlate} - {service} - {status} - $ {wash.Amount:N0}";
+    }
+
+    private static void AddPendingWashes(
+        ColumnDescriptor col,
+        IReadOnlyCollection<TicketPendingWashData> pendingWashes)
+    {
+        if (pendingWashes.Count == 0)
+            return;
+
+        col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
+        col.Item().Text("Lavados pendientes:").Bold().FontSize(6);
+        foreach (var wash in pendingWashes)
+            col.Item().Text($"- {FormatPendingWashLine(wash)}").FontSize(6);
+    }
+
+    private static string[] SplitAdditionalServices(string? notes)
+    {
+        return (notes ?? string.Empty)
+            .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToArray();
+    }
+
+    private static string? GetParkingDirection(TicketType type)
+    {
+        return type switch
+        {
+            TicketType.Entry => "Entrada",
+            TicketType.Exit => "Salida",
+            TicketType.Payment => "Salida",
+            _ => null
+        };
     }
 }

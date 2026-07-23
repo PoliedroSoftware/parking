@@ -4,12 +4,15 @@ namespace CleanArchitecture.Blazor.Server.UI.Services;
 
 public class MovementRecord
 {
+    public int RecordId { get; set; }
     public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
     public DateTime Time { get; set; }
     public string Type { get; set; } = string.Empty;
     public string LicensePlate { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
     public int Amount { get; set; }
+    public int GrossAmount { get; set; }
+    public int DiscountAmount { get; set; }
     public string Status { get; set; } = "Activo";
     public DateTime? ExitTime { get; set; }
     public string FormattedDuration { get; set; } = string.Empty;

@@ -20,6 +20,8 @@ public class TicketData
     public DateTime? EntryTime { get; set; }
     public string? TicketNumber { get; set; }
     public decimal? Amount { get; set; }
+    public decimal? GrossAmount { get; set; }
+    public decimal? DiscountAmount { get; set; }
     public decimal? HourlyRate { get; set; }
     public bool? IsPaid { get; set; }
     public string? PaymentMethod { get; set; }
@@ -37,6 +39,24 @@ public class TicketData
     public DateTime? EstimatedDelivery { get; set; }
     public List<TicketVehicleData> Vehicles { get; set; } = new();
     public List<TicketPendingWashData> PendingWashes { get; set; } = new();
+    public TicketCompanyData Company { get; set; } = TicketCompanyData.Default;
+}
+
+public sealed record TicketCompanyData(
+    string DisplayName,
+    string TradeName,
+    string TaxId,
+    string Address,
+    string Phone,
+    string FooterText)
+{
+    public static TicketCompanyData Default { get; } = new(
+        "POLIEDRO SOFTWARE",
+        "POLIEDRO PARKING",
+        "NIT: 900.123.456-7",
+        "Bogota D.C.",
+        "+57 (601) 123 4567",
+        "Soluciones de Parqueo");
 }
 
 public class TicketVehicleData
@@ -70,8 +90,8 @@ public class TicketService
         var sb = new System.Text.StringBuilder();
 
         sb.AppendLine("[HEADER]");
-        sb.AppendLine($"[CENTER-SMALL]:{data.CarparkName}");
-        sb.AppendLine("[CENTER-TINY]:NIT: 900.123.456-7 | Bogota D.C.");
+        sb.AppendLine($"[CENTER-SMALL]:{data.Company.TradeName}");
+        sb.AppendLine($"[CENTER-TINY]:{data.Company.TaxId} | {data.Company.Address}");
         sb.AppendLine("[DASHED]");
 
         // TICKET TYPE
@@ -97,8 +117,6 @@ public class TicketService
             if (data.Duration.HasValue)
                 sb.AppendLine($"[ROW]:Tiempo total:|{FormatDuration(data.Duration.Value)}");
         }
-        if (!string.IsNullOrEmpty(data.VehicleType))
-            sb.AppendLine($"[ROW]:Tipo:|{data.VehicleType}");
         if (!string.IsNullOrEmpty(data.OperatorName) && data.Type != TicketType.Wash)
             sb.AppendLine($"[ROW]:Operador:|{data.OperatorName}");
 
@@ -135,6 +153,7 @@ public class TicketService
         {
             if (data.HourlyRate.HasValue && data.HourlyRate > 0)
                 sb.AppendLine($"[ROW]:Valor hora:|$ {data.HourlyRate.Value:N0}");
+            AppendDiscountText(sb, data);
             sb.AppendLine("[DOUBLE]");
             sb.AppendLine($"[HUGE]:$ {data.Amount.Value:N0}");
             if (!string.IsNullOrEmpty(data.PaymentMethod))
@@ -182,17 +201,13 @@ public class TicketService
             AppendPendingWashesText(sb, data.PendingWashes);
         }
 
-        // BARCODE LINE
-        sb.AppendLine("[DASHED]");
-        sb.AppendLine($"[CENTER-SMALL]:{ticketNo}");
-
         // FOOTER
         sb.AppendLine("[DASHED]");
         sb.AppendLine($"[CENTER-SMALL]:Impreso: {FormatDateTime(DateTime.Now, includeSeconds: true)}");
         sb.AppendLine("[DASHED]");
         sb.AppendLine("[CENTER-TINY]:GRACIAS POR SU VISITA");
-        sb.AppendLine("[CENTER-TINY]:POLIEDRO SOFTWARE | Soluciones de Parqueo");
-        sb.AppendLine("[CENTER-TINY]:Tel: +57 (601) 123 4567 | Bogota, Colombia");
+        sb.AppendLine($"[CENTER-TINY]:{data.Company.DisplayName} | {data.Company.FooterText}");
+        sb.AppendLine($"[CENTER-TINY]:Tel: {data.Company.Phone} | {data.Company.Address}");
 
         return sb.ToString();
     }
@@ -221,7 +236,7 @@ public class TicketService
         var ticketType = GetTicketTitle(data.Type);
 
         var ticketNo = data.TicketNumber ?? GenerateTicketNumber();
-        var carparkName = string.IsNullOrWhiteSpace(data.CarparkName) ? "POLIEDRO PARKING" : data.CarparkName;
+        var carparkName = string.IsNullOrWhiteSpace(data.CarparkName) ? data.Company.TradeName : data.CarparkName;
 
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
@@ -255,7 +270,7 @@ public class TicketService
             "padding: 1px 3px 2px;",
             "text-align: center;");
         AppendStyle(sb, ".brand-name",
-            $"font-size: {HeaderSize}px;",
+            "font-size: 10px;",
             "font-weight: 900;",
             "text-transform: uppercase;");
         AppendStyle(sb, ".brand-sub",
@@ -342,9 +357,10 @@ public class TicketService
         sb.AppendLine("</style></head><body><div class='ticket'>");
 
         sb.AppendLine("<div class='brand'>");
-        sb.AppendLine($"<div class='brand-name'>{Html(carparkName)}</div>");
+        sb.AppendLine($"<div class='brand-name'>{Html(data.Company.DisplayName)}</div>");
+        sb.AppendLine($"<div class='brand-sub'>{Html(carparkName)}</div>");
         sb.AppendLine("<div class='brand-sub'>Parqueadero autorizado</div>");
-        sb.AppendLine("<div class='brand-sub'>NIT: 900.123.456-7 - Bogota D.C.</div>");
+        sb.AppendLine($"<div class='brand-sub'>{Html(data.Company.TaxId)} - {Html(data.Company.Address)}</div>");
         sb.AppendLine("</div>");
         sb.AppendLine($"<div class='doc-title'>{Html(ticketType)}</div>");
         AppendRow(sb, "Fecha", FormatDateTime(data.DateTime));
@@ -405,6 +421,7 @@ public class TicketService
             {
                 if (data.HourlyRate.HasValue && data.HourlyRate > 0)
                     AppendRow(sb, "Valor hora", Money(data.HourlyRate.Value));
+                AppendDiscountHtml(sb, data);
                 sb.AppendLine("<div class='total-box'>");
                 sb.AppendLine("<div class='total-label'>Total pagado</div>");
                 sb.AppendLine($"<div class='total-amount'>{Money(data.Amount.Value)}</div>");
@@ -463,8 +480,6 @@ public class TicketService
         }
 
         sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div class='center small'>{ticketNo}</div>");
-        sb.AppendLine("<div class='line'></div>");
         sb.AppendLine("<div class='footer'>");
         sb.AppendLine($"<div>Impreso: {FormatDateTime(DateTime.Now, includeSeconds: true)}</div>");
         if (!string.IsNullOrWhiteSpace(data.CustomerName))
@@ -473,8 +488,8 @@ public class TicketService
             sb.AppendLine("<div>Cliente: Consumidor Final</div>");
         sb.AppendLine("<div class='solid-line'></div>");
         sb.AppendLine("<div class='bold'>GRACIAS POR SU VISITA</div>");
-        sb.AppendLine("<div>Poliedro Software - Soluciones de Parqueo</div>");
-        sb.AppendLine("<div>Tel: +57 (601) 123 4567 - Bogota, Colombia</div>");
+        sb.AppendLine($"<div>{Html(data.Company.DisplayName)} - {Html(data.Company.FooterText)}</div>");
+        sb.AppendLine($"<div>Tel: {Html(data.Company.Phone)} - {Html(data.Company.Address)}</div>");
         sb.AppendLine("</div>");
         sb.AppendLine("<script>");
         sb.AppendLine("window.onload = function() { setTimeout(function() { window.print(); }, 250); };");
@@ -510,6 +525,24 @@ public class TicketService
     private static string Html(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
 
     private static string Money(decimal amount) => $"$ {amount:N0}";
+
+    private static void AppendDiscountText(System.Text.StringBuilder sb, TicketData data)
+    {
+        if (data.GrossAmount is > 0 && data.DiscountAmount is > 0)
+        {
+            sb.AppendLine($"[ROW]:Valor normal:|$ {data.GrossAmount.Value:N0}");
+            sb.AppendLine($"[ROW]:Descuento:|-$ {data.DiscountAmount.Value:N0}");
+        }
+    }
+
+    private static void AppendDiscountHtml(System.Text.StringBuilder sb, TicketData data)
+    {
+        if (data.GrossAmount is > 0 && data.DiscountAmount is > 0)
+        {
+            AppendRow(sb, "Valor normal", Money(data.GrossAmount.Value));
+            AppendRow(sb, "Descuento", $"- {Money(data.DiscountAmount.Value)}");
+        }
+    }
 
     private static IReadOnlyList<TicketVehicleData> GetTicketVehicles(TicketData data)
     {

@@ -603,6 +603,26 @@ public class ApplicationDbContextInitializer
         await UpsertBaseMonthlyRatesAsync();
         await UpsertBaseWashAdditionalsAsync();
         await UpsertBaseWashServicePricesAsync();
+        await UpsertCompanyInformationAsync();
+    }
+
+    private async Task UpsertCompanyInformationAsync()
+    {
+        if (await _context.CompanyInformation.AnyAsync(x => x.IsActive))
+            return;
+
+        _context.CompanyInformation.Add(new CompanyInformation
+        {
+            DisplayName = "POLIEDRO SOFTWARE",
+            TradeName = "POLIEDRO PARKING",
+            TaxId = "NIT: 900.123.456-7",
+            Address = "Bogota D.C.",
+            Phone = "+57 (601) 123 4567",
+            FooterText = "Soluciones de Parqueo",
+            IsActive = true
+        });
+
+        await _context.SaveChangesAsync();
     }
 
     private async Task UpsertBaseParkingRatesAsync()

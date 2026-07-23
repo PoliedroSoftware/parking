@@ -22,12 +22,15 @@ public sealed class PosTicketPrintResult
 public sealed class PosTicketPrintService(
     TicketService ticketService,
     IPrinterService printerService,
-    IJSRuntime jsRuntime)
+    IJSRuntime jsRuntime,
+    CompanyInformationService companyInformationService)
 {
     public async Task<PosTicketPrintResult> PrintAsync(TicketData ticketData, CancellationToken cancellationToken = default)
     {
         if (ticketData is null)
             return PosTicketPrintResult.Failed("No se recibio informacion del ticket.");
+
+        await companyInformationService.ApplyAsync(ticketData, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(printerService.PrinterName))
         {

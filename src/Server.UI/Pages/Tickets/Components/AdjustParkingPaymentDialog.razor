@@ -1,0 +1,53 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">@LicensePlate</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Valor actual: $ @CurrentAmount.ToString("N0")
+            </MudText>
+            <MudNumericField T="decimal"
+                             Label="Nuevo valor pagado"
+                             @bind-Value="_newAmount"
+                             Min="0"
+                             Required="true"
+                             Variant="Variant.Outlined" />
+            <MudTextField T="string"
+                          Label="Motivo del ajuste"
+                          @bind-Value="_reason"
+                          Lines="3"
+                          Required="true"
+                          Variant="Variant.Outlined" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="Submit">Guardar ajuste</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public string LicensePlate { get; set; } = string.Empty;
+    [Parameter] public decimal CurrentAmount { get; set; }
+
+    private decimal _newAmount;
+    private string _reason = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _newAmount = CurrentAmount;
+    }
+
+    private void Submit()
+    {
+        if (_newAmount < 0)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_reason))
+            return;
+
+        MudDialog.Close(DialogResult.Ok(new ParkingPaymentAdjustmentInput(_newAmount, _reason.Trim())));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

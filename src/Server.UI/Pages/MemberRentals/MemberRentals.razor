@@ -16,6 +16,7 @@
 @inject IStringLocalizer<MemberRentals> L
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @inject TicketService TicketService
+@inject CompanyInformationService CompanyInformationService
 @inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
 
@@ -356,7 +357,9 @@
 		if (details is null)
 			return;
 
-		var pdf = TicketPdfService.GenerateTicketPdf(BuildMonthlyTicketData(details));
+        var ticketData = BuildMonthlyTicketData(details);
+        await CompanyInformationService.ApplyAsync(ticketData);
+        var pdf = TicketPdfService.GenerateTicketPdf(ticketData);
 		await BlazorDownloadFileService.DownloadFileAsync($"Mensualidad_{dto.LicensePlate}.pdf", pdf, "application/pdf");
 		Snackbar.Add("PDF descargado", Severity.Success);
 	}

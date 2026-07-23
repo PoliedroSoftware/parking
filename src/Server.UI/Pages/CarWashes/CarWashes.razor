@@ -18,6 +18,7 @@
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @inject IZoneService ZoneService
 @inject TicketService TicketService
+@inject CompanyInformationService CompanyInformationService
 @inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
 @inject BlazorDownloadFileService BlazorDownloadFileService
@@ -527,7 +528,7 @@
     {
         var additionalsTotal = dto.Additionals?.Sum(a => a.Price) ?? 0;
         var operatorNames = FormatOperatorsOrNull(dto);
-        var pdf = TicketPdfService.GenerateTicketPdf(new TicketData
+        var ticketData = new TicketData
         {
             Type = TicketType.Wash, LicensePlate = dto.LicensePlate ?? "",
             VehicleType = dto.VehicleType?.GetDescription() ?? "", Amount = dto.Price,
@@ -537,7 +538,9 @@
             Notes = FormatAdditionalServices(dto),
             CustomerName = dto.Member?.Name, OperatorName = operatorNames, QueueNumber = dto.QueueNumber,
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
-        });
+        };
+        await CompanyInformationService.ApplyAsync(ticketData);
+        var pdf = TicketPdfService.GenerateTicketPdf(ticketData);
         await BlazorDownloadFileService.DownloadFileAsync($"Lavado_{dto.LicensePlate}_{dto.Id}.pdf", pdf, "application/pdf");
         Snackbar.Add("PDF descargado", Severity.Success);
     }

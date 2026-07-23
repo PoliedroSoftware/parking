@@ -29,9 +29,9 @@ public class TicketPdfService
 
                 page.Content().Column(col =>
                 {
-                    col.Item().AlignCenter().Text("POLIEDRO SOFTWARE").Bold().FontSize(11);
-                    col.Item().AlignCenter().Text(data.CarparkName).FontSize(7);
-                    col.Item().AlignCenter().Text("NIT: 900.123.456-7 - Bogota D.C.").FontSize(6);
+                    col.Item().AlignCenter().Text(data.Company.DisplayName).Bold().FontSize(9);
+                    col.Item().AlignCenter().Text(string.IsNullOrWhiteSpace(data.CarparkName) ? data.Company.TradeName : data.CarparkName).FontSize(7);
+                    col.Item().AlignCenter().Text($"{data.Company.TaxId} - {data.Company.Address}").FontSize(6);
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
                     col.Item().AlignCenter().Text(ticketType).Bold().FontSize(9);
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
@@ -105,6 +105,11 @@ public class TicketPdfService
                     {
                         if (data.HourlyRate.HasValue && data.HourlyRate > 0)
                             col.Item().Row(r => { r.RelativeItem().Text("Valor hora:").FontSize(7); r.RelativeItem().AlignRight().Text($"$ {data.HourlyRate.Value:N0}").FontSize(7).Bold(); });
+                        if (data.GrossAmount is > 0 && data.DiscountAmount is > 0)
+                        {
+                            col.Item().Row(r => { r.RelativeItem().Text("Valor normal:").FontSize(7); r.RelativeItem().AlignRight().Text($"$ {data.GrossAmount.Value:N0}").FontSize(7); });
+                            col.Item().Row(r => { r.RelativeItem().Text("Descuento:").FontSize(7); r.RelativeItem().AlignRight().Text($"- $ {data.DiscountAmount.Value:N0}").FontSize(7); });
+                        }
                         if (data.Amount.HasValue)
                         {
                             col.Item().PaddingVertical(2).BorderBottom(1).BorderTop(1).BorderColor("#000").AlignCenter().Text($"$ {data.Amount.Value:N0}").Bold().FontSize(20);
@@ -169,8 +174,8 @@ public class TicketPdfService
                         col.Item().AlignCenter().Text($"Operador: {data.OperatorName}").FontSize(6);
                     col.Item().PaddingVertical(2).BorderBottom(1).BorderColor("#000");
                     col.Item().AlignCenter().Text("GRACIAS POR SU VISITA").Bold().FontSize(7);
-                    col.Item().AlignCenter().Text("POLIEDRO SOFTWARE").FontSize(7);
-                    col.Item().AlignCenter().Text("Tel: +57 (601) 123 4567 | Bogota, Colombia").FontSize(6);
+                    col.Item().AlignCenter().Text($"{data.Company.DisplayName} | {data.Company.FooterText}").FontSize(7);
+                    col.Item().AlignCenter().Text($"Tel: {data.Company.Phone} | {data.Company.Address}").FontSize(6);
                 });
             });
         }).GeneratePdf();

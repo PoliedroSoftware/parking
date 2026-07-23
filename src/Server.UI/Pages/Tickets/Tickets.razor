@@ -1,12 +1,15 @@
 ﻿@page "/pages/tickets"
 
 @using CleanArchitecture.Blazor.Server.UI.Services
+@using CleanArchitecture.Blazor.Application.Features.ParkingPayments.Commands.Adjust
+@using CleanArchitecture.Blazor.Server.UI.Pages.Tickets.Components
 @using CleanArchitecture.Blazor.Domain.Enums
 @using System.Collections.Concurrent
 @using System.Globalization
 
 @inject IStringLocalizer<Tickets> L
 @inject TicketService TicketService
+@inject CompanyInformationService CompanyInformationService
 @inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
 @inject ParkingSessionService ParkingService
@@ -171,6 +174,7 @@
                         <MudTh>Placa</MudTh>
                         <MudTh>Cliente</MudTh>
                         <MudTh>Duracion</MudTh>
+                        <MudTh Style="text-align:right;">Descuento</MudTh>
                         <MudTh Style="text-align:right;">Valor</MudTh>
                         <MudTh></MudTh>
                     </HeaderContent>
@@ -185,6 +189,16 @@
                         <MudTd><strong class="plate-cell small">@context.LicensePlate</strong></MudTd>
                         <MudTd>@(string.IsNullOrEmpty(context.CustomerName) ? "Consumidor Final" : context.CustomerName)</MudTd>
                         <MudTd>@context.FormattedDuration</MudTd>
+                        <MudTd Class="amount-cell">
+                            @if (context.DiscountAmount > 0)
+                            {
+                                <span class="discount-cell">-$ @context.DiscountAmount.ToString("N0")</span>
+                            }
+                            else
+                            {
+                                <span style="color:#999;">-</span>
+                            }
+                        </MudTd>
                         <MudTd Class="amount-cell">
                             @if (context.Amount > 0)
                             {
@@ -203,27 +217,37 @@
                                     SALIDA
                                 </MudButton>
                             }
-                            else if (context.Amount > 0)
+                            else if (context.Status == CompletedParkingStatus)
                             {
                                 <MudStack Row Spacing="1">
-                                    <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
-                                                   Icon="@Icons.Material.Filled.Print"
-                                                   Color="Color.Info"
-                                                   OnClick="@(() => ReprintTicket(context))" />
-                                    <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
-                                                   Icon="@Icons.Material.Filled.Refresh"
-                                                   Color="Color.Warning"
-                                                   OnClick="ResetPrinterQueue" />
-                                    <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
-                                                   Icon="@Icons.Material.Filled.PictureAsPdf"
-                                                   Color="Color.Error"
-                                                   OnClick="@(() => DownloadPdf(context))" />
+                                    @if (context.Amount > 0)
+                                    {
+                                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                       Icon="@Icons.Material.Filled.Print"
+                                                       Color="Color.Info"
+                                                       OnClick="@(() => ReprintTicket(context))" />
+                                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                       Icon="@Icons.Material.Filled.Refresh"
+                                                       Color="Color.Warning"
+                                                       OnClick="ResetPrinterQueue" />
+                                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                       Icon="@Icons.Material.Filled.PictureAsPdf"
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => DownloadPdf(context))" />
+                                    }
+                                    @if (_parkingPaymentAccessRights.Adjust && CanAdjustParkingPayment(context))
+                                    {
+                                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
+                                                       Icon="@Icons.Material.Filled.EditNote"
+                                                       Color="Color.Warning"
+                                                       OnClick="@(() => AdjustParkingPayment(context))" />
+                                    }
                                 </MudStack>
                             }
                         </MudTd>
                     </RowTemplate>
                     <FooterContent>
-                        <MudTd colspan="6" Style="text-align:right;font-weight:700;">TOTAL DEL DIA</MudTd>
+                        <MudTd colspan="7" Style="text-align:right;font-weight:700;">TOTAL DEL DIA</MudTd>
                         <MudTd Style="text-align:right;font-weight:700;font-size:16px;">$ @_movements.Sum(m => m.Amount).ToString("N0")</MudTd>
                         <MudTd></MudTd>
                     </FooterContent>
@@ -491,6 +515,7 @@
     private MudAutocomplete<string>? _plateInput;
     private Timer? _refreshTimer;
     private bool _disposed;
+    private ParkingPaymentsAccessRights _parkingPaymentAccessRights = new();
     private const string ActiveParkingStatus = "Activo";
     private const string CompletedParkingStatus = "Completado";
     private const int ParkingHourlyRate = 3500;
@@ -498,6 +523,7 @@
     protected override async Task OnInitializedAsync()
     {
         Title = L["Parqueo"];
+        _parkingPaymentAccessRights = await PermissionService.GetAccessRightsAsync<ParkingPaymentsAccessRights>();
         await LoadParkingStateSafeAsync(showSnackbar: true);
         _refreshTimer = new Timer(_ => _ = InvokeAsync(async () =>
         {
@@ -577,7 +603,7 @@
         StateHasChanged();
     }
 
-    private int CalculateAmount(TimeSpan duration)
+    private static int CalculateAmount(TimeSpan duration)
     {
         var hours = Math.Ceiling(duration.TotalHours);
         return Math.Max(2000, (int)(hours * ParkingHourlyRate));
@@ -619,6 +645,9 @@
         var plate = NormalizePlate(_licensePlate);
         if (string.IsNullOrEmpty(plate)) return;
 
+        await ClearPlateInputAsync();
+        await InvokeAsync(StateHasChanged);
+
         try
         {
             var activeRecord = await GetActiveParkingRecordAsync(plate);
@@ -636,7 +665,7 @@
             _lastMessage = $"Error procesando placa {plate}: {ex.Message}";
             _lastSeverity = Severity.Error;
             Snackbar.Add(_lastMessage, Severity.Error);
-            _licensePlate = string.Empty;
+            await ClearPlateInputAsync();
             await InvokeAsync(StateHasChanged);
             await FocusPlateInputAsync();
         }
@@ -725,6 +754,8 @@
             EntryTime = record.EntryTime,
             TicketNumber = record.TicketNumber,
             Amount = amount,
+            GrossAmount = amount,
+            DiscountAmount = 0,
             HourlyRate = ParkingHourlyRate,
             Duration = duration,
             CustomerName = customer == "Consumidor Final" ? null : customer,
@@ -772,10 +803,20 @@
 
     private async Task ClearPlateAndReloadAsync()
     {
-        _licensePlate = string.Empty;
+        await ClearPlateInputAsync();
         await LoadParkingStateSafeAsync(showSnackbar: true);
         await InvokeAsync(StateHasChanged);
         await FocusPlateInputAsync();
+    }
+
+    private async Task ClearPlateInputAsync()
+    {
+        _licensePlate = string.Empty;
+
+        if (_plateInput is not null)
+        {
+            await _plateInput.ClearAsync();
+        }
     }
 
     private async Task FocusPlateInputAsync()
@@ -815,17 +856,78 @@
         }
     }
 
+    private static bool CanAdjustParkingPayment(MovementRecord movement)
+    {
+        return movement.RecordId > 0 && movement.Status == CompletedParkingStatus && movement.ExitTime.HasValue;
+    }
+
+    private async Task AdjustParkingPayment(MovementRecord movement)
+    {
+        if (!_parkingPaymentAccessRights.Adjust ||
+            !await PermissionService.HasPermissionAsync(Permissions.ParkingPayments.Adjust))
+        {
+            Snackbar.Add("No tiene permiso para ajustar pagos de parqueo.", Severity.Error);
+            return;
+        }
+
+        if (!CanAdjustParkingPayment(movement))
+        {
+            Snackbar.Add("Solo se puede ajustar el pago de un parqueo finalizado.", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<AdjustParkingPaymentDialog>
+        {
+            { x => x.LicensePlate, movement.LicensePlate },
+            { x => x.CurrentAmount, movement.Amount }
+        };
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<AdjustParkingPaymentDialog>(
+            "Ajustar pago de parqueo",
+            parameters,
+            options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled ||
+            dialogResult.Data is not ParkingPaymentAdjustmentInput adjustment)
+            return;
+
+        var result = await Mediator.Send(new AdjustParkingPaymentCommand
+        {
+            ParkingRecordId = movement.RecordId,
+            NewAmount = adjustment.NewAmount,
+            Reason = adjustment.Reason
+        });
+
+        if (result.Succeeded)
+        {
+            Snackbar.Add("Pago de parqueo ajustado.", Severity.Success);
+            await LoadParkingStateSafeAsync(showSnackbar: true);
+            StateHasChanged();
+            return;
+        }
+
+        Snackbar.Add(result.Errors.FirstOrDefault() ?? "No se pudo ajustar el pago de parqueo.", Severity.Error);
+    }
+
     private static MovementRecord ToMovementRecord(ParkingRecord record)
     {
         var duration = record.ExitTime.HasValue ? record.ExitTime.Value - record.EntryTime : (TimeSpan?)null;
         return new MovementRecord
         {
+            RecordId = record.Id,
             Id = record.TicketNumber ?? record.Id.ToString(),
             Time = record.EntryTime,
             Type = "Entrada",
             LicensePlate = record.LicensePlate,
             CustomerName = record.CustomerName ?? string.Empty,
             Amount = (int)record.Amount,
+            GrossAmount = duration.HasValue ? CalculateAmount(duration.Value) : (int)record.Amount,
+            DiscountAmount = duration.HasValue ? Math.Max(0, CalculateAmount(duration.Value) - (int)record.Amount) : 0,
             Status = record.Status,
             ExitTime = record.ExitTime,
             FormattedDuration = duration.HasValue ? FormatDuration(duration) : string.Empty
@@ -837,9 +939,10 @@
         if (string.IsNullOrWhiteSpace(notes))
             return "Carro";
 
-        return Enum.TryParse<VehicleTypes>(notes, out var vehicleType)
+        var vehicleTypeName = notes.Split('|', 2)[0].Trim();
+        return Enum.TryParse<VehicleTypes>(vehicleTypeName, out var vehicleType)
             ? vehicleType.GetDescription()
-            : notes;
+            : vehicleTypeName;
     }
 
     private async Task ReprintTicket(MovementRecord m)
@@ -857,6 +960,8 @@
             EntryTime = m.Time,
             TicketNumber = ticketNo,
             Amount = m.Amount,
+            GrossAmount = m.GrossAmount,
+            DiscountAmount = m.DiscountAmount,
             HourlyRate = type == TicketType.Exit ? ParkingHourlyRate : null,
             Duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
                 ? ParseDuration(m.FormattedDuration) : null,
@@ -876,16 +981,20 @@
         var duration = !string.IsNullOrEmpty(m.FormattedDuration) && m.FormattedDuration != "--"
             ? ParseDuration(m.FormattedDuration) : null;
 
-        var pdf = TicketPdfService.GenerateTicketPdf(new TicketData
+        var ticketData = new TicketData
         {
             Type = type, LicensePlate = m.LicensePlate,
             DateTime = m.ExitTime ?? m.Time, EntryTime = m.Time,
             TicketNumber = m.Id, Amount = m.Amount,
+            GrossAmount = m.GrossAmount,
+            DiscountAmount = m.DiscountAmount,
             HourlyRate = type == TicketType.Exit ? ParkingHourlyRate : null,
             Duration = duration,
             CustomerName = m.CustomerName == "Consumidor Final" ? null : m.CustomerName,
             OperatorName = "Operador"
-        });
+        };
+        await CompanyInformationService.ApplyAsync(ticketData);
+        var pdf = TicketPdfService.GenerateTicketPdf(ticketData);
         await BlazorDownloadFileService.DownloadFileAsync($"Ticket_{m.LicensePlate}_{m.Id}.pdf", pdf, "application/pdf");
         Snackbar.Add("PDF descargado", Severity.Success);
     }

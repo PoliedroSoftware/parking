@@ -684,7 +684,7 @@
             TicketNumber = ticketNo,
             Status = ActiveParkingStatus,
             Amount = 0,
-            Notes = _vehicleType.ToString()
+            Notes = _vehicleTypeName,
         });
         await db.SaveChangesAsync(CancellationToken.None);
 
@@ -713,7 +713,7 @@
             DateTime = entryTime,
             TicketNumber = ticketNo,
             OperatorName = "Operador",
-            VehicleType = _vehicleType.GetDescription()
+            VehicleType = _vehicleTypeName
         };
 
         await PrintPosTicket(ticketData);

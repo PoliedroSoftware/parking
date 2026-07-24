@@ -595,9 +595,26 @@ public class ApplicationDbContextInitializer
 
         await UpsertBaseParkingRatesAsync();
         await UpsertBaseMonthlyRatesAsync();
+        await UpsertVehicleTypeConfigsAsync();
         await UpsertBaseWashAdditionalsAsync();
         await UpsertBaseWashServicePricesAsync();
         await UpsertCompanyInformationAsync();
+    }
+
+    private async Task UpsertVehicleTypeConfigsAsync()
+    {
+        var existing = await _context.VehicleTypeConfigs.ToListAsync();
+        if (existing.Count > 0) return;
+
+        _context.VehicleTypeConfigs.Add(new VehicleTypeConfig
+        {
+            Name = "Carro", Icon = "directions_car", IsActive = true
+        });
+        _context.VehicleTypeConfigs.Add(new VehicleTypeConfig
+        {
+            Name = "Moto", Icon = "two_wheeler", IsActive = true
+        });
+        await _context.SaveChangesAsync();
     }
 
     private async Task UpsertCompanyInformationAsync()

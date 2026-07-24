@@ -599,4 +599,136 @@ public sealed class ReportTicketService(CompanyInformationService companyInforma
     {
         return value.ToString("hh:mm tt", CultureInfo.InvariantCulture);
     }
+
+    public async Task<(string TaggedText, string Html)> GenerateTurnoTicketAsync(
+        TurnoReportData data, CancellationToken cancellationToken = default)
+    {
+        data.Company = await companyInformationService.GetAsync(cancellationToken);
+        return (GenerateTurnoText(data), GenerateTurnoHtml(data));
+    }
+
+    private static string GenerateTurnoText(TurnoReportData data)
+    {
+        var sb = new System.Text.StringBuilder();
+        AppendReportHeader(sb, data.Company, "ENTREGA DE TURNO");
+        sb.AppendLine($"[ROW]:Fecha:|{data.Date:dd/MM/yyyy}");
+        sb.AppendLine("[DASHED]");
+        if (!string.IsNullOrWhiteSpace(data.OperadorEntrega))
+            sb.AppendLine($"[ROW]:Entrega:|{data.OperadorEntrega}");
+        if (!string.IsNullOrWhiteSpace(data.OperadorRecibe))
+            sb.AppendLine($"[ROW]:Recibe:|{data.OperadorRecibe}");
+        sb.AppendLine("[DASHED]");
+        sb.AppendLine($"[ROW]:Parqueos activos:|{data.ParqueosActivos}");
+        sb.AppendLine($"[ROW]:Lavados entregados:|{data.LavadosEntregados}");
+        sb.AppendLine($"[ROW]:Lavados pendientes:|{data.LavadosPendientes}");
+        sb.AppendLine("[DOUBLE]");
+        sb.AppendLine($"[HUGE]:$ {data.TotalPagos:N0}");
+        sb.AppendLine($"[CENTER]:TOTAL PAGOS DIA");
+        sb.AppendLine("[DASHED]");
+
+        if (data.Parqueos.Count > 0)
+        {
+            sb.AppendLine("[CENTER]:PARQUEOS ACTIVOS");
+            sb.AppendLine("[DASHED]");
+            foreach (var p in data.Parqueos)
+                sb.AppendLine($"[ROW]:{p.VehicleType} {p.Placa}|{p.Tiempo} ~$ {p.Estimado:N0}");
+            sb.AppendLine("[DASHED]");
+        }
+
+        if (data.Lavados.Count > 0)
+        {
+            sb.AppendLine("[CENTER]:LAVADOS DEL DIA");
+            sb.AppendLine("[DASHED]");
+            foreach (var l in data.Lavados)
+            {
+                var pagado = l.Pagado ? "PAG" : "NO PAG";
+                sb.AppendLine($"[ROW]:{l.Estado} {l.Placa}|{pagado} $ {l.Precio:N0}");
+            }
+            sb.AppendLine("[DASHED]");
+        }
+
+        sb.AppendLine("[DASHED]");
+        sb.AppendLine($"[CENTER]:Firma entrega: ________________");
+        sb.AppendLine($"[CENTER]:Firma recibe: ________________");
+        AppendReportFooter(sb, data.Company);
+        return sb.ToString();
+    }
+
+    private static string GenerateTurnoHtml(TurnoReportData data)
+    {
+        var sb = StartHtml();
+        AppendReportHtmlHeader(sb, data.Company, "ENTREGA DE TURNO");
+        AppendHtmlRow(sb, "Fecha", data.Date.ToString("dd/MM/yyyy"));
+        AppendHtmlLine(sb);
+        if (!string.IsNullOrWhiteSpace(data.OperadorEntrega))
+            AppendHtmlRow(sb, "Entrega", data.OperadorEntrega);
+        if (!string.IsNullOrWhiteSpace(data.OperadorRecibe))
+            AppendHtmlRow(sb, "Recibe", data.OperadorRecibe);
+        AppendHtmlLine(sb);
+        AppendHtmlRow(sb, "Parqueos activos", data.ParqueosActivos.ToString());
+        AppendHtmlRow(sb, "Lavados entregados", data.LavadosEntregados.ToString());
+        AppendHtmlRow(sb, "Lavados pendientes", data.LavadosPendientes.ToString());
+        AppendHtmlDouble(sb);
+        AppendHtmlTotal(sb, Money(data.TotalPagos));
+        sb.AppendLine("<div class='total-label'>TOTAL PAGOS DIA</div>");
+        AppendHtmlLine(sb);
+
+        if (data.Parqueos.Count > 0)
+        {
+            sb.AppendLine("<div class='plate-label'>PARQUEOS ACTIVOS</div>");
+            sb.AppendLine("<div class='line'></div>");
+            foreach (var p in data.Parqueos)
+                AppendHtmlRow(sb, $"{p.VehicleType} {p.Placa}", $"{p.Tiempo} ~$ {p.Estimado:N0}");
+            AppendHtmlLine(sb);
+        }
+
+        if (data.Lavados.Count > 0)
+        {
+            sb.AppendLine("<div class='plate-label'>LAVADOS DEL DIA</div>");
+            sb.AppendLine("<div class='line'></div>");
+            foreach (var l in data.Lavados)
+            {
+                var pagado = l.Pagado ? "PAG" : "NO PAG";
+                AppendHtmlRow(sb, $"{l.Estado} {l.Placa}", $"{pagado} $ {l.Precio:N0}");
+            }
+            AppendHtmlLine(sb);
+        }
+
+        AppendHtmlLine(sb);
+        sb.AppendLine("<div class='center'>Firma entrega: ________________</div>");
+        sb.AppendLine("<div style='margin-top:12px;'></div>");
+        sb.AppendLine("<div class='center'>Firma recibe: ________________</div>");
+        AppendReportHtmlFooter(sb, data.Company);
+        return FinishHtml(sb);
+    }
+}
+
+public sealed class TurnoReportData
+{
+    public DateTime Date { get; set; }
+    public string? OperadorEntrega { get; set; }
+    public string? OperadorRecibe { get; set; }
+    public int ParqueosActivos { get; set; }
+    public int LavadosEntregados { get; set; }
+    public int LavadosPendientes { get; set; }
+    public int TotalPagos { get; set; }
+    public List<TurnoParqueoData> Parqueos { get; set; } = new();
+    public List<TurnoLavadoData> Lavados { get; set; } = new();
+    public TicketCompanyData Company { get; set; } = TicketCompanyData.Default;
+}
+
+public sealed class TurnoParqueoData
+{
+    public string Placa { get; set; } = string.Empty;
+    public string VehicleType { get; set; } = string.Empty;
+    public string Tiempo { get; set; } = string.Empty;
+    public int Estimado { get; set; }
+}
+
+public sealed class TurnoLavadoData
+{
+    public string Placa { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
+    public int Precio { get; set; }
+    public bool Pagado { get; set; }
 }

@@ -33,6 +33,7 @@ public interface IApplicationDbContext : IAsyncDisposable
     DbSet<ParkingRate> ParkingRates { get; set; }
     DbSet<MonthlyRate> MonthlyRates { get; set; }
     DbSet<CompanyInformation> CompanyInformation { get; set; }
+    DbSet<VehicleTypeConfig> VehicleTypeConfigs { get; set; }
 
     DbSet<Holiday> Holidays { get; set; }
 

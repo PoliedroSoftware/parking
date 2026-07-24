@@ -52,7 +52,7 @@ public class MenuService : IMenuService
                 },
                 new()
                 {
-                    Title = "REPORTES",
+                    Title = "Reportes",
                     Icon = Icons.Material.Filled.Assessment,
                     PageStatus = PageStatus.Completed,
                     IsParent = true,
@@ -60,19 +60,9 @@ public class MenuService : IMenuService
                     {
                         new() { Title = "Reporte Mensual", Href = "/pages/reporte", PageStatus = PageStatus.Completed },
                         new() { Title = "Utilidad Anual", Href = "/pages/utilidad", PageStatus = PageStatus.Completed },
+                        new() { Title = "Estatus de Turno", Href = "/pages/estatus", PageStatus = PageStatus.Completed },
                         new() { Title = "Arqueo de Caja", Href = "/pages/arqueo", PageStatus = PageStatus.Completed },
                         new() { Title = "Gastos", Href = "/pages/gastos", PageStatus = PageStatus.Completed },
-                    }
-                },
-                new()
-                {
-                    Title = "GASTOS",
-                    Icon = Icons.Material.Filled.MoneyOff,
-                    PageStatus = PageStatus.Completed,
-                    IsParent = true,
-                    MenuItems = new List<MenuSectionSubItemModel>
-                    {
-                        new() { Title = "Registrar Gasto", Href = "/pages/gastos", PageStatus = PageStatus.Completed },
                     }
                 },
             }
@@ -92,6 +82,7 @@ public class MenuService : IMenuService
                     {
                         new() { Title = "Parqueaderos", Href = "/pages/carparks", PageStatus = PageStatus.Completed },
                         new() { Title = "Impresora POS", Href = "/pages/ajustes/impresora", PageStatus = PageStatus.Completed },
+                        new() { Title = "Tipos de Vehiculo", Href = "/pages/vehicle-types", PageStatus = PageStatus.Completed },
                         new() { Title = "Usuarios", Href = "/identity/users", PageStatus = PageStatus.Completed },
                         new() { Title = "Roles", Href = "/identity/roles", PageStatus = PageStatus.Completed },
                     }

@@ -54,8 +54,7 @@
                         <MudTd><strong>@context.Name</strong></MudTd>
                         <MudTd>@context.Icon</MudTd>
                         <MudTd>
-                            <MudSwitch @bind-Value="context.IsActive" Color="Color.Success"
-                                       ValueChanged="@(v => ToggleActive(context))"></MudSwitch>
+                            <MudSwitch @bind-Value="context.IsActive" Color="Color.Success"></MudSwitch>
                         </MudTd>
                         <MudTd>
                             <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
@@ -107,20 +106,20 @@
             Icon = _newItem.Icon?.Trim(),
             IsActive = true
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(CancellationToken.None);
         _newItem = new VehicleTypeConfig();
         Snackbar.Add("Tipo de vehiculo guardado", Severity.Success);
         await LoadData();
     }
 
-    private async Task ToggleActive(VehicleTypeConfig item)
+    private async Task ToggleActive(VehicleTypeConfig item, bool value)
     {
         await using var db = await DbFactory.CreateAsync();
         var entity = await db.VehicleTypeConfigs.FindAsync(item.Id);
         if (entity is not null)
         {
-            entity.IsActive = item.IsActive;
-            await db.SaveChangesAsync();
+            entity.IsActive = value;
+            await db.SaveChangesAsync(CancellationToken.None);
         }
     }
 
@@ -131,7 +130,7 @@
         if (entity is not null)
         {
             db.VehicleTypeConfigs.Remove(entity);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(CancellationToken.None);
             Snackbar.Add("Tipo de vehiculo eliminado", Severity.Success);
             await LoadData();
         }

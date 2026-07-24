@@ -1,0 +1,388 @@
+@page "/pages/estatus"
+@using CleanArchitecture.Blazor.Domain.Entities
+@using CleanArchitecture.Blazor.Domain.Enums
+@using CleanArchitecture.Blazor.Server.UI.Services
+@using System.Globalization
+
+@inject IApplicationDbContextFactory DbFactory
+@inject PosTicketPrintService PosTicketPrintService
+@inject ReportTicketService ReportTicketService
+@inject TicketService TicketService
+
+<PageTitle>Estatus de Turno</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
+        <div>
+            <MudText Typo="Typo.h3" Style="font-weight:700;">Estatus de Turno</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Entrega de turno - @DateTime.Today.ToString("dd/MM/yyyy")</MudText>
+        </div>
+        <MudStack Row Spacing="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Info" Size="Size.Large"
+                       OnClick="Refresh" StartIcon="@Icons.Material.Filled.Refresh">
+                ACTUALIZAR
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                       OnClick="PrintTurno" StartIcon="@Icons.Material.Filled.Print">
+                IMPRIMIR TURNO
+            </MudButton>
+        </MudStack>
+    </div>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+    }
+
+    @* OPERADORES *@
+    <MudGrid Spacing="3" Class="mb-4">
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="3" Style="background:#e8f5e9;">
+                <MudCardContent>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Operador que entrega</MudText>
+                    <MudTextField T="string" @bind-Value="_operadorEntrega" Label="Nombre" Variant="Variant.Outlined"
+                                  Placeholder="Quien entrega el turno"></MudTextField>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="3" Style="background:#e3f2fd;">
+                <MudCardContent>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Operador que recibe</MudText>
+                    <MudTextField T="string" @bind-Value="_operadorRecibe" Label="Nombre" Variant="Variant.Outlined"
+                                  Placeholder="Quien recibe el turno"></MudTextField>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @* SUMMARY CARDS *@
+    <MudGrid Spacing="3" Class="mb-4">
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#e8f5e9;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.caption">Parqueos Activos</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Info">@_parqueosActivos.Count</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#e3f2fd;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.caption">Lavados Entregados</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Success">@_lavadosEntregados.Count</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#f3e5f5;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.caption">Lavados Pendientes</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Warning">@_lavadosPendientes.Count</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <MudCard Elevation="3" Style="background:#fff3e0;">
+                <MudCardContent Class="text-center">
+                    <MudText Typo="Typo.caption">Pagos del Dia</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Error">$ @_pagosDia.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @* PARKING ACTIVE *@
+    <MudCard Elevation="3" Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent><MudText Typo="Typo.h6">Parqueos Activos</MudText></CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_parqueosActivos.Any())
+            {
+                <div class="mud-data-grid-responsive">
+                <MudTable Items="@_parqueosActivos" Dense="true" FixedHeader="true" Height="250px">
+                    <HeaderContent>
+                        <MudTh>Placa</MudTh>
+                        <MudTh>Tipo</MudTh>
+                        <MudTh>Hora Entrada</MudTh>
+                        <MudTh>Tiempo</MudTh>
+                        <MudTh Style="text-align:right;">Estimado</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><strong>@context.LicensePlate</strong></MudTd>
+                        <MudTd><MudChip T="string" Size="Size.Small" Color="Color.Info">@context.VehicleType</MudChip></MudTd>
+                        <MudTd>@context.EntryTime.ToString("hh:mm tt")</MudTd>
+                        <MudTd>@FormatDuration(DateTime.Now - context.EntryTime)</MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;">$ @context.EstimatedAmount.ToString("N0")</MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTd colspan="4"><strong>TOTAL ACTIVOS: @_parqueosActivos.Count</strong></MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;">$ @_parqueosActivos.Sum(p => p.EstimatedAmount).ToString("N0")</MudTd>
+                    </FooterContent>
+                </MudTable>
+                </div>
+            }
+            else
+            {
+                <MudText Color="Color.Secondary" Style="padding:20px;text-align:center;">Sin parqueos activos</MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    @* WASHES *@
+    <MudCard Elevation="3" Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent><MudText Typo="Typo.h6">Lavados del Dia</MudText></CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_todosLavados.Any())
+            {
+                <div class="mud-data-grid-responsive">
+                <MudTable Items="@_todosLavados" Dense="true" FixedHeader="true" Height="300px">
+                    <HeaderContent>
+                        <MudTh>Placa</MudTh>
+                        <MudTh>Servicio</MudTh>
+                        <MudTh>Estado</MudTh>
+                        <MudTh>Lavador</MudTh>
+                        <MudTh Style="text-align:right;">Precio</MudTh>
+                        <MudTh>Pagado</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><strong>@context.Placa</strong></MudTd>
+                        <MudTd>@context.Servicio</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(context.Estado == "Entregado" ? Color.Success : context.Estado == "En Proceso" ? Color.Warning : Color.Default)"
+                                     Variant="Variant.Filled">
+                                @context.Estado
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>@context.Lavador</MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Precio.ToString("N0")</MudTd>
+                        <MudTd>
+                            @if (context.Pagado)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" />
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTd colspan="4"><strong>TOTAL</strong></MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;">$ @_todosLavados.Sum(l => l.Precio).ToString("N0")</MudTd>
+                        <MudTd></MudTd>
+                    </FooterContent>
+                </MudTable>
+                </div>
+            }
+            else
+            {
+                <MudText Color="Color.Secondary" Style="padding:20px;text-align:center;">Sin lavados hoy</MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+
+</MudContainer>
+
+@code {
+    private string _operadorEntrega = "";
+    private string _operadorRecibe = "";
+    private bool _loading = true;
+    private int _pagosDia;
+
+    private List<ActiveParkingViewModel> _parqueosActivos = new();
+    private List<LavadoViewModel> _todosLavados = new();
+    private List<LavadoViewModel> _lavadosEntregados = new();
+    private List<LavadoViewModel> _lavadosPendientes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task Refresh()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _loading = true;
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+
+            await using var db = await DbFactory.CreateAsync();
+
+            _parqueosActivos = await db.ParkingRecords
+                .AsNoTracking()
+                .Where(p => p.Status == "Activo")
+                .OrderBy(p => p.EntryTime)
+                .Select(p => new ActiveParkingViewModel
+                {
+                    LicensePlate = p.LicensePlate,
+                    EntryTime = p.EntryTime,
+                    VehicleType = ParseVehicleType(p.Notes),
+                    EstimatedAmount = 0
+                })
+                .ToListAsync();
+
+            foreach (var p in _parqueosActivos)
+            {
+                p.EstimatedAmount = (int)Math.Ceiling((DateTime.Now - p.EntryTime).TotalHours) * 3500;
+                if (p.EstimatedAmount < 2000) p.EstimatedAmount = 2000;
+            }
+
+            var washes = await db.CarWashes
+                .AsNoTracking()
+                .Where(c => c.StartTime.HasValue &&
+                            c.StartTime.Value >= today && c.StartTime.Value < tomorrow)
+                .OrderBy(c => c.StartTime)
+                .Select(c => new LavadoViewModel
+                {
+                    Placa = c.LicensePlate,
+                    Servicio = c.WashServiceType.GetDescription(),
+                    Estado = c.Status.GetDescription(),
+                    Precio = (int)c.Price,
+                    Pagado = c.IsPaid
+                })
+                .ToListAsync();
+
+            var washIds = washes.Select(w => w.Placa).Distinct().ToList();
+            var operators = await db.CarWashOperators
+                .AsNoTracking()
+                .Where(o => o.CarWash != null &&
+                            o.CarWash.StartTime.HasValue &&
+                            o.CarWash.StartTime.Value >= today &&
+                            o.CarWash.StartTime.Value < tomorrow)
+                .Select(o => new { o.CarWash!.LicensePlate, o.OperatorName })
+                .ToListAsync();
+
+            foreach (var w in washes)
+            {
+                w.Lavador = operators
+                    .Where(o => o.LicensePlate == w.Placa)
+                    .Select(o => o.OperatorName)
+                    .FirstOrDefault() ?? "-";
+            }
+
+            _todosLavados = washes;
+
+            _lavadosEntregados = _todosLavados
+                .Where(l => l.Estado == "Entregado" || l.Estado == "Completado")
+                .ToList();
+
+            _lavadosPendientes = _todosLavados
+                .Where(l => l.Estado != "Entregado" && l.Estado != "Completado" && l.Estado != "Cancelado")
+                .ToList();
+
+            _pagosDia = (int)(await db.ParkingRecords
+                .Where(p => p.Status == "Completado" && p.ExitTime.HasValue &&
+                            p.ExitTime.Value >= today && p.ExitTime.Value < tomorrow)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0)
+                + (int)(await db.CarWashes
+                .Where(c => c.IsPaid && c.StartTime.HasValue &&
+                            c.StartTime.Value >= today && c.StartTime.Value < tomorrow)
+                .SumAsync(c => (decimal?)c.Price) ?? 0)
+                + (int)(await db.MemberRentals
+                .Where(r => r.PaymentTime >= today && r.PaymentTime < tomorrow)
+                .SumAsync(r => (decimal?)r.AmountPaid) ?? 0);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string ParseVehicleType(string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(notes)) return "Carro";
+        if (Enum.TryParse<VehicleTypes>(notes, out var vt)) return vt.GetDescription();
+        return notes.Split('|', 2)[0].Trim();
+    }
+
+    private static string FormatDuration(TimeSpan d)
+    {
+        if (d.TotalDays >= 1) return $"{(int)d.TotalDays}d {d.Hours}h {d.Minutes}m";
+        if (d.TotalHours >= 1) return $"{(int)d.TotalHours}h {d.Minutes}m";
+        return $"{d.Minutes} min";
+    }
+
+    private async Task PrintTurno()
+    {
+        try
+        {
+            var data = new TurnoReportData
+            {
+                Date = DateTime.Today,
+                OperadorEntrega = string.IsNullOrWhiteSpace(_operadorEntrega) ? null : _operadorEntrega,
+                OperadorRecibe = string.IsNullOrWhiteSpace(_operadorRecibe) ? null : _operadorRecibe,
+                ParqueosActivos = _parqueosActivos.Count,
+                LavadosEntregados = _lavadosEntregados.Count,
+                LavadosPendientes = _lavadosPendientes.Count,
+                TotalPagos = _pagosDia,
+                Parqueos = _parqueosActivos.Select(p => new TurnoParqueoData
+                {
+                    Placa = p.LicensePlate,
+                    VehicleType = p.VehicleType,
+                    Tiempo = FormatDuration(DateTime.Now - p.EntryTime),
+                    Estimado = p.EstimatedAmount
+                }).ToList(),
+                Lavados = _todosLavados.Select(l => new TurnoLavadoData
+                {
+                    Placa = l.Placa,
+                    Estado = GetEstadoAbrev(l.Estado),
+                    Precio = l.Precio,
+                    Pagado = l.Pagado
+                }).ToList()
+            };
+
+            var (tagged, html) = await ReportTicketService.GenerateTurnoTicketAsync(data);
+            var result = await PosTicketPrintService.PrintReportAsync(tagged, html);
+
+            var severity = result.PrintedDirectly
+                ? Severity.Success
+                : result.PreviewOpened ? Severity.Warning : Severity.Error;
+            Snackbar.Add(result.Message, severity);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al imprimir: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private static string GetEstadoAbrev(string estado)
+    {
+        return estado switch
+        {
+            "Entregado" => "ENTREG",
+            "Completado" => "COMPL",
+            "En Proceso" => "EN PROC",
+            "Pendiente" => "PEND",
+            _ => estado.Length > 8 ? estado[..8] : estado
+        };
+    }
+
+    public class ActiveParkingViewModel
+    {
+        public string LicensePlate { get; set; } = "";
+        public DateTime EntryTime { get; set; }
+        public string VehicleType { get; set; } = "";
+        public int EstimatedAmount { get; set; }
+    }
+
+    public class LavadoViewModel
+    {
+        public string Placa { get; set; } = "";
+        public string Servicio { get; set; } = "";
+        public string Estado { get; set; } = "";
+        public string Lavador { get; set; } = "";
+        public int Precio { get; set; }
+        public bool Pagado { get; set; }
+    }
+}

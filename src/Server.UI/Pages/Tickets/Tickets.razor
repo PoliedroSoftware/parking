@@ -16,7 +16,6 @@
 @inject ISnackbar Snackbar
 @inject IApplicationDbContextFactory DbFactory
 @inject BlazorDownloadFileService BlazorDownloadFileService
-@inject IPrinterService PrinterService
 @attribute [Authorize]
 @implements IDisposable
 
@@ -227,10 +226,6 @@
                                                        Color="Color.Info"
                                                        OnClick="@(() => ReprintTicket(context))" />
                                         <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
-                                                       Icon="@Icons.Material.Filled.Refresh"
-                                                       Color="Color.Warning"
-                                                       OnClick="ResetPrinterQueue" />
-                                        <MudIconButton Variant="Variant.Outlined" Size="Size.Small"
                                                        Icon="@Icons.Material.Filled.PictureAsPdf"
                                                        Color="Color.Error"
                                                        OnClick="@(() => DownloadPdf(context))" />
@@ -434,6 +429,9 @@
     .parking-card {
         border: 1px solid #e3e8ef;
         border-radius: 14px;
+    }
+
+    .parking-card > .mud-card-header {
         overflow: hidden;
     }
 
@@ -494,6 +492,17 @@
         .plate-input input {
             font-size: 30px !important;
             height: 76px !important;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .plate-input input {
+            font-size: 24px !important;
+            height: 64px !important;
+        }
+
+        .metric-card strong {
+            font-size: 22px;
         }
     }
 </style>
@@ -829,30 +838,6 @@
         catch
         {
             // The input can be unavailable while the print popup opens or the circuit is closing.
-        }
-    }
-
-    private async Task ResetPrinterQueue()
-    {
-        try
-        {
-            var repairedJobs = await PrinterService.RepairQueueBeforePrintAsync();
-            if (repairedJobs < 0)
-            {
-                Snackbar.Add("Windows no permitio resetear la impresora. Abra la app como administrador o limpie la cola manualmente.", Severity.Warning);
-                await FocusPlateInputAsync();
-                return;
-            }
-
-            Snackbar.Add(repairedJobs > 0
-                ? $"Impresora reiniciada. Cola limpiada: {repairedJobs} trabajo(s)."
-                : "Impresora revisada. No habia trabajos bloqueados.",
-                repairedJobs > 0 ? Severity.Warning : Severity.Success);
-            await FocusPlateInputAsync();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"No se pudo resetear la impresora: {ex.Message}", Severity.Error);
         }
     }
 

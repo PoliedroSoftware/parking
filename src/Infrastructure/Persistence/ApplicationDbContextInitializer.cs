@@ -388,8 +388,6 @@ public class ApplicationDbContextInitializer
                 Name = new MultiCodeName("MAIN", "Zona Principal", "Zona Principal"),
                 IsMain = true,
                 Description = "Primary entry / exit area.",
-                HourlySets = new HourlySets(),
-                MonthlySets = new MonthlySets(),
                 Vehicles = [],
                 Gates = [],
                 SpaceGroups = []
@@ -397,16 +395,12 @@ public class ApplicationDbContextInitializer
             var basementZone = new Zone
             {
                 Name = new MultiCodeName("B1", "Sotano B1", "Sotano B1"),
-                HourlySets = new HourlySets(),
-                MonthlySets = new MonthlySets(),
                 IsMain = false,
                 Description = "General long stay parking.",
             };
             var vipZone = new Zone
             {
                 Name = new MultiCodeName("VIP", "VIP Nivel 2", "VIP Nivel 2"),
-                HourlySets = new HourlySets(),
-                MonthlySets = new MonthlySets(),
                 IsMain = false,
                 Description = "Reserved spaces for premium members.",
             };

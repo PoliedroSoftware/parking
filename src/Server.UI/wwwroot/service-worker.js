@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poliedro-v1';
+const CACHE_NAME = 'poliedro-v2';
 const STATIC_ASSETS = [
   '/',
   '_framework/blazor.web.js',
@@ -7,7 +7,6 @@ const STATIC_ASSETS = [
   'css/app.css',
   'manifest.json',
   'icon-192.png',
-  'icon-512.png',
   'logo_poliedro.png'
 ];
 
@@ -38,7 +37,7 @@ self.addEventListener('fetch', event => {
 
   if (event.request.method !== 'GET') return;
 
-  if (url.pathname.startsWith('/_blazor') || url.pathname.startsWith('/serverHub')) {
+  if (url.pathname.startsWith('/_blazor') || url.pathname.startsWith('/signalRHub')) {
     return;
   }
 

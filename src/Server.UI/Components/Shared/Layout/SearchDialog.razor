@@ -11,7 +11,7 @@
                           TextChanged="@(SearchPages)"
                           Immediate="true"/>
             <MudList T="string" 
-                     Style="height: 300px; overflow-y: auto">
+                     Style="max-height: 50vh; overflow-y: auto">
                 @foreach (var (key, value) in _pagesFiltered)
                 {
                     <MudListItem T="string" OnClick="@(() => Navigation.NavigateTo(value))">

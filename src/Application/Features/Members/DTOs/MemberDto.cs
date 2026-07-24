@@ -78,10 +78,10 @@ public class MemberDto
         public Mapping()
         {
             CreateMap<Member, MemberDto>(MemberList.None)
-                .ForMember(x=>x.MemberRentals,y=>y.Ignore())
-                .ForMember(x=>x.MemberVehicles,y=>y.Ignore())
-                .ForMember(y => y.MemberRentals, y => y.Ignore())
-                .ForMember(x => x.MemberVehicles, y => y.Ignore());
+                .ForMember(x => x.MemberRentals, y => y.Ignore())
+                .ForMember(x => x.MemberVehicles, y => y.Ignore())
+                .ForMember(x => x.SpaceGroup, y => y.Ignore())
+                .ForMember(x => x.Tenant, y => y.Ignore());
             CreateMap<MemberDto, Member>(MemberList.None)
                 .ForMember(y => y.MemberRentals, y => y.Ignore())
                 .ForMember(x => x.MemberVehicles, y => y.Ignore())

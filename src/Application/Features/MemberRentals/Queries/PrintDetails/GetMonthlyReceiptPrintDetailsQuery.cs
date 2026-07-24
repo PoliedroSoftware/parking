@@ -80,6 +80,29 @@ public class GetMonthlyReceiptPrintDetailsQueryHandler :
                 })
                 .OrderBy(x => x.LicensePlate)
                 .ToListAsync(cancellationToken);
+
+            var vehicleTypes = rental.Vehicles
+                .Select(v => v.VehicleType)
+                .Where(v => v.HasValue)
+                .Distinct()
+                .ToList();
+
+            if (vehicleTypes.Count > 0)
+            {
+                var rates = await db.MonthlyRates.AsNoTracking()
+                    .Where(r => r.IsActive && vehicleTypes.Contains(r.VehicleType))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var vehicle in rental.Vehicles)
+                {
+                    if (vehicle.VehicleType.HasValue)
+                    {
+                        vehicle.MonthlyFee = rates
+                            .FirstOrDefault(r => r.VehicleType == vehicle.VehicleType.Value)
+                            ?.MonthlyFee ?? 0;
+                    }
+                }
+            }
         }
 
         if (rental.Vehicles.Count == 0 && !string.IsNullOrWhiteSpace(rental.LicensePlate))

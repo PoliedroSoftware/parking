@@ -56,6 +56,7 @@
         <MudCardContent>
             @if (_expenses.Any())
             {
+                <div class="mud-data-grid-responsive">
                 <MudTable Items="@_expenses" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="400px">
                     <HeaderContent>
                         <MudTh>Fecha</MudTh>
@@ -75,6 +76,7 @@
                         </MudTd>
                     </RowTemplate>
                 </MudTable>
+                </div>
             }
         </MudCardContent>
     </MudCard>

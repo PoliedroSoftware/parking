@@ -1,0 +1,198 @@
+@using CleanArchitecture.Blazor.Domain.Entities
+@using CleanArchitecture.Blazor.Domain.Enums
+@using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+
+@inject IApplicationDbContextFactory DbFactory
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-3">@Member.Name</MudText>
+
+        @if (_loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+        }
+        else if (_rateItems.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">
+                Este cliente no tiene vehiculos registrados o no hay tarifas configuradas.
+            </MudAlert>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Seleccione los tipos de vehiculo a pagar:</MudText>
+            <MudStack Spacing="2" Class="mb-4">
+                @foreach (var item in _rateItems)
+                {
+                    <MudCard Elevation="@(item.Selected ? 3 : 1)"
+                             Style="@(item.Selected ? "border: 2px solid var(--mud-palette-primary);cursor:pointer;" : "cursor:pointer;")"
+                             Class="pa-2">
+                        <div @onclick="@(() => ToggleItem(item))" @onclick:preventDefault="true" style="width:100%;height:100%;">
+                        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Color="Color.Primary" Size="Size.Small" />
+                                <div>
+                                    <MudText Typo="Typo.body1" Style="font-weight:600;">@item.Label</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.Plates</MudText>
+                                </div>
+                            </MudStack>
+                            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                                <MudText Typo="Typo.body1" Style="font-weight:700;">$ @item.Fee.ToString("N0")</MudText>
+                                <MudIcon Icon="@(item.Selected ? Icons.Material.Filled.CheckBox : Icons.Material.Filled.CheckBoxOutlineBlank)"
+                                         Color="@(item.Selected ? Color.Success : Color.Default)" />
+                            </MudStack>
+                        </MudStack>
+                        </div>
+                    </MudCard>
+                }
+            </MudStack>
+
+            <MudDivider Class="my-3" />
+
+            <MudStack Row Justify="Justify.SpaceBetween" Class="mb-4">
+                <MudText Typo="Typo.h6">Total a pagar</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Success" Style="font-weight:800;">$ @_total.ToString("N0")</MudText>
+            </MudStack>
+
+            <MudSelect T="PaymentMethods" Label="Metodo de pago"
+                       @bind-Value="_paymentMethod" Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter">
+                <MudSelectItem Value="@PaymentMethods.Cash">Efectivo</MudSelectItem>
+                <MudSelectItem Value="@PaymentMethods.CreditCard">Tarjeta</MudSelectItem>
+                <MudSelectItem Value="@PaymentMethods.Transferencia">Transferencia</MudSelectItem>
+                <MudSelectItem Value="@PaymentMethods.Nequi">Nequi</MudSelectItem>
+                <MudSelectItem Value="@PaymentMethods.Daviplata">Daviplata</MudSelectItem>
+            </MudSelect>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudLoadingButton Loading="@_saving" OnClick="OnPay"
+                          Variant="Variant.Filled" Color="Color.Success"
+                          Disabled="@(_total == 0)"
+                          StartIcon="@Icons.Material.Filled.Payment">
+            PAGAR
+        </MudLoadingButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public MemberDto Member { get; set; } = null!;
+
+    private List<RateItem> _rateItems = new();
+    private PaymentMethods _paymentMethod = PaymentMethods.Cash;
+    private bool _loading = true;
+    private bool _saving;
+
+    private int _total => _rateItems.Where(x => x.Selected).Sum(x => (int)x.Fee);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRates();
+    }
+
+    private async Task LoadRates()
+    {
+        try
+        {
+            _loading = true;
+            await using var db = await DbFactory.CreateAsync();
+
+            var vehicles = await db.MemberVehicles
+                .AsNoTracking()
+                .Where(x => x.MemberId == Member.Id && x.Vehicle != null)
+                .Select(x => new { x.Vehicle!.Name, x.Vehicle.VehicleTypeId })
+                .ToListAsync();
+
+            if (vehicles.Count == 0 && !string.IsNullOrWhiteSpace(Member.LicensePlate))
+            {
+                var primaryVehicle = await db.Vehicles
+                    .AsNoTracking()
+                    .Where(v => v.Name == Member.LicensePlate)
+                    .Select(v => new { v.Name, v.VehicleTypeId })
+                    .FirstOrDefaultAsync();
+
+                if (primaryVehicle != null)
+                {
+                    vehicles.Add(primaryVehicle);
+                }
+            }
+
+            var vehicleTypes = vehicles.Select(v => v.VehicleTypeId).Distinct().ToList();
+
+            var rates = await db.MonthlyRates
+                .AsNoTracking()
+                .Where(r => r.IsActive && vehicleTypes.Contains(r.VehicleType))
+                .ToListAsync();
+
+            _rateItems = vehicleTypes
+                .Select(vt =>
+                {
+                    var rate = rates.FirstOrDefault(r => r.VehicleType == vt);
+                    var plates = vehicles
+                        .Where(v => v.VehicleTypeId == vt)
+                        .Select(v => v.Name)
+                        .ToList();
+                    return new RateItem
+                    {
+                        VehicleType = vt,
+                        Label = vt.GetDescription(),
+                        Plates = string.Join(", ", plates),
+                        Fee = rate?.MonthlyFee ?? 0,
+                        Selected = false
+                    };
+                })
+                .Where(x => x.Fee > 0)
+                .OrderBy(x => x.Fee)
+                .ToList();
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleItem(RateItem item)
+    {
+        item.Selected = !item.Selected;
+        StateHasChanged();
+    }
+
+    private async Task OnPay()
+    {
+        try
+        {
+            _saving = true;
+            MudDialog.Close(DialogResult.Ok(new PayResult
+            {
+                TotalAmount = _total,
+                PaymentMethod = _paymentMethod,
+                SelectedTypes = _rateItems.Where(x => x.Selected).Select(x => x.VehicleType).ToList()
+            }));
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    void Cancel() => MudDialog.Cancel();
+
+    private class RateItem
+    {
+        public VehicleTypes VehicleType { get; set; }
+        public string Label { get; set; } = string.Empty;
+        public string Plates { get; set; } = string.Empty;
+        public decimal Fee { get; set; }
+        public bool Selected { get; set; }
+    }
+
+    public class PayResult
+    {
+        public int TotalAmount { get; set; }
+        public PaymentMethods PaymentMethod { get; set; }
+        public List<VehicleTypes> SelectedTypes { get; set; } = new();
+    }
+}

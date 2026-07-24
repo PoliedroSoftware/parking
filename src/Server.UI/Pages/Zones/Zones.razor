@@ -239,7 +239,7 @@
 	}
 	private Task OnCreate()
 	{
-		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", ""), HourlySets = new(), MonthlySets = new() };
+		var command = new AddEditZoneCommand() { Name = new MultiCodeName("", "", "") };
 		return ShowEditFormDialog(L["New Zone"], command);
 	}
 

@@ -118,6 +118,7 @@ public static class DependencyInjection
             services.AddScoped<CompanyInformationService>();
             services.AddScoped<PosTicketPrintService>();
             services.AddScoped<TicketPdfService>();
+            services.AddScoped<ReportTicketService>();
             services.AddSingleton<ParkingSessionService>();
         services
             .AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>()

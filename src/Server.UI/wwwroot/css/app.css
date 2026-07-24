@@ -165,6 +165,14 @@
     .mud-card-actions {
         padding: 8px 16px 12px 16px !important;
     }
+
+    .utilidad-neta {
+        font-size: 22px !important;
+    }
+
+    .reporte-net-value {
+        font-size: 22px !important;
+    }
 }
 
 @@media (max-width: 960px) {
@@ -201,6 +209,10 @@
     }
 
     .utilidad-neta {
+        font-size: 28px !important;
+    }
+
+    .reporte-net-value {
         font-size: 28px !important;
     }
 }

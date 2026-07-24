@@ -5,8 +5,9 @@
 @using System.Globalization
 
 @inject IApplicationDbContextFactory DbFactory
-@inject TicketService TicketService
-@inject IJSRuntime JSRuntime
+@inject PosTicketPrintService PosTicketPrintService
+@inject ReportTicketService ReportTicketService
+
 @attribute [Authorize]
 
 <PageTitle>Reporte Mensual</PageTitle>
@@ -55,7 +56,7 @@
     <MudCard Elevation="4" Class="mb-6">
         <MudCardContent Class="text-center pa-6" Style="background:linear-gradient(135deg,#1a237e,#283593);">
             <MudText Typo="Typo.body1" Style="color:rgba(255,255,255,0.8);">RESULTADO NETO DEL MES</MudText>
-            <MudText Typo="Typo.h3" Style="color:#fff;font-weight:800;font-size:42px;">
+            <MudText Typo="Typo.h3" Style="color:#fff;font-weight:800;font-size:42px;" Class="reporte-net-value">
                 $ @_resultadoNeto.ToString("N0")
             </MudText>
         </MudCardContent>
@@ -66,6 +67,7 @@
             <MudCard Elevation="3">
                 <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Ingresos por Dia</MudText></CardHeaderContent></MudCardHeader>
                 <MudCardContent>
+                    <div class="mud-data-grid-responsive">
                     <MudTable Items="@_ingresosDiarios" Dense="true" FixedHeader="true" Height="350px">
                         <HeaderContent>
                             <MudTh>Dia</MudTh>
@@ -89,6 +91,7 @@
                             <MudTd Style="text-align:right;font-size:18px;"><strong>$ @(_ingresosParqueo + _ingresosLavado + _ingresosMensualidad).ToString("N0")</strong></MudTd>
                         </FooterContent>
                     </MudTable>
+                    </div>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -98,6 +101,7 @@
                 <MudCardContent>
                     @if (_gastos.Any())
                     {
+                        <div class="mud-data-grid-responsive">
                         <MudTable Items="@_gastos" Dense="true" FixedHeader="true" Height="350px">
                             <HeaderContent>
                                 <MudTh>Fecha</MudTh>
@@ -112,6 +116,7 @@
                                 <MudTd Style="text-align:right;">$ @context.Amount.ToString("N0")</MudTd>
                             </RowTemplate>
                         </MudTable>
+                        </div>
                     }
                 </MudCardContent>
             </MudCard>
@@ -183,28 +188,45 @@
 
     private async Task PrintReport()
     {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'>");
-        sb.AppendLine("<style>@media print{@page{size:80mm 250mm;margin:0}}body{width:72mm;margin:4mm;font-family:'Courier New',monospace;font-size:9px;}.center{text-align:center;}.bold{font-weight:bold;}.line{border-top:1px dashed #000;margin:3px 0;}</style></head><body>");
-        sb.AppendLine("<div class='center bold'>REPORTE MENSUAL</div>");
-        sb.AppendLine($"<div class='center'>{_reportDate:MMMM yyyy}</div>");
-        sb.AppendLine($"<div class='center'>Emitido: {FormatDateTime(DateTime.Now)}</div>");
-        sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div>Parqueo:<span style='float:right'>$ {_ingresosParqueo:N0}</span></div>");
-        sb.AppendLine($"<div>Lavado:<span style='float:right'>$ {_ingresosLavado:N0}</span></div>");
-        sb.AppendLine($"<div>Mensualidad:<span style='float:right'>$ {_ingresosMensualidad:N0}</span></div>");
-        sb.AppendLine($"<div>Gastos:<span style='float:right'>$ {_gastosTotales:N0}</span></div>");
-        sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div class='bold'>NETO:<span style='float:right'>$ {_resultadoNeto:N0}</span></div>");
-        sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine("<div class='center small'>POLIEDRO SOFTWARE</div>");
-        sb.AppendLine("<script>window.onload=function(){window.print();}</script></body></html>");
-        await JSRuntime.InvokeVoidAsync("openTicketWindow", sb.ToString());
-    }
+        try
+        {
+            var data = new IngresosReportData
+            {
+                Date = _reportDate,
+                ParkingRevenue = _ingresosParqueo,
+                WashRevenue = _ingresosLavado,
+                MonthlyRevenue = _ingresosMensualidad,
+                TotalExpenses = _gastosTotales,
+                NetRevenue = _resultadoNeto,
+                Days = _ingresosDiarios.Select(d => new DayRevenueData
+                {
+                    Day = d.Day,
+                    Parking = d.Parking,
+                    Wash = d.Wash,
+                    Monthly = d.Monthly,
+                    Total = d.Total
+                }).ToList(),
+                Expenses = _gastos.Select(e => new ExpenseItemData
+                {
+                    Date = e.Date.ToString("dd/MM"),
+                    Category = e.Category ?? "",
+                    Description = e.Description ?? "",
+                    Amount = (int)e.Amount
+                }).ToList()
+            };
 
-    private static string FormatDateTime(DateTime value)
-    {
-        return value.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
+            var (tagged, html) = await ReportTicketService.GenerateIngresosTicketAsync(data);
+            var result = await PosTicketPrintService.PrintReportAsync(tagged, html);
+
+            var severity = result.PrintedDirectly
+                ? Severity.Success
+                : result.PreviewOpened ? Severity.Warning : Severity.Error;
+            Snackbar.Add(result.Message, severity);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al imprimir: {ex.Message}", Severity.Error);
+        }
     }
 
     public class DayRevenue

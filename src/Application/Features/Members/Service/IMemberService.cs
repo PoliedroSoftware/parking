@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
-using CleanArchitecture.Blazor.Application.Features.Zones.Caching;
-using CleanArchitecture.Blazor.Application.Features.Zones.DTOs;
+using CleanArchitecture.Blazor.Application.Features.Members.Caching;
+using CleanArchitecture.Blazor.Application.Features.Members.DTOs;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace CleanArchitecture.Blazor.Application.Features.Members.Service;
@@ -49,11 +49,11 @@ public class MemberService : IMemberService
     {
         if (forceRefresh)
         {
-            _fusionCache.Remove(ZoneCacheKey.GetAllCacheKey);
+            _fusionCache.Remove(MemberCacheKey.GetAllCacheKey);
         }
         await using var db = await _dbContextFactory.CreateAsync();
         var list = await _fusionCache.GetOrSetAsync(
-        ZoneCacheKey.GetAllCacheKey,
+        MemberCacheKey.GetAllCacheKey,
         async _ => await QueryAsync(db)
         );
         return list ?? new List<MemberDto>();

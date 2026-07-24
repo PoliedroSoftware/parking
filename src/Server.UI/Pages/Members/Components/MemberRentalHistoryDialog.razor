@@ -1,0 +1,265 @@
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.DTOs
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.PrintDetails
+@using CleanArchitecture.Blazor.Application.Features.Members.DTOs
+@using CleanArchitecture.Blazor.Server.UI.Services
+
+@inject IApplicationDbContextFactory DbFactory
+@inject PosTicketPrintService PosTicketPrintService
+@inject TicketService TicketService
+@inject TicketPdfService TicketPdfService
+@inject CompanyInformationService CompanyInformationService
+@inject BlazorDownloadFileService BlazorDownloadFileService
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+            <div>
+                <MudText Typo="Typo.h6">Historial de pagos</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@_member.Name</MudText>
+            </div>
+            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                       OnClick="OpenPayDialog" StartIcon="@Icons.Material.Filled.Payment">
+                PAGAR
+            </MudButton>
+        </MudStack>
+
+        @if (_loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+        }
+        else if (_payments.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-2">No hay pagos registrados para este cliente.</MudAlert>
+        }
+        else
+        {
+            <div class="mud-data-grid-responsive">
+            <MudTable Items="@_payments" Hover="true" Dense="true" FixedHeader="true" Height="350px">
+                <HeaderContent>
+                    <MudTh>Mes pagado</MudTh>
+                    <MudTh>Desde</MudTh>
+                    <MudTh>Hasta</MudTh>
+                    <MudTh Style="text-align:right;">Pagado</MudTh>
+                    <MudTh>Metodo</MudTh>
+                    <MudTh>Fecha pago</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                            @context.PaidMonth
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@(context.StartDate?.ToString("d") ?? "-")</MudTd>
+                    <MudTd>@(context.ExpiryDate?.ToString("d") ?? "-")</MudTd>
+                    <MudTd Style="text-align:right;">$ @context.AmountPaid.ToString("N0")</MudTd>
+                    <MudTd><MudChip T="string" Size="Size.Small">@context.PaymentMethodId?.GetDescription()</MudChip></MudTd>
+                    <MudTd>@(context.PaymentTime?.ToString("d") ?? "-")</MudTd>
+                    <MudTd>
+                        <MudStack Row Spacing="1">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Print"
+                                           Color="Color.Info" OnClick="@(() => PrintReceipt(context))" />
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.PictureAsPdf"
+                                           Color="Color.Error" OnClick="@(() => DownloadPdf(context))" />
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cerrar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [EditorRequired] [Parameter] public MemberDto _member { get; set; } = null!;
+
+    private List<MemberRentalDto> _payments = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPayments();
+    }
+
+    private async Task LoadPayments()
+    {
+        try
+        {
+            _loading = true;
+            await using var db = await DbFactory.CreateAsync();
+            _payments = await db.MemberRentals.AsNoTracking()
+                .Where(r => r.MemberId == _member.Id)
+                .OrderByDescending(r => r.PaymentTime)
+                .ThenByDescending(r => r.Id)
+                .Select(r => new MemberRentalDto
+                {
+                    Id = r.Id,
+                    MemberId = r.MemberId,
+                    LicensePlate = r.LicensePlate,
+                    CardId = r.CardId,
+                    StartDate = r.StartDate,
+                    ExpiryDate = r.ExpiryDate,
+                    RentalFee = r.RentalFee,
+                    Deposit = r.Deposit,
+                    AmountDue = r.AmountDue,
+                    AmountPaid = r.AmountPaid,
+                    PaymentTime = r.PaymentTime,
+                    PaymentMethodId = r.PaymentMethodId,
+                    Notes = r.Notes
+                })
+                .ToListAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenPayDialog()
+    {
+        var parameters = new DialogParameters<MemberRentalPayDialog> { { x => x.Member, _member } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<MemberRentalPayDialog>($"Pagar - {_member.Name}", parameters, options);
+        var result = await dialog.Result;
+        if (result?.Data is MemberRentalPayDialog.PayResult payResult && payResult.TotalAmount > 0)
+        {
+            var cmd = new AddEditMemberRentalCommand
+            {
+                Member = _member,
+                MemberId = _member.Id,
+                LicensePlate = _member.LicensePlate,
+                CardId = _member.CardId,
+                StartDate = _member.StartDate ?? DateTime.Today,
+                ExpiryDate = _member.StartDate?.AddMonths(1) ?? DateTime.Today.AddMonths(1),
+                RentalFee = payResult.TotalAmount,
+                AmountDue = payResult.TotalAmount,
+                AmountPaid = payResult.TotalAmount,
+                PaymentTime = DateTime.Now,
+                PaymentMethodId = payResult.PaymentMethod
+            };
+
+            var sendResult = await Mediator.Send(cmd);
+            if (sendResult.Succeeded)
+            {
+                Snackbar.Add("Pago registrado exitosamente", Severity.Success);
+                await LoadPayments();
+
+                var rentalId = sendResult.Data;
+                var printQuery = new GetMonthlyReceiptPrintDetailsQuery { MemberRentalId = rentalId };
+                var printDetails = await Mediator.Send(printQuery);
+                if (printDetails.Succeeded && printDetails.Data is not null)
+                {
+                    await PrintTicketFromDetails(printDetails.Data);
+                }
+            }
+            else
+            {
+                Snackbar.Add(sendResult.Errors.FirstOrDefault() ?? "Error al registrar el pago", Severity.Error);
+            }
+        }
+    }
+
+    private async Task PrintReceipt(MemberRentalDto rental)
+    {
+        var query = new GetMonthlyReceiptPrintDetailsQuery { MemberRentalId = rental.Id };
+        var result = await Mediator.Send(query);
+        if (!result.Succeeded || result.Data is null)
+        {
+            Snackbar.Add(result.Errors.FirstOrDefault() ?? "No se pudo cargar el recibo.", Severity.Error);
+            return;
+        }
+
+        await PrintTicketFromDetails(result.Data);
+    }
+
+    private async Task PrintTicketFromDetails(MonthlyReceiptPrintDetailsDto details)
+    {
+        var vehicles = details.Vehicles.Select(x => new TicketVehicleData
+        {
+            LicensePlate = x.LicensePlate,
+            VehicleType = x.VehicleTypeDescription,
+            Price = x.MonthlyFee
+        }).ToList();
+
+        var ticketData = new TicketData
+        {
+            Type = TicketType.Monthly,
+            LicensePlate = vehicles.FirstOrDefault()?.LicensePlate ?? details.LicensePlate ?? "",
+            VehicleType = vehicles.Count == 1 ? vehicles[0].VehicleType : "",
+            DateTime = details.PaymentTime ?? DateTime.Now,
+            TicketNumber = TicketService.GenerateTicketNumber(),
+            Amount = details.AmountPaid,
+            PaymentMethod = details.PaymentMethodId?.GetDescription(),
+            BillingPeriod = string.IsNullOrWhiteSpace(details.PaidMonth) ? "Periodo no definido" : details.PaidMonth,
+            MemberName = details.MemberName,
+            OperatorName = "Operador",
+            Vehicles = vehicles,
+            PendingWashes = details.PendingWashes.Select(x => new TicketPendingWashData
+            {
+                LicensePlate = x.LicensePlate,
+                Service = x.WashServiceDescription,
+                Status = x.StatusDescription,
+                Amount = x.Price
+            }).ToList()
+        };
+
+        var printResult = await PosTicketPrintService.PrintAsync(ticketData);
+        var severity = printResult.PrintedDirectly
+            ? Severity.Success
+            : printResult.PreviewOpened ? Severity.Warning : Severity.Error;
+        Snackbar.Add(printResult.Message, severity);
+    }
+
+    private async Task DownloadPdf(MemberRentalDto rental)
+    {
+        var query = new GetMonthlyReceiptPrintDetailsQuery { MemberRentalId = rental.Id };
+        var result = await Mediator.Send(query);
+        if (!result.Succeeded || result.Data is null)
+        {
+            Snackbar.Add(result.Errors.FirstOrDefault() ?? "No se pudo cargar el recibo.", Severity.Error);
+            return;
+        }
+
+        var details = result.Data;
+        var vehicles = details.Vehicles.Select(x => new TicketVehicleData
+        {
+            LicensePlate = x.LicensePlate,
+            VehicleType = x.VehicleTypeDescription,
+            Price = x.MonthlyFee
+        }).ToList();
+
+        var ticketData = new TicketData
+        {
+            Type = TicketType.Monthly,
+            LicensePlate = vehicles.FirstOrDefault()?.LicensePlate ?? details.LicensePlate ?? "",
+            VehicleType = vehicles.Count == 1 ? vehicles[0].VehicleType : "",
+            DateTime = details.PaymentTime ?? DateTime.Now,
+            TicketNumber = TicketService.GenerateTicketNumber(),
+            Amount = details.AmountPaid,
+            PaymentMethod = details.PaymentMethodId?.GetDescription(),
+            BillingPeriod = string.IsNullOrWhiteSpace(details.PaidMonth) ? "Periodo no definido" : details.PaidMonth,
+            MemberName = details.MemberName,
+            OperatorName = "Operador",
+            Vehicles = vehicles,
+            PendingWashes = details.PendingWashes.Select(x => new TicketPendingWashData
+            {
+                LicensePlate = x.LicensePlate,
+                Service = x.WashServiceDescription,
+                Status = x.StatusDescription,
+                Amount = x.Price
+            }).ToList()
+        };
+
+        await CompanyInformationService.ApplyAsync(ticketData);
+        var pdf = TicketPdfService.GenerateTicketPdf(ticketData);
+        await BlazorDownloadFileService.DownloadFileAsync($"Mensualidad_{details.MemberName}_{rental.Id}.pdf", pdf, "application/pdf");
+        Snackbar.Add("PDF descargado", Severity.Success);
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

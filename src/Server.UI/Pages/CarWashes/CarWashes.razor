@@ -514,9 +514,9 @@
             Type = TicketType.Wash, LicensePlate = dto.LicensePlate ?? "",
             VehicleType = dto.VehicleType?.GetDescription() ?? "", Amount = dto.Price,
             BasePrice = dto.Price - additionalsTotal - dto.WeekendSurcharge,
-            AdditionalsTotal = additionalsTotal, Surcharge = dto.WeekendSurcharge,
+            Surcharge = dto.WeekendSurcharge,
             IsPaid = dto.IsPaid, PaymentMethod = dto.PaymentMethod?.GetDescription(), WashServiceType = dto.WashServiceType?.GetDescription(),
-            Notes = FormatAdditionalServices(dto),
+            AdditionalDetails = dto.Additionals?.Select(a => new WashAdditionalDetail { Name = a.AdditionalName?.Trim() ?? "", Price = a.Price }).ToList() ?? new(),
             CustomerName = dto.Member?.Name, OperatorName = operatorNames, QueueNumber = dto.QueueNumber,
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
         };
@@ -533,9 +533,9 @@
             Type = TicketType.Wash, LicensePlate = dto.LicensePlate ?? "",
             VehicleType = dto.VehicleType?.GetDescription() ?? "", Amount = dto.Price,
             BasePrice = dto.Price - additionalsTotal - dto.WeekendSurcharge,
-            AdditionalsTotal = additionalsTotal, Surcharge = dto.WeekendSurcharge,
+            Surcharge = dto.WeekendSurcharge,
             IsPaid = dto.IsPaid, PaymentMethod = dto.PaymentMethod?.GetDescription(), WashServiceType = dto.WashServiceType?.GetDescription(),
-            Notes = FormatAdditionalServices(dto),
+            AdditionalDetails = dto.Additionals?.Select(a => new WashAdditionalDetail { Name = a.AdditionalName?.Trim() ?? "", Price = a.Price }).ToList() ?? new(),
             CustomerName = dto.Member?.Name, OperatorName = operatorNames, QueueNumber = dto.QueueNumber,
             DateTime = dto.StartTime ?? DateTime.Now, TicketNumber = TicketService.GenerateTicketNumber()
         };

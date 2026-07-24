@@ -53,7 +53,9 @@ public class VehicleDto
     {
         public Mapping()
         {
-            CreateMap<Vehicle, VehicleDto>(MemberList.None);
+            CreateMap<Vehicle, VehicleDto>(MemberList.None)
+                .ForMember(x => x.Zone, y => y.Ignore())
+                .ForMember(x => x.Charge, y => y.Ignore());
 
             CreateMap<VehicleDto, Vehicle>(MemberList.None)
                 .ForMember(x => x.Zone, y => y.Ignore())

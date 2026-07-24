@@ -47,7 +47,6 @@ public class MenuService : IMenuService
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
                         new() { Title = "Mensualidades", Href = "/pages/members", PageStatus = PageStatus.Completed },
-                        new() { Title = "Pagos", Href = "/pages/memberrentals", PageStatus = PageStatus.Completed },
                         new() { Title = "Tarifas Mensualidad", Href = "/tables/monthly-rates", PageStatus = PageStatus.Completed },
                     }
                 },

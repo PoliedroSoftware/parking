@@ -56,9 +56,46 @@ public sealed class PosTicketPrintService(
         }
     }
 
+    public async Task<PosTicketPrintResult> PrintReportAsync(
+        string taggedContent,
+        string htmlContent,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(taggedContent))
+            return PosTicketPrintResult.Failed("No se genero contenido para el reporte.");
+
+        if (string.IsNullOrWhiteSpace(printerService.PrinterName))
+        {
+            await OpenReportBrowserPreviewAsync(htmlContent);
+            return PosTicketPrintResult.Preview(
+                "No hay impresora POS configurada. Se abrio la vista previa de impresion.");
+        }
+
+        try
+        {
+            await printerService.PrintTicketAsync(taggedContent, cancellationToken);
+            return PosTicketPrintResult.Direct("Reporte enviado directo a la impresora POS.");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var cleanupMessage = await TryCleanupQueueAsync(cancellationToken);
+            return PosTicketPrintResult.Failed(
+                $"No se pudo imprimir directo en POS: {ex.Message}{cleanupMessage}");
+        }
+    }
+
     private async Task OpenBrowserPreviewAsync(TicketData ticketData)
     {
         await jsRuntime.InvokeVoidAsync("openTicketWindow", ticketService.GenerateTicketHtmlForWindow(ticketData));
+    }
+
+    private async Task OpenReportBrowserPreviewAsync(string htmlContent)
+    {
+        await jsRuntime.InvokeVoidAsync("openTicketWindow", htmlContent);
     }
 
     private async Task<string> TryCleanupQueueAsync(CancellationToken cancellationToken)

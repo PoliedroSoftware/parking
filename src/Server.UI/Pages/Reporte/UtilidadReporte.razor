@@ -4,6 +4,8 @@
 @using System.Globalization
 
 @inject IApplicationDbContextFactory DbFactory
+@inject PosTicketPrintService PosTicketPrintService
+@inject ReportTicketService ReportTicketService
 
 <PageTitle>Utilidad - Poliedro</PageTitle>
 
@@ -32,8 +34,8 @@
     @if (_monthlyData.Any())
     {
         <MudPaper Elevation="2" Class="pa-4">
-            <div class="mud-table-responsive">
-            <MudTable Items="@_monthlyData" Dense="true" Hover="true" FixedHeader="true" Height="500" Elevation="0">
+            <div class="mud-data-grid-responsive">
+            <MudTable Items="@_monthlyData" Dense="true" Hover="true" FixedHeader="true" Height="500px" Elevation="0">
                 <HeaderContent>
                     <MudTh>Mes</MudTh>
                     <MudTh Style="text-align:right;">Parqueo</MudTh>
@@ -72,37 +74,6 @@
 </MudContainer>
 
 @* TICKET DE IMPRESION *@
-@if (_showTicket)
-{
-    <MudPaper Elevation="4" Class="mt-4" id="utilidad-ticket" Style="max-width:320px;margin:0 auto;font-family:monospace;font-size:12px;">
-        <MudContainer Class="pa-2">
-            <div class="text-center mb-2">
-                <MudText Typo="Typo.body2" Style="font-weight:700;">POLIEDRO SOFTWARE</MudText>
-                <MudText Typo="Typo.caption">Reporte de Utilidad</MudText>
-                <MudText Typo="Typo.caption">Año: @_selectedYear</MudText>
-                <MudText Typo="Typo.caption">Emitido: @FormatDateTime(DateTime.Now)</MudText>
-                <MudDivider Class="my-1" />
-            </div>
-            @foreach (var m in _monthlyData)
-            {
-                <div style="margin-bottom:4px;">
-                    <strong>@m.MonthName.Substring(0,3).ToUpper()</strong>
-                    <table style="width:100%;font-size:11px;">
-                        <tr><td>Parqueo</td><td style="text-align:right;">$ @m.ParkingRevenue.ToString("N0")</td></tr>
-                        <tr><td>Lavado</td><td style="text-align:right;">$ @m.WashRevenue.ToString("N0")</td></tr>
-                        <tr><td>Mensualidad</td><td style="text-align:right;">$ @m.MonthlyRevenue.ToString("N0")</td></tr>
-                        <tr><td>Gastos</td><td style="text-align:right;">$ @m.Expenses.ToString("N0")</td></tr>
-                        <tr><td><strong>Utilidad</strong></td><td style="text-align:right;"><strong>$ @m.Profit.ToString("N0")</strong></td></tr>
-                    </table>
-                    <MudDivider Class="my-1" />
-                </div>
-            }
-            <div style="font-weight:800;font-size:13px;text-align:center;">
-                UTILIDAD ANUAL: $ @_totales.Profit.ToString("N0")
-            </div>
-        </MudContainer>
-    </MudPaper>
-}
 
 @code {
     private int _selectedYear = DateTime.Today.Year;
@@ -110,7 +81,6 @@
     private List<MonthlyProfit> _monthlyData = new();
     private MonthlyProfit _totales = new();
     private bool _loading = true;
-    private bool _showTicket;
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,7 +102,6 @@
     private async Task OnYearChanged(int year)
     {
         _selectedYear = year;
-        _showTicket = false;
         await LoadData();
     }
 
@@ -198,17 +167,39 @@
 
     private async Task PrintTicket()
     {
-        _showTicket = true;
-        StateHasChanged();
-        await Task.Delay(300);
-        await JS.InvokeVoidAsync("window.print");
-    }
+        try
+        {
+            var data = new UtilidadReportData
+            {
+                Year = _selectedYear,
+                Months = _monthlyData.Select(m => new MonthlyProfitData
+                {
+                    MonthName = m.MonthName,
+                    ParkingRevenue = m.ParkingRevenue,
+                    WashRevenue = m.WashRevenue,
+                    MonthlyRevenue = m.MonthlyRevenue,
+                    Expenses = m.Expenses,
+                    Profit = m.Profit
+                }).ToList(),
+                TotalParkingRevenue = _totales.ParkingRevenue,
+                TotalWashRevenue = _totales.WashRevenue,
+                TotalMonthlyRevenue = _totales.MonthlyRevenue,
+                TotalExpenses = _totales.Expenses,
+                TotalProfit = _totales.Profit
+            };
 
-    private int TotalRevenue(MonthlyProfit m) => m.ParkingRevenue + m.WashRevenue + m.MonthlyRevenue;
+            var (tagged, html) = await ReportTicketService.GenerateUtilidadTicketAsync(data);
+            var result = await PosTicketPrintService.PrintReportAsync(tagged, html);
 
-    private static string FormatDateTime(DateTime value)
-    {
-        return value.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
+            var severity = result.PrintedDirectly
+                ? Severity.Success
+                : result.PreviewOpened ? Severity.Warning : Severity.Error;
+            Snackbar.Add(result.Message, severity);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al imprimir: {ex.Message}", Severity.Error);
+        }
     }
 
     public class MonthlyProfit

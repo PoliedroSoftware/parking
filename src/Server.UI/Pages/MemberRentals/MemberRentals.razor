@@ -389,7 +389,8 @@
 			.Select(x => new TicketVehicleData
 			{
 				LicensePlate = x.LicensePlate,
-				VehicleType = x.VehicleTypeDescription
+				VehicleType = x.VehicleTypeDescription,
+				Price = x.MonthlyFee
 			})
 			.ToList();
 

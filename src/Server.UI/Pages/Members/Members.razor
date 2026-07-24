@@ -2,6 +2,9 @@
 
 @using CleanArchitecture.Blazor.Application.Features.Carparks.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Carparks.Services
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.AddEdit
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.DTOs
+@using CleanArchitecture.Blazor.Application.Features.MemberRentals.Queries.PrintDetails
 @using CleanArchitecture.Blazor.Application.Features.Members.Caching
 @using CleanArchitecture.Blazor.Application.Features.Members.DTOs
 @using CleanArchitecture.Blazor.Application.Features.Members.Specifications
@@ -99,14 +102,20 @@
 	</ToolBarContent>
 	<Columns>
 		<SelectColumn ShowInFooter="false"></SelectColumn>
-		<TemplateColumn HeaderStyle="width:190px" Title="@AppStrings.Actions" Sortable="false">
+		<TemplateColumn HeaderStyle="width:210px" Title="@AppStrings.Actions" Sortable="false">
 			<CellTemplate>
 				<MudStack Row Spacing="1" AlignItems="AlignItems.Center">
 					<MudButton Variant="Variant.Filled" Size="Size.Small"
+							   Color="Color.Success"
+							   StartIcon="@Icons.Material.Filled.Payment"
+							   OnClick="@(() => OpenPayDialog(context.Item))">
+						Pagar
+					</MudButton>
+					<MudButton Variant="Variant.Filled" Size="Size.Small"
 							   Color="Color.Info"
-							   StartIcon="@Icons.Material.Filled.Print"
-							   OnClick="@(() => OnPrintMonthlyReceipt(context.Item))">
-						Imprimir
+							   StartIcon="@Icons.Material.Filled.History"
+							   OnClick="@(() => OpenHistoryDialog(context.Item))">
+						Historial
 					</MudButton>
 					@if (_accessRights.Edit || _accessRights.Delete)
 					{
@@ -331,6 +340,95 @@
 			});
 	}
 
+    private async Task OpenPayDialog(MemberDto dto)
+    {
+        var parameters = new DialogParameters<MemberRentalPayDialog> { { x => x.Member, dto } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<MemberRentalPayDialog>($"Pagar - {dto.Name}", parameters, options);
+        var result = await dialog.Result;
+        if (result?.Data is MemberRentalPayDialog.PayResult payResult && payResult.TotalAmount > 0)
+        {
+            var cmd = new AddEditMemberRentalCommand
+            {
+                Member = dto,
+                MemberId = dto.Id,
+                LicensePlate = dto.LicensePlate,
+                CardId = dto.CardId,
+                StartDate = dto.StartDate ?? DateTime.Today,
+                ExpiryDate = dto.StartDate?.AddMonths(1) ?? DateTime.Today.AddMonths(1),
+                RentalFee = payResult.TotalAmount,
+                AmountDue = payResult.TotalAmount,
+                AmountPaid = payResult.TotalAmount,
+                PaymentTime = DateTime.Now,
+                PaymentMethodId = payResult.PaymentMethod
+            };
+
+            var sendResult = await Mediator.Send(cmd);
+            if (sendResult.Succeeded)
+            {
+                Snackbar.Add("Pago registrado exitosamente", Severity.Success);
+                await _membersGrid.ReloadServerData();
+
+                var rentalId = sendResult.Data;
+                var printQuery = new GetMonthlyReceiptPrintDetailsQuery { MemberRentalId = rentalId };
+                var printResult = await Mediator.Send(printQuery);
+                if (printResult.Succeeded && printResult.Data is not null)
+                {
+                    var details = printResult.Data;
+                    var ticketData = BuildTicketData(details);
+                    var posResult = await PosTicketPrintService.PrintAsync(ticketData);
+                    var sev = posResult.PrintedDirectly ? Severity.Success
+                        : posResult.PreviewOpened ? Severity.Warning : Severity.Error;
+                    Snackbar.Add(posResult.Message, sev);
+                }
+            }
+            else
+            {
+                Snackbar.Add(sendResult.Errors.FirstOrDefault() ?? "Error al registrar el pago", Severity.Error);
+            }
+        }
+    }
+
+    private static TicketData BuildTicketData(MonthlyReceiptPrintDetailsDto details)
+    {
+        var vehicles = details.Vehicles
+            .Select(x => new TicketVehicleData
+            {
+                LicensePlate = x.LicensePlate,
+                VehicleType = x.VehicleTypeDescription,
+                Price = x.MonthlyFee
+            }).ToList();
+
+        return new TicketData
+        {
+            Type = TicketType.Monthly,
+            LicensePlate = vehicles.FirstOrDefault()?.LicensePlate ?? details.LicensePlate ?? "",
+            VehicleType = vehicles.Count == 1 ? vehicles[0].VehicleType : "",
+            DateTime = details.PaymentTime ?? DateTime.Now,
+            TicketNumber = $"TK-{DateTime.Now:yyMMdd}-{details.MemberRentalId}",
+            Amount = details.AmountPaid,
+            PaymentMethod = details.PaymentMethodId?.GetDescription(),
+            BillingPeriod = string.IsNullOrWhiteSpace(details.PaidMonth) ? "Periodo no definido" : details.PaidMonth,
+            MemberName = details.MemberName,
+            OperatorName = "Operador",
+            Vehicles = vehicles,
+            PendingWashes = details.PendingWashes.Select(x => new TicketPendingWashData
+            {
+                LicensePlate = x.LicensePlate,
+                Service = x.WashServiceDescription,
+                Status = x.StatusDescription,
+                Amount = x.Price
+            }).ToList()
+        };
+    }
+
+    private async Task OpenHistoryDialog(MemberDto dto)
+    {
+        var parameters = new DialogParameters<MemberRentalHistoryDialog> { { x => x._member, dto } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true };
+        await DialogService.ShowAsync<MemberRentalHistoryDialog>($"Pagos de {dto.Name}", parameters, options);
+    }
+
     private static Color GetPaymentStatusColor(MemberDto member)
     {
         if (member.MonthsOverdue <= 0)
@@ -375,7 +473,8 @@
 			.Select(x => new TicketVehicleData
 			{
 				LicensePlate = x.LicensePlate,
-				VehicleType = x.VehicleTypeDescription
+				VehicleType = x.VehicleTypeDescription,
+				Price = x.MonthlyFee
 			})
 			.ToList();
 

@@ -65,7 +65,7 @@ public class UpdateMemberCommand : ICacheInvalidatorRequest<Result<int>>
     [Description("Amount")]
     public decimal? Amount { get; set; }
     [Description("Deposit")]
-    public decimal? Deposit => SpaceGroup?.Zone?.MonthlySets.Deposit;
+    public decimal? Deposit => SpaceGroup?.Zone?.MonthlyDeposit;
     [Description("Amount Note")]
     public string? AmountNote { get; set; }
     public string CacheKey => MemberCacheKey.GetAllCacheKey;

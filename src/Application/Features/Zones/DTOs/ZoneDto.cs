@@ -48,12 +48,15 @@ public class ZoneDto
     public string? Identifier => $"Z{Id}";
     [Description("Holidays")]
     public bool[] Holidays => [.. HolidaySets.Split(',').Select(x => x == "1")];
-    [Description("Hourly Sets")]
-    public HourlySets HourlySets { get; set; } = new();
 
-    // 月租泊車服務設定 Monthly Parking Service Settings
-    [Description("Monthly Sets")]
-    public MonthlySets MonthlySets { get; set; } = new();
+    public int Capacity { get; set; } = 100;
+    public int Adjustment { get; set; }
+    public bool ManualFull { get; set; }
+    public int GracePeriod { get; set; } = 15;
+    public int ExitBuffer { get; set; } = 15;
+    public decimal? LostTicketFee { get; set; } = 300;
+    public decimal MonthlyDeposit { get; set; } = 150m;
+
     private class Mapping : Profile
     {
         public Mapping()

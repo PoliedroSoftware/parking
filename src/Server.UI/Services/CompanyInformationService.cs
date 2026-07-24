@@ -29,4 +29,5 @@ public sealed class CompanyInformationService(IApplicationDbContextFactory dbFac
     {
         ticketData.Company = await GetAsync(cancellationToken);
     }
+
 }

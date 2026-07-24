@@ -27,9 +27,14 @@ dotnet build PoliedroParking.slnx -c Debug
 dotnet run -p src/Server.UI
 ```
 
-- The solution uses `.slnx` format (not traditional `.sln`). CI confirms: `dotnet restore/build AceParking.Blazor.slnx` (`.github/workflows/dotnet.yml`).
-- No test projects exist yet. The `tests/` directory referenced in docs is aspirational; the solution file does not include them.
+- The solution uses `.slnx` format (not traditional `.sln`). CI uses `PoliedroParking.slnx` (`.github/workflows/dotnet.yml`).
+- **Two `.slnx` files exist**: `PoliedroParking.slnx` (main, includes PrinterWorker) and `AceParking.Blazor.slnx` (without PrinterWorker). Always use `PoliedroParking.slnx`.
+- No test projects exist yet. The `tests/` directory in `.cursorrules` is aspirational; no solution file includes them.
 - The entrypoint DLL (used in Dockerfile) is `CleanArchitecture.Blazor.Server.UI.dll`.
+
+## PrinterWorker
+
+`src/PrinterWorker/` is a standalone console project (NOT part of Clean Architecture layers). It uses `System.Drawing.Common` to render and print thermal receipt tickets. The Blazor app calls it as an external process with `PrinterWorker.exe <printerName> <contentFile> <outputFile>`. Only included in `PoliedroParking.slnx`.
 
 ## Namespace vs Repo Name
 
@@ -101,6 +106,10 @@ When using in-memory DB (`UseInMemoryDatabase=true`), the DI setup uses `AddDbCo
 - `.editorconfig` enforces: 4-space indentation, CRLF line endings, UTF-8 BOM, file-scoped namespaces, `var` preferred, `_` prefix on private instance fields.
 - ReSharper settings embedded in `.editorconfig` (align multiline, wrap rules, etc.).
 - Max line length: 120 characters.
+
+## MudBlazor Convention
+
+- **No custom CSS** on MudBlazor components. Use built-in component properties, themes, variants, and spacing classes (`Class="ma-2 pa-4"`) only. Custom styles defeat MudBlazor's theming system.
 
 ## Migrator Projects
 

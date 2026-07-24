@@ -39,7 +39,14 @@ public class TicketData
     public DateTime? EstimatedDelivery { get; set; }
     public List<TicketVehicleData> Vehicles { get; set; } = new();
     public List<TicketPendingWashData> PendingWashes { get; set; } = new();
+    public List<WashAdditionalDetail> AdditionalDetails { get; set; } = new();
     public TicketCompanyData Company { get; set; } = TicketCompanyData.Default;
+}
+
+public sealed class WashAdditionalDetail
+{
+    public string Name { get; set; } = string.Empty;
+    public decimal Price { get; set; }
 }
 
 public sealed record TicketCompanyData(
@@ -63,6 +70,7 @@ public class TicketVehicleData
 {
     public string LicensePlate { get; set; } = string.Empty;
     public string VehicleType { get; set; } = string.Empty;
+    public decimal Price { get; set; }
 }
 
 public class TicketPendingWashData
@@ -169,14 +177,13 @@ public class TicketService
                 sb.AppendLine($"[CENTER]:COLA #{data.QueueNumber.Value}");
             if (!string.IsNullOrEmpty(data.WashServiceType))
                 sb.AppendLine($"[CENTER]:Servicio: {data.WashServiceType}");
-            AppendAdditionalServicesText(sb, data.Notes);
             if (data.Amount.HasValue)
             {
                 sb.AppendLine("[DASHED]");
                 if (data.BasePrice.HasValue && data.BasePrice > 0)
                     sb.AppendLine($"[ROW]:Lavado base:|$ {data.BasePrice:N0}");
-                if (data.AdditionalsTotal.HasValue && data.AdditionalsTotal > 0)
-                    sb.AppendLine($"[ROW]:Adicionales:|$ {data.AdditionalsTotal:N0}");
+                foreach (var ad in data.AdditionalDetails)
+                    sb.AppendLine($"[ROW]:{ad.Name}|$ {ad.Price:N0}");
                 if (data.Surcharge.HasValue && data.Surcharge > 0)
                     sb.AppendLine($"[ROW]:Recargo fin sem.:|$ {data.Surcharge:N0}");
                 sb.AppendLine("[DASHED]");
@@ -192,9 +199,19 @@ public class TicketService
         {
             sb.AppendLine("[DASHED]");
             if (!string.IsNullOrEmpty(data.MemberName))
-                sb.AppendLine($"[ROW]:Miembro:|{data.MemberName}");
+                sb.AppendLine($"[ROW]:Cliente:|{data.MemberName}");
             if (!string.IsNullOrEmpty(data.BillingPeriod))
                 sb.AppendLine($"[ROW]:Mes pagado:|{data.BillingPeriod}");
+            foreach (var v in GetTicketVehicles(data))
+            {
+                var desc = !string.IsNullOrEmpty(v.VehicleType)
+                    ? $"{v.LicensePlate} ({v.VehicleType})"
+                    : v.LicensePlate;
+                sb.AppendLine(v.Price > 0
+                    ? $"[ROW]:{desc}|$ {v.Price:N0}"
+                    : $"[CENTER]:{desc}");
+            }
+            sb.AppendLine("[DASHED]");
             sb.AppendLine($"[ROW]:Valor alquiler:|$ {data.Amount.Value:N0}");
             if (!string.IsNullOrEmpty(data.PaymentMethod))
                 sb.AppendLine($"[ROW]:Metodo de pago:|{data.PaymentMethod}");
@@ -407,7 +424,7 @@ public class TicketService
         if (!string.IsNullOrWhiteSpace(data.CustomerName))
             AppendRow(sb, "Cliente", data.CustomerName);
         if (!string.IsNullOrWhiteSpace(data.MemberName))
-            AppendRow(sb, "Miembro", data.MemberName);
+            AppendRow(sb, "Cliente", data.MemberName);
         sb.AppendLine("</div>");
 
         if (data.Type == TicketType.Entry)
@@ -438,13 +455,12 @@ public class TicketService
                 sb.AppendLine($"<div class='center bold'>TURNO #{data.QueueNumber.Value}</div>");
             if (!string.IsNullOrWhiteSpace(data.WashServiceType))
                 AppendRow(sb, "Servicio", data.WashServiceType);
-            AppendAdditionalServicesHtml(sb, data.Notes);
             if (data.Amount.HasValue)
             {
                 if (data.BasePrice.HasValue && data.BasePrice > 0)
                     AppendRow(sb, "Lavado base", Money(data.BasePrice.Value));
-                if (data.AdditionalsTotal.HasValue && data.AdditionalsTotal > 0)
-                    AppendRow(sb, "Adicionales", Money(data.AdditionalsTotal.Value));
+                foreach (var ad in data.AdditionalDetails)
+                    AppendRow(sb, ad.Name, Money(ad.Price));
                 if (data.Surcharge.HasValue && data.Surcharge > 0)
                     AppendRow(sb, "Recargo", Money(data.Surcharge.Value));
                 sb.AppendLine("<div class='total-box'>");
@@ -467,6 +483,16 @@ public class TicketService
             sb.AppendLine("<div class='line'></div>");
             if (!string.IsNullOrWhiteSpace(data.BillingPeriod))
                 AppendRow(sb, "Mes pagado", data.BillingPeriod);
+            foreach (var v in GetTicketVehicles(data))
+            {
+                var desc = !string.IsNullOrWhiteSpace(v.VehicleType)
+                    ? $"{v.LicensePlate} ({v.VehicleType})"
+                    : v.LicensePlate;
+                if (v.Price > 0)
+                    AppendRow(sb, desc, Money(v.Price));
+                else
+                    sb.AppendLine($"<div class='center bold'>{Html(desc)}</div>");
+            }
             AppendRow(sb, "Valor alquiler", Money(data.Amount.Value));
             if (!string.IsNullOrWhiteSpace(data.PaymentMethod))
                 AppendRow(sb, "Metodo de pago", data.PaymentMethod);
@@ -618,9 +644,9 @@ public class TicketService
         {
             TicketType.Entry => "PARQUEO",
             TicketType.Exit => "PARQUEO",
-            TicketType.Payment => "COMPROBANTE DE PAGO",
+            TicketType.Payment => "PAGO",
             TicketType.Wash => "LAVADO",
-            TicketType.Monthly => "COMPROBANTE MENSUALIDAD",
+            TicketType.Monthly => "MENSUALIDAD",
             _ => "TICKET"
         };
     }

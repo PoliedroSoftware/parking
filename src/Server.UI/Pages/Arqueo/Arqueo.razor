@@ -4,11 +4,13 @@
 @using System.Globalization
 
 @inject IJSRuntime JSRuntime
+@inject PosTicketPrintService PosTicketPrintService
+@inject ReportTicketService ReportTicketService
 
 <PageTitle>Arqueo de Caja</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
         <div>
             <MudText Typo="Typo.h3" Style="font-weight:700;">Arqueo de Caja</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">Resumen y detalle del dia</MudText>
@@ -117,6 +119,7 @@
         <MudCardContent>
             @if (summary.Movements.Any())
             {
+                <div class="mud-data-grid-responsive">
                 <MudTable Items="@summary.Movements" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="450px">
                     <HeaderContent>
                         <MudTh>#</MudTh>
@@ -145,6 +148,7 @@
                         <MudTd Style="text-align:right;font-weight:700;font-size:18px;color:#d32f2f;">$ @summary.TotalRevenue.ToString("N0")</MudTd>
                     </FooterContent>
                 </MudTable>
+                </div>
             }
             else
             {
@@ -171,59 +175,51 @@
         return m.Status == "Activo" ? "PARQUEO ACTIVO" : "PARQUEO";
     }
 
-    private async Task PrintClosingReport()
-    {
-        var summary = MovementTracker.GetDaySummary();
-        var sb = new System.Text.StringBuilder();
-
-        sb.AppendLine("<!DOCTYPE html><html><head><meta charset='utf-8'>");
-        sb.AppendLine("<style>");
-        sb.AppendLine("@media print { @page { size: 80mm 250mm; margin: 0; } body { width: 72mm; margin: 4mm; font-family: 'Courier New', monospace; font-size: 9px; } }");
-        sb.AppendLine("body { width: 72mm; margin: 4mm; font-family: 'Courier New', monospace; font-size: 9px; }");
-        sb.AppendLine(".center { text-align: center; } .bold { font-weight: bold; }");
-        sb.AppendLine(".line { border-top: 1px dashed #000; margin: 3px 0; } .big { font-size: 14px; }");
-        sb.AppendLine("</style></head><body>");
-
-        sb.AppendLine("<div class='center bold big'>POLIEDRO SOFTWARE</div>");
-        sb.AppendLine("<div class='center'>ARQUEO DE CAJA</div>");
-        sb.AppendLine($"<div class='center'>Fecha: {summary.Date:dd/MM/yyyy}</div>");
-        sb.AppendLine("<div class='line'></div>");
-
-        sb.AppendLine($"<div><span>Entradas:</span><span style='float:right'>{summary.TotalEntries}</span></div>");
-        sb.AppendLine($"<div><span>Salidas:</span><span style='float:right'>{summary.TotalExits}</span></div>");
-        sb.AppendLine($"<div><span>Lavados:</span><span style='float:right'>{summary.TotalWashes}</span></div>");
-        sb.AppendLine($"<div><span>Mensualidades:</span><span style='float:right'>{summary.TotalMonthly}</span></div>");
-        sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div class='bold'><span>PARKING:</span><span style='float:right'>$ {summary.TotalParkingRevenue:N0}</span></div>");
-        sb.AppendLine($"<div class='bold'><span>LAVADO:</span><span style='float:right'>$ {summary.TotalWashRevenue:N0}</span></div>");
-        sb.AppendLine($"<div class='bold'><span>MENSUAL:</span><span style='float:right'>$ {summary.TotalMonthlyRevenue:N0}</span></div>");
-        sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div class='bold big'><span>TOTAL:</span><span style='float:right'>$ {summary.TotalRevenue:N0}</span></div>");
-        sb.AppendLine("<div class='line'></div>");
-
-        foreach (var m in summary.Movements)
-        {
-            var cliente = string.IsNullOrEmpty(m.CustomerName) ? "CF" : m.CustomerName;
-            sb.AppendLine($"<div><span>{FormatTime(m.Time)} {m.Type}</span> <span>{m.LicensePlate}</span> <span style='float:right'>{(m.Amount > 0 ? $"$ {m.Amount:N0}" : "-")}</span></div>");
-        }
-
-        sb.AppendLine("<div class='line'></div>");
-        sb.AppendLine($"<div class='center'>Impreso: {FormatDateTime(DateTime.Now)}</div>");
-        sb.AppendLine("<div class='center'>POLIEDRO SOFTWARE</div>");
-        sb.AppendLine("<script>window.onload=function(){window.print();}</script>");
-        sb.AppendLine("</body></html>");
-
-        await JSRuntime.InvokeVoidAsync("openTicketWindow", sb.ToString());
-    }
-
-    private static string FormatDateTime(DateTime value)
-    {
-        return value.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture);
-    }
-
     private static string FormatTime(DateTime value, bool includeSeconds = false)
     {
         var format = includeSeconds ? "hh:mm:ss tt" : "hh:mm tt";
         return value.ToString(format, CultureInfo.InvariantCulture);
+    }
+
+    private async Task PrintClosingReport()
+    {
+        try
+        {
+            var summary = MovementTracker.GetDaySummary();
+
+            var data = new CierreReportData
+            {
+                Date = summary.Date,
+                TotalEntries = summary.TotalEntries,
+                TotalExits = summary.TotalExits,
+                TotalWashes = summary.TotalWashes,
+                TotalMonthly = summary.TotalMonthly,
+                TotalParkingRevenue = summary.TotalParkingRevenue,
+                TotalWashRevenue = summary.TotalWashRevenue,
+                TotalMonthlyRevenue = summary.TotalMonthlyRevenue,
+                TotalRevenue = summary.TotalRevenue,
+                Movements = summary.Movements.Select(m => new CierreMovementData
+                {
+                    Time = m.Time,
+                    Type = m.Type,
+                    LicensePlate = m.LicensePlate,
+                    CustomerName = m.CustomerName,
+                    FormattedDuration = m.FormattedDuration,
+                    Amount = m.Amount
+                }).ToList()
+            };
+
+            var (tagged, html) = await ReportTicketService.GenerateCierreTicketAsync(data);
+            var result = await PosTicketPrintService.PrintReportAsync(tagged, html);
+
+            var severity = result.PrintedDirectly
+                ? Severity.Success
+                : result.PreviewOpened ? Severity.Warning : Severity.Error;
+            Snackbar.Add(result.Message, severity);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al imprimir: {ex.Message}", Severity.Error);
+        }
     }
 }

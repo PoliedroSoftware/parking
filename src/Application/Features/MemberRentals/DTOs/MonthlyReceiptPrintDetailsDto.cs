@@ -28,6 +28,7 @@ public class MonthlyReceiptVehicleDto
     public string LicensePlate { get; set; } = string.Empty;
     public VehicleTypes? VehicleType { get; set; }
     public string VehicleTypeDescription => VehicleType?.GetDescription() ?? string.Empty;
+    public decimal MonthlyFee { get; set; }
 }
 
 public class MonthlyReceiptPendingWashDto

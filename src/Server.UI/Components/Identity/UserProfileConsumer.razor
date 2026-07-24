@@ -5,33 +5,33 @@
 @inject ILogger<UserProfileConsumer> Logger
 
 <div class="user-profile-info">
-    <h3>Current User Profile</h3>
+    <h3>Perfil del Usuario</h3>
     
     @if (CurrentProfile != UserProfile.Empty)
     {
         <div class="profile-details">
-            <p><strong>Display Name:</strong> @CurrentProfile.DisplayName</p>
-            <p><strong>Email:</strong> @CurrentProfile.Email</p>
-            <p><strong>Username:</strong> @CurrentProfile.UserName</p>
-            <p><strong>Tenant:</strong> @CurrentProfile.TenantName</p>
+            <p><strong>Nombre:</strong> @CurrentProfile.DisplayName</p>
+            <p><strong>Correo:</strong> @CurrentProfile.Email</p>
+            <p><strong>Usuario:</strong> @CurrentProfile.UserName</p>
+            <p><strong>Empresa:</strong> @CurrentProfile.TenantName</p>
             <p><strong>Roles:</strong> @string.Join(", ", CurrentProfile.AssignedRoles ?? Array.Empty<string>())</p>
-            <p><strong>Time Zone:</strong> @CurrentProfile.TimeZoneId</p>
-            <p><strong>Language:</strong> @CurrentProfile.LanguageCode</p>
+            <p><strong>Zona Horaria:</strong> @CurrentProfile.TimeZoneId</p>
+            <p><strong>Idioma:</strong> @CurrentProfile.LanguageCode</p>
         </div>
         
         <div class="profile-actions">
             <button @onclick="RefreshProfile" class="btn btn-primary">
-                Refresh Profile
+                Actualizar Perfil
             </button>
             
             <button @onclick="UpdateLocalProfile" class="btn btn-secondary">
-                Update Local (Demo)
+                Actualizar Local (Demo)
             </button>
         </div>
     }
     else
     {
-        <p>User profile not loaded</p>
+        <p>Perfil de usuario no cargado</p>
     }
 </div>
 

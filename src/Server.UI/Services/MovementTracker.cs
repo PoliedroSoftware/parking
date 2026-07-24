@@ -16,6 +16,7 @@ public class MovementRecord
     public string Status { get; set; } = "Activo";
     public DateTime? ExitTime { get; set; }
     public string FormattedDuration { get; set; } = string.Empty;
+    public string VehicleType { get; set; } = string.Empty;
 }
 
 public static class MovementTracker

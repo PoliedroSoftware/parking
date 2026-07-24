@@ -1,0 +1,111 @@
+@using CleanArchitecture.Blazor.Domain.Entities
+@using CleanArchitecture.Blazor.Domain.Enums
+
+@inject IApplicationDbContextFactory DbFactory
+
+<MudDialog>
+    <DialogContent>
+        <div class="pa-6 vehicle-dialog-container"
+             @onkeydown="OnKeyDown"
+             style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;outline:none;">
+        <MudText Typo="Typo.h4" Class="mb-4" Style="font-weight:800;text-align:center;">TIPO DE VEHICULO</MudText>
+
+        @if (_loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+        }
+        else if (_types.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">No hay tipos de vehiculo activos. Configurelos en Tipos de Vehiculo.</MudAlert>
+        }
+        else
+        {
+            <div class="vehicle-type-grid">
+                @foreach (var vt in _types)
+                {
+                    <button class="vehicle-type-card @(_selectedName == vt.Name ? "selected" : "")"
+                            style="cursor:pointer;padding:24px;text-align:center;min-width:150px;"
+                            tabindex="0"
+                            @onclick="@(() => Select(vt.Name))"
+                            @onfocus="@(() => _selectedName = vt.Name)">
+                        <MudIcon Icon="@GetIcon(vt.Icon)" Style="font-size:48px;color:var(--mud-palette-primary);pointer-events:none;" />
+                        <MudText Typo="Typo.h6" Style="font-weight:700;margin-top:8px;pointer-events:none;">@vt.Name</MudText>
+                    </button>
+                }
+            </div>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-4">TAB para mover · ENTER para seleccionar</MudText>
+        }
+        </div>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private List<VehicleTypeConfig> _types = new();
+    private string? _selectedName;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTypes();
+    }
+
+    private async Task LoadTypes()
+    {
+        try
+        {
+            _loading = true;
+            await using var db = await DbFactory.CreateAsync();
+            _types = await db.VehicleTypeConfigs
+                .AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrEmpty(_selectedName))
+            Select(_selectedName);
+    }
+
+    private static string GetIcon(string? icon)
+    {
+        return icon switch
+        {
+            "two_wheeler" => Icons.Material.Filled.TwoWheeler,
+            "local_shipping" => Icons.Material.Filled.LocalShipping,
+            "directions_bus" => Icons.Material.Filled.DirectionsBus,
+            _ => Icons.Material.Filled.DirectionsCar
+        };
+    }
+
+    private void Select(string name) => MudDialog.Close(DialogResult.Ok(name));
+}
+
+<style>
+    .vehicle-dialog-container:focus { outline: none; }
+    .vehicle-type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px; width: 100%; max-width: 700px;
+    }
+    .vehicle-type-card {
+        border-radius: 12px; border: 2px solid #e0e0e0; background: #fff;
+        transition: all 0.15s; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; outline: none;
+        font-family: inherit; font-size: inherit; min-height: 120px;
+    }
+    .vehicle-type-card:hover { border-color: var(--mud-palette-primary); transform: scale(1.05); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    .vehicle-type-card:focus-visible, .vehicle-type-card.selected {
+        border-color: var(--mud-palette-primary); border-width: 3px;
+        box-shadow: 0 0 0 3px rgba(25,118,210,0.3); background: #e3f2fd; transform: scale(1.05);
+    }
+    .vehicle-type-card:active { transform: scale(0.97); background: var(--mud-palette-primary-hover); }
+</style>

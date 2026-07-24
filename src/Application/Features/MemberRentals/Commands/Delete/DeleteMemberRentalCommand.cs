@@ -19,7 +19,7 @@ public class DeleteMemberRentalCommand:  ICacheInvalidatorRequest<Result>
 {
   public int[] Id {  get; }
   public string CacheKey => MemberRentalCacheKey.GetAllCacheKey;
-  public IEnumerable<string>? Tags => MemberRentalCacheKey.Tags;
+  public IEnumerable<string>? Tags => new[] { "memberrental", "member" };
   public DeleteMemberRentalCommand(int[] id)
   {
     Id = id;

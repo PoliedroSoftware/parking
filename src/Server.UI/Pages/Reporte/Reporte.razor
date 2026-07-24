@@ -12,42 +12,42 @@
 
 <PageTitle>Reporte Mensual</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
     <MudText Typo="Typo.h3" Style="font-weight:700;">Reporte Mensual</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
         @_reportDate.ToString("MMMM yyyy") - Ingresos vs Gastos
     </MudText>
 
     <MudGrid Spacing="3" Class="mb-6">
-        <MudItem xs="6" md="3">
+        <MudItem xs="6" sm="3">
             <MudCard Elevation="3" Style="background:#e8f5e9;">
                 <MudCardContent Class="text-center">
-                    <MudText Typo="Typo.body2">Ingresos Parqueo</MudText>
-                    <MudText Typo="Typo.h4" Color="Color.Success">$ @_ingresosParqueo.ToString("N0")</MudText>
+                    <MudText Typo="Typo.body2">Parqueo</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Success">$ @_ingresosParqueo.ToString("N0")</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
-        <MudItem xs="6" md="3">
+        <MudItem xs="6" sm="3">
             <MudCard Elevation="3" Style="background:#e3f2fd;">
                 <MudCardContent Class="text-center">
-                    <MudText Typo="Typo.body2">Ingresos Lavado</MudText>
-                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @_ingresosLavado.ToString("N0")</MudText>
+                    <MudText Typo="Typo.body2">Lavado</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Primary">$ @_ingresosLavado.ToString("N0")</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
-        <MudItem xs="6" md="3">
+        <MudItem xs="6" sm="3">
             <MudCard Elevation="3" Style="background:#f3e5f5;">
                 <MudCardContent Class="text-center">
-                    <MudText Typo="Typo.body2">Ingresos Mensualidad</MudText>
-                    <MudText Typo="Typo.h4" Color="Color.Tertiary">$ @_ingresosMensualidad.ToString("N0")</MudText>
+                    <MudText Typo="Typo.body2">Mensualidad</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Tertiary">$ @_ingresosMensualidad.ToString("N0")</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
-        <MudItem xs="6" md="3">
+        <MudItem xs="6" sm="3">
             <MudCard Elevation="3" Style="background:#ffebee;">
                 <MudCardContent Class="text-center">
-                    <MudText Typo="Typo.body2">Gastos Totales</MudText>
-                    <MudText Typo="Typo.h4" Color="Color.Error">$ @_gastosTotales.ToString("N0")</MudText>
+                    <MudText Typo="Typo.body2">Gastos</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Error">$ @_gastosTotales.ToString("N0")</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -62,66 +62,94 @@
         </MudCardContent>
     </MudCard>
 
-    <MudGrid Spacing="3">
-        <MudItem xs="12" md="6">
-            <MudCard Elevation="3">
-                <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Ingresos por Dia</MudText></CardHeaderContent></MudCardHeader>
-                <MudCardContent>
-                    <div class="mud-data-grid-responsive">
-                    <MudTable Items="@_ingresosDiarios" Dense="true" FixedHeader="true" Height="350px">
-                        <HeaderContent>
-                            <MudTh>Dia</MudTh>
-                            <MudTh Style="text-align:right;">Parqueo</MudTh>
-                            <MudTh Style="text-align:right;">Lavado</MudTh>
-                            <MudTh Style="text-align:right;">Mensualidad</MudTh>
-                            <MudTh Style="text-align:right;">Total</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>@context.Day</MudTd>
-                            <MudTd Style="text-align:right;">$ @context.Parking.ToString("N0")</MudTd>
-                            <MudTd Style="text-align:right;">$ @context.Wash.ToString("N0")</MudTd>
-                            <MudTd Style="text-align:right;">$ @context.Monthly.ToString("N0")</MudTd>
-                            <MudTd Style="text-align:right;font-weight:700;">$ @context.Total.ToString("N0")</MudTd>
-                        </RowTemplate>
-                        <FooterContent>
-                            <MudTd><strong>TOTAL</strong></MudTd>
-                            <MudTd Style="text-align:right;"><strong>$ @_ingresosParqueo.ToString("N0")</strong></MudTd>
-                            <MudTd Style="text-align:right;"><strong>$ @_ingresosLavado.ToString("N0")</strong></MudTd>
-                            <MudTd Style="text-align:right;"><strong>$ @_ingresosMensualidad.ToString("N0")</strong></MudTd>
-                            <MudTd Style="text-align:right;font-size:18px;"><strong>$ @(_ingresosParqueo + _ingresosLavado + _ingresosMensualidad).ToString("N0")</strong></MudTd>
-                        </FooterContent>
-                    </MudTable>
-                    </div>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-        <MudItem xs="12" md="6">
-            <MudCard Elevation="3">
-                <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Gastos del Mes</MudText></CardHeaderContent></MudCardHeader>
-                <MudCardContent>
-                    @if (_gastos.Any())
-                    {
-                        <div class="mud-data-grid-responsive">
-                        <MudTable Items="@_gastos" Dense="true" FixedHeader="true" Height="350px">
-                            <HeaderContent>
-                                <MudTh>Fecha</MudTh>
-                                <MudTh>Categoria</MudTh>
-                                <MudTh>Descripcion</MudTh>
-                                <MudTh Style="text-align:right;">Valor</MudTh>
-                            </HeaderContent>
-                            <RowTemplate>
-                                <MudTd>@context.Date.ToString("dd/MM")</MudTd>
-                                <MudTd><MudChip T="string" Size="Size.Small">@context.Category</MudChip></MudTd>
-                                <MudTd>@context.Description</MudTd>
-                                <MudTd Style="text-align:right;">$ @context.Amount.ToString("N0")</MudTd>
-                            </RowTemplate>
-                        </MudTable>
-                        </div>
-                    }
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-    </MudGrid>
+    <MudCard Elevation="3" Class="mb-6">
+        <MudCardHeader>
+            <CardHeaderContent><MudText Typo="Typo.h6">Detalle Diario</MudText></CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_detalleDiario.Any())
+            {
+                <div class="mud-data-grid-responsive">
+                <MudTable Items="@_detalleDiario" Dense="true" FixedHeader="true" Height="400px">
+                    <HeaderContent>
+                        <MudTh>Dia</MudTh>
+                        <MudTh Style="text-align:right;">Parqueo</MudTh>
+                        <MudTh Style="text-align:right;">Lavado</MudTh>
+                        <MudTh Style="text-align:right;">Mensualidad</MudTh>
+                        <MudTh Style="text-align:right;">Ingresos</MudTh>
+                        <MudTh Style="text-align:right;">Gastos</MudTh>
+                        <MudTh Style="text-align:right;">Neto</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><strong>@context.Day</strong></MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Parking.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Wash.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Monthly.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;color:#2e7d32;">$ @context.Ingresos.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right;color:#c62828;">$ @context.Expenses.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right;font-weight:800;">
+                            <MudText Style="@GetNetoColor(context.Neto)">$ @context.Neto.ToString("N0")</MudText>
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTd><strong>TOTAL</strong></MudTd>
+                        <MudTd Style="text-align:right;"><strong>$ @_ingresosParqueo.ToString("N0")</strong></MudTd>
+                        <MudTd Style="text-align:right;"><strong>$ @_ingresosLavado.ToString("N0")</strong></MudTd>
+                        <MudTd Style="text-align:right;"><strong>$ @_ingresosMensualidad.ToString("N0")</strong></MudTd>
+                        <MudTd Style="text-align:right;font-weight:800;color:#2e7d32;font-size:15px;">
+                            <strong>$ @(_ingresosParqueo + _ingresosLavado + _ingresosMensualidad).ToString("N0")</strong>
+                        </MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;color:#c62828;font-size:15px;">
+                            <strong>$ @_gastosTotales.ToString("N0")</strong>
+                        </MudTd>
+                        <MudTd Style="text-align:right;font-weight:800;font-size:18px;">
+                            <strong>$ @_resultadoNeto.ToString("N0")</strong>
+                        </MudTd>
+                    </FooterContent>
+                </MudTable>
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="text-align:center;padding:20px;">
+                    Sin movimientos para este mes
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Elevation="3" Class="mb-6">
+        <MudCardHeader>
+            <CardHeaderContent><MudText Typo="Typo.h6">Gastos del Mes</MudText></CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_gastos.Any())
+            {
+                <div class="mud-data-grid-responsive">
+                <MudTable Items="@_gastos" Dense="true" FixedHeader="true" Height="350px">
+                    <HeaderContent>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Categoria</MudTh>
+                        <MudTh>Descripcion</MudTh>
+                        <MudTh Style="text-align:right;">Valor</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Date.ToString("dd/MM")</MudTd>
+                        <MudTd><MudChip T="string" Size="Size.Small">@context.Category</MudChip></MudTd>
+                        <MudTd>@context.Description</MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Amount.ToString("N0")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="text-align:center;padding:20px;">
+                    Sin gastos registrados
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
 
     <div style="text-align:center;margin-top:20px;">
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
@@ -136,7 +164,7 @@
     private int _ingresosMensualidad;
     private int _gastosTotales;
     private int _resultadoNeto;
-    private List<DayRevenue> _ingresosDiarios = new();
+    private List<DayDetail> _detalleDiario = new();
     private List<Expense> _gastos = new();
 
     protected override async Task OnInitializedAsync()
@@ -151,38 +179,70 @@
 
         await using var db = await DbFactory.CreateAsync();
 
-        var paidWashes = await db.CarWashes
-            .Where(c => c.StartTime.HasValue && c.StartTime.Value >= firstDay && c.StartTime.Value <= lastDay && c.IsPaid)
-            .Select(c => (int?)c.Price).ToListAsync();
-        _ingresosLavado = paidWashes.Sum(p => p ?? 0);
-
-        var rentals = await db.MemberRentals
-            .Where(r => r.PaymentTime >= firstDay && r.PaymentTime <= lastDay)
-            .Select(r => (int?)r.AmountPaid).ToListAsync();
-        _ingresosMensualidad = rentals.Sum(r => r ?? 0);
-
-        _ingresosParqueo = (int)(await db.ParkingRecords
-            .Where(p => p.Status == "Completado" && p.ExitTime.HasValue && p.ExitTime.Value >= firstDay && p.ExitTime.Value <= lastDay)
-            .SumAsync(p => (decimal?)p.Amount) ?? 0);
-
-        _gastos = await db.Expenses.Where(e => e.Date >= firstDay && e.Date <= lastDay).OrderByDescending(e => e.Date).ToListAsync();
-        _gastosTotales = _gastos.Sum(e => (int)e.Amount);
-        _resultadoNeto = _ingresosParqueo + _ingresosLavado + _ingresosMensualidad - _gastosTotales;
-
-        _ingresosDiarios = (await db.ParkingRecords
-            .Where(p => p.Status == "Completado" && p.ExitTime.HasValue && p.ExitTime.Value >= firstDay && p.ExitTime.Value <= lastDay)
+        var parkingByDay = (await db.ParkingRecords
+            .Where(p => p.Status == "Completado" && p.ExitTime.HasValue
+                && p.ExitTime.Value >= firstDay && p.ExitTime.Value <= lastDay)
             .Select(p => new { p.ExitTime, p.Amount })
             .ToListAsync())
             .GroupBy(p => p.ExitTime!.Value.Date)
-            .Select(g => new DayRevenue
+            .ToDictionary(g => g.Key, g => (int)g.Sum(p => p.Amount));
+
+        var washByDay = (await db.CarWashes
+            .Where(c => c.StartTime.HasValue && c.IsPaid
+                && c.StartTime.Value >= firstDay && c.StartTime.Value <= lastDay)
+            .Select(c => new { c.StartTime, Price = (int?)c.Price })
+            .ToListAsync())
+            .GroupBy(c => c.StartTime!.Value.Date)
+            .ToDictionary(g => g.Key, g => g.Sum(c => c.Price ?? 0));
+
+        var monthlyByDay = (await db.MemberRentals
+            .Where(r => r.PaymentTime >= firstDay && r.PaymentTime <= lastDay)
+            .Select(r => new { r.PaymentTime, r.AmountPaid })
+            .ToListAsync())
+            .GroupBy(r => r.PaymentTime.Date)
+            .ToDictionary(g => g.Key, g => (int)g.Sum(r => r.AmountPaid));
+
+        _gastos = await db.Expenses
+            .Where(e => e.Date >= firstDay && e.Date <= lastDay)
+            .OrderByDescending(e => e.Date).ToListAsync();
+
+        var expensesByDay = _gastos
+            .GroupBy(e => e.Date.Date)
+            .ToDictionary(g => g.Key, g => (int)g.Sum(e => e.Amount));
+
+        _ingresosParqueo = parkingByDay.Values.Sum();
+        _ingresosLavado = washByDay.Values.Sum();
+        _ingresosMensualidad = monthlyByDay.Values.Sum();
+        _gastosTotales = expensesByDay.Values.Sum();
+        _resultadoNeto = _ingresosParqueo + _ingresosLavado + _ingresosMensualidad - _gastosTotales;
+
+        var allDays = new HashSet<DateTime>();
+        foreach (var d in parkingByDay.Keys) allDays.Add(d);
+        foreach (var d in washByDay.Keys) allDays.Add(d);
+        foreach (var d in monthlyByDay.Keys) allDays.Add(d);
+        foreach (var d in expensesByDay.Keys) allDays.Add(d);
+
+        _detalleDiario = allDays
+            .OrderBy(d => d)
+            .Select(day =>
             {
-                Day = g.Key.ToString("dd/MM"),
-                Parking = (int)g.Sum(p => p.Amount),
-                Wash = 0,
-                Monthly = 0,
-                Total = (int)g.Sum(p => p.Amount)
+                var parking = parkingByDay.GetValueOrDefault(day);
+                var wash = washByDay.GetValueOrDefault(day);
+                var monthly = monthlyByDay.GetValueOrDefault(day);
+                var expenses = expensesByDay.GetValueOrDefault(day);
+                var ingresos = parking + wash + monthly;
+
+                return new DayDetail
+                {
+                    Day = day.ToString("ddd dd", new CultureInfo("es-CO")),
+                    Parking = parking,
+                    Wash = wash,
+                    Monthly = monthly,
+                    Ingresos = ingresos,
+                    Expenses = expenses,
+                    Neto = ingresos - expenses
+                };
             })
-            .OrderBy(d => d.Day)
             .ToList();
     }
 
@@ -198,13 +258,13 @@
                 MonthlyRevenue = _ingresosMensualidad,
                 TotalExpenses = _gastosTotales,
                 NetRevenue = _resultadoNeto,
-                Days = _ingresosDiarios.Select(d => new DayRevenueData
+                Days = _detalleDiario.Select(d => new DayRevenueData
                 {
                     Day = d.Day,
                     Parking = d.Parking,
                     Wash = d.Wash,
                     Monthly = d.Monthly,
-                    Total = d.Total
+                    Total = d.Ingresos
                 }).ToList(),
                 Expenses = _gastos.Select(e => new ExpenseItemData
                 {
@@ -229,12 +289,16 @@
         }
     }
 
-    public class DayRevenue
+    public class DayDetail
     {
         public string Day { get; set; } = "";
         public int Parking { get; set; }
         public int Wash { get; set; }
         public int Monthly { get; set; }
-        public int Total { get; set; }
+        public int Ingresos { get; set; }
+        public int Expenses { get; set; }
+        public int Neto { get; set; }
     }
+
+    private static string GetNetoColor(int neto) => neto >= 0 ? "color:#2e7d32" : "color:#c62828";
 }

@@ -1,0 +1,139 @@
+@page "/pages/vehicle-types"
+@using CleanArchitecture.Blazor.Domain.Entities
+@using CleanArchitecture.Blazor.Domain.Enums
+
+@inject IApplicationDbContextFactory DbFactory
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Tipos de Vehiculo</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h3" Style="font-weight:700;">Tipos de Vehiculo</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Gestione los tipos de vehiculo del parqueadero</MudText>
+
+    <MudCard Elevation="3" Class="mb-6">
+        <MudCardContent>
+            <MudForm Model="@_newItem">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="5">
+                        <MudTextField Label="Nombre" @bind-Value="_newItem.Name" Required="true"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudSelect T="string" Label="Icono" @bind-Value="_newItem.Icon" Clearable="true">
+                            <MudSelectItem Value="@("directions_car")">🚗 Carro</MudSelectItem>
+                            <MudSelectItem Value="@("two_wheeler")">🏍️ Moto</MudSelectItem>
+                            <MudSelectItem Value="@("local_shipping")">🚛 Camion</MudSelectItem>
+                            <MudSelectItem Value="@("directions_bus")">🚌 Bus</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4" Class="d-flex align-end">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveItem"
+                                   StartIcon="@Icons.Material.Filled.Save" FullWidth="true">Guardar</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Elevation="3">
+        <MudCardHeader>
+            <CardHeaderContent><MudText Typo="Typo.h6">Tipos registrados</MudText></CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (_items.Any())
+            {
+                <MudTable Items="@_items" Hover="true" Dense="true" Striped="true">
+                    <HeaderContent>
+                        <MudTh>Nombre</MudTh>
+                        <MudTh>Icono</MudTh>
+                        <MudTh>Activo</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><strong>@context.Name</strong></MudTd>
+                        <MudTd>@context.Icon</MudTd>
+                        <MudTd>
+                            <MudSwitch @bind-Value="context.IsActive" Color="Color.Success"
+                                       ValueChanged="@(v => ToggleActive(context))"></MudSwitch>
+                        </MudTd>
+                        <MudTd>
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error" OnClick="@(() => DeleteItem(context))"></MudIconButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="text-align:center;padding:20px;">
+                    No hay tipos de vehiculo registrados
+                </MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private VehicleTypeConfig _newItem = new();
+    private List<VehicleTypeConfig> _items = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        await using var db = await DbFactory.CreateAsync();
+        _items = await db.VehicleTypeConfigs
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+    }
+
+    private async Task SaveItem()
+    {
+        if (string.IsNullOrWhiteSpace(_newItem.Name))
+        {
+            Snackbar.Add("El nombre es requerido", Severity.Warning);
+            return;
+        }
+
+        await using var db = await DbFactory.CreateAsync();
+        db.VehicleTypeConfigs.Add(new VehicleTypeConfig
+        {
+            Name = _newItem.Name.Trim(),
+            Icon = _newItem.Icon?.Trim(),
+            IsActive = true
+        });
+        await db.SaveChangesAsync();
+        _newItem = new VehicleTypeConfig();
+        Snackbar.Add("Tipo de vehiculo guardado", Severity.Success);
+        await LoadData();
+    }
+
+    private async Task ToggleActive(VehicleTypeConfig item)
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var entity = await db.VehicleTypeConfigs.FindAsync(item.Id);
+        if (entity is not null)
+        {
+            entity.IsActive = item.IsActive;
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private async Task DeleteItem(VehicleTypeConfig item)
+    {
+        await using var db = await DbFactory.CreateAsync();
+        var entity = await db.VehicleTypeConfigs.FindAsync(item.Id);
+        if (entity is not null)
+        {
+            db.VehicleTypeConfigs.Remove(entity);
+            await db.SaveChangesAsync();
+            Snackbar.Add("Tipo de vehiculo eliminado", Severity.Success);
+            await LoadData();
+        }
+    }
+}

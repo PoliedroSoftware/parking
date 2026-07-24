@@ -1,9 +1,11 @@
 @page "/pages/arqueo"
 
 @using CleanArchitecture.Blazor.Server.UI.Services
+@using CleanArchitecture.Blazor.Domain.Entities
 @using System.Globalization
 
 @inject IJSRuntime JSRuntime
+@inject IApplicationDbContextFactory DbFactory
 @inject PosTicketPrintService PosTicketPrintService
 @inject ReportTicketService ReportTicketService
 
@@ -13,17 +15,25 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
         <div>
             <MudText Typo="Typo.h3" Style="font-weight:700;">Arqueo de Caja</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Resumen y detalle del dia</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Resumen y detalle del dia - @DateTime.Today.ToString("dd/MM/yyyy")</MudText>
         </div>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
-                   OnClick="PrintClosingReport" StartIcon="@Icons.Material.Filled.Print"
-                   Style="height:48px;">
-            IMPRIMIR CIERRE
-        </MudButton>
+        <MudStack Row Spacing="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Info" Size="Size.Large"
+                       OnClick="Refresh" StartIcon="@Icons.Material.Filled.Refresh"
+                       Style="height:48px;">
+                ACTUALIZAR
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                       OnClick="PrintClosingReport" StartIcon="@Icons.Material.Filled.Print"
+                       Style="height:48px;">
+                IMPRIMIR CIERRE
+            </MudButton>
+        </MudStack>
     </div>
 
-    @{
-        var summary = MovementTracker.GetDaySummary();
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
     }
 
     @* SUMMARY CARDS *@
@@ -32,7 +42,7 @@
             <MudCard Elevation="3">
                 <MudCardContent Class="text-center">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Entradas</MudText>
-                    <MudText Typo="Typo.h3" Color="Color.Info">@summary.TotalEntries</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Info">@_totalEntradas</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -40,7 +50,7 @@
             <MudCard Elevation="3">
                 <MudCardContent Class="text-center">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Salidas</MudText>
-                    <MudText Typo="Typo.h3" Color="Color.Success">@summary.TotalExits</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Success">@_totalSalidasCobradas</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -48,7 +58,7 @@
             <MudCard Elevation="3">
                 <MudCardContent Class="text-center">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Lavados</MudText>
-                    <MudText Typo="Typo.h3" Color="Color.Warning">@summary.TotalWashes</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Warning">@_totalLavados</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -56,7 +66,7 @@
             <MudCard Elevation="3">
                 <MudCardContent Class="text-center">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Mensualidades</MudText>
-                    <MudText Typo="Typo.h3" Color="Color.Primary">@summary.TotalMonthly</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Primary">@_totalMensualidades</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -64,7 +74,7 @@
             <MudCard Elevation="3" Style="background:#e8f5e9;">
                 <MudCardContent Class="text-center">
                     <MudText Typo="Typo.caption">Total Operaciones</MudText>
-                    <MudText Typo="Typo.h3" Style="font-weight:700;">@(summary.TotalEntries + summary.TotalExits + summary.TotalWashes + summary.TotalMonthly)</MudText>
+                    <MudText Typo="Typo.h3" Style="font-weight:700;">@(_totalSalidasCobradas + _totalLavados + _totalMensualidades)</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -72,7 +82,7 @@
             <MudCard Elevation="3" Style="background:#fff3e0;">
                 <MudCardContent Class="text-center">
                     <MudText Typo="Typo.caption">TOTAL DEL DIA</MudText>
-                    <MudText Typo="Typo.h3" Color="Color.Error" Style="font-weight:800;">$ @summary.TotalRevenue.ToString("N0")</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Error" Style="font-weight:800;">$ @_totalIngresos.ToString("N0")</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -84,8 +94,8 @@
             <MudCard Elevation="2">
                 <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Parqueo</MudText></CardHeaderContent></MudCardHeader>
                 <MudCardContent>
-                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @summary.TotalParkingRevenue.ToString("N0")</MudText>
-                    <MudText Typo="Typo.caption">@summary.TotalExits salidas cobradas</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @_totalParqueo.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption">@_totalSalidasCobradas salidas cobradas</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -93,8 +103,8 @@
             <MudCard Elevation="2">
                 <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Lavado</MudText></CardHeaderContent></MudCardHeader>
                 <MudCardContent>
-                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @summary.TotalWashRevenue.ToString("N0")</MudText>
-                    <MudText Typo="Typo.caption">@summary.TotalWashes servicios</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @_totalLavado.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption">@_totalLavados servicios pagados</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -102,8 +112,8 @@
             <MudCard Elevation="2">
                 <MudCardHeader><CardHeaderContent><MudText Typo="Typo.h6">Mensualidades</MudText></CardHeaderContent></MudCardHeader>
                 <MudCardContent>
-                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @summary.TotalMonthlyRevenue.ToString("N0")</MudText>
-                    <MudText Typo="Typo.caption">@summary.TotalMonthly pagos</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">$ @_totalMensualidad.ToString("N0")</MudText>
+                    <MudText Typo="Typo.caption">@_totalMensualidades pagos recibidos</MudText>
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -113,14 +123,14 @@
     <MudCard Elevation="3">
         <MudCardHeader>
             <CardHeaderContent>
-                <MudText Typo="Typo.h6">Detalle de Movimientos - @summary.Date.ToString("dd/MM/yyyy")</MudText>
+                <MudText Typo="Typo.h6">Detalle de Movimientos - @DateTime.Today.ToString("dd/MM/yyyy")</MudText>
             </CardHeaderContent>
         </MudCardHeader>
         <MudCardContent>
-            @if (summary.Movements.Any())
+            @if (_movimientos.Any())
             {
                 <div class="mud-data-grid-responsive">
-                <MudTable Items="@summary.Movements" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="450px">
+                <MudTable Items="@_movimientos" Hover="true" Dense="true" Striped="true" FixedHeader="true" Height="450px">
                     <HeaderContent>
                         <MudTh>#</MudTh>
                         <MudTh>Hora</MudTh>
@@ -131,21 +141,21 @@
                         <MudTh Style="text-align:right;">Valor</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>@(summary.Movements.IndexOf(context) + 1)</MudTd>
-                        <MudTd>@FormatTime(context.Time, includeSeconds: true)</MudTd>
+                        <MudTd>@(_movimientos.IndexOf(context) + 1)</MudTd>
+                        <MudTd>@FormatTime(context.Time)</MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small" Color="@GetMovementColor(context)">
                                 @GetMovementLabel(context)
                             </MudChip>
                         </MudTd>
-                        <MudTd><strong>@context.LicensePlate</strong></MudTd>
-                        <MudTd>@(string.IsNullOrEmpty(context.CustomerName) ? "Consumidor Final" : context.CustomerName)</MudTd>
-                        <MudTd>@context.FormattedDuration</MudTd>
-                        <MudTd Style="text-align:right;">$ @context.Amount.ToString("N0")</MudTd>
+                        <MudTd><strong>@context.Placa</strong></MudTd>
+                        <MudTd>@(string.IsNullOrEmpty(context.Cliente) ? "Consumidor Final" : context.Cliente)</MudTd>
+                        <MudTd>@context.Duracion</MudTd>
+                        <MudTd Style="text-align:right;">$ @context.Valor.ToString("N0")</MudTd>
                     </RowTemplate>
                     <FooterContent>
                         <MudTd colspan="6" Style="text-align:right;font-weight:700;font-size:16px;">TOTAL</MudTd>
-                        <MudTd Style="text-align:right;font-weight:700;font-size:18px;color:#d32f2f;">$ @summary.TotalRevenue.ToString("N0")</MudTd>
+                        <MudTd Style="text-align:right;font-weight:700;font-size:18px;color:#d32f2f;">$ @_totalIngresos.ToString("N0")</MudTd>
                     </FooterContent>
                 </MudTable>
                 </div>
@@ -161,51 +171,177 @@
 </MudContainer>
 
 @code {
-    private Color GetMovementColor(MovementRecord m)
+    private int _totalEntradas;
+    private int _totalSalidasCobradas;
+    private int _totalLavados;
+    private int _totalMensualidades;
+    private int _totalParqueo;
+    private int _totalLavado;
+    private int _totalMensualidad;
+    private int _totalIngresos;
+    private bool _loading = true;
+    private List<ArqueoMovimiento> _movimientos = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        if (m.Type == "Lavado") return Color.Warning;
-        if (m.Type == "Mensualidad") return Color.Primary;
-        return m.Status == "Activo" ? Color.Info : Color.Success;
+        await LoadData();
     }
 
-    private string GetMovementLabel(MovementRecord m)
+    private async Task Refresh()
     {
-        if (m.Type == "Lavado") return "LAVADO";
-        if (m.Type == "Mensualidad") return "MENSUAL";
-        return m.Status == "Activo" ? "PARQUEO ACTIVO" : "PARQUEO";
+        await LoadData();
     }
 
-    private static string FormatTime(DateTime value, bool includeSeconds = false)
+    private async Task LoadData()
     {
-        var format = includeSeconds ? "hh:mm:ss tt" : "hh:mm tt";
-        return value.ToString(format, CultureInfo.InvariantCulture);
+        try
+        {
+            _loading = true;
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+
+            await using var db = await DbFactory.CreateAsync();
+
+            var parkings = await db.ParkingRecords
+                .AsNoTracking()
+                .Where(p => p.EntryTime >= today && p.EntryTime < tomorrow)
+                .OrderBy(p => p.EntryTime)
+                .ToListAsync();
+
+            _totalEntradas = parkings.Count;
+            _totalSalidasCobradas = parkings.Count(p => p.Status == "Completado");
+            _totalParqueo = (int)parkings.Where(p => p.Status == "Completado").Sum(p => p.Amount);
+
+            var washes = await db.CarWashes
+                .AsNoTracking()
+                .Where(c => c.IsPaid &&
+                    ((c.StartTime.HasValue && c.StartTime.Value >= today && c.StartTime.Value < tomorrow) ||
+                     (c.StartTime == null && c.CreatedAt.HasValue && c.CreatedAt.Value >= today && c.CreatedAt.Value < tomorrow)))
+                .OrderBy(c => c.StartTime ?? c.CreatedAt)
+                .ToListAsync();
+
+            _totalLavados = washes.Count;
+            _totalLavado = (int)washes.Sum(c => c.Price);
+
+            var rentals = await db.MemberRentals
+                .AsNoTracking()
+                .Where(r => r.PaymentTime >= today && r.PaymentTime < tomorrow)
+                .OrderBy(r => r.PaymentTime)
+                .ToListAsync();
+
+            _totalMensualidades = rentals.Count;
+            _totalMensualidad = (int)rentals.Sum(r => r.AmountPaid);
+
+            _totalIngresos = _totalParqueo + _totalLavado + _totalMensualidad;
+
+            _movimientos.Clear();
+
+            foreach (var p in parkings.Where(p => p.Status == "Completado"))
+            {
+                var duracion = (p.ExitTime.HasValue && p.ExitTime > p.EntryTime)
+                    ? FormatDuration(p.ExitTime.Value - p.EntryTime)
+                    : "--";
+                _movimientos.Add(new ArqueoMovimiento
+                {
+                    Time = p.ExitTime ?? p.EntryTime,
+                    Type = "PARQUEO",
+                    Placa = p.LicensePlate,
+                    Cliente = string.IsNullOrEmpty(p.CustomerName) ? "" : p.CustomerName,
+                    Duracion = duracion,
+                    Valor = (int)p.Amount
+                });
+            }
+
+            foreach (var w in washes)
+            {
+                _movimientos.Add(new ArqueoMovimiento
+                {
+                    Time = w.StartTime ?? w.CreatedAt ?? DateTime.Now,
+                    Type = "LAVADO",
+                    Placa = w.LicensePlate,
+                    Cliente = "",
+                    Duracion = w.WashServiceType.GetDescription(),
+                    Valor = (int)w.Price
+                });
+            }
+
+            foreach (var r in rentals)
+            {
+                var mesPagado = r.StartDate.HasValue
+                    ? CultureInfo.GetCultureInfo("es-CO").TextInfo.ToTitleCase(
+                        r.StartDate.Value.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("es-CO")))
+                    : "";
+                _movimientos.Add(new ArqueoMovimiento
+                {
+                    Time = r.PaymentTime,
+                    Type = "MENSUAL",
+                    Placa = r.LicensePlate,
+                    Cliente = "",
+                    Duracion = mesPagado,
+                    Valor = (int)r.AmountPaid
+                });
+            }
+
+            _movimientos = _movimientos.OrderByDescending(m => m.Time).ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static Color GetMovementColor(ArqueoMovimiento m)
+    {
+        if (m.Type == "LAVADO") return Color.Warning;
+        if (m.Type == "MENSUAL") return Color.Primary;
+        return Color.Success;
+    }
+
+    private static string GetMovementLabel(ArqueoMovimiento m)
+    {
+        return m.Type switch
+        {
+            "LAVADO" => "LA",
+            "MENSUAL" => "ME",
+            _ => "PQ"
+        };
+    }
+
+    private static string FormatTime(DateTime value)
+    {
+        return value.ToString("hh:mm tt", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatDuration(TimeSpan d)
+    {
+        if (d.TotalDays >= 1) return $"{(int)d.TotalDays}d {d.Hours}h {d.Minutes}m";
+        if (d.TotalHours >= 1) return $"{(int)d.TotalHours}h {d.Minutes}m";
+        return $"{d.Minutes} min";
     }
 
     private async Task PrintClosingReport()
     {
         try
         {
-            var summary = MovementTracker.GetDaySummary();
-
             var data = new CierreReportData
             {
-                Date = summary.Date,
-                TotalEntries = summary.TotalEntries,
-                TotalExits = summary.TotalExits,
-                TotalWashes = summary.TotalWashes,
-                TotalMonthly = summary.TotalMonthly,
-                TotalParkingRevenue = summary.TotalParkingRevenue,
-                TotalWashRevenue = summary.TotalWashRevenue,
-                TotalMonthlyRevenue = summary.TotalMonthlyRevenue,
-                TotalRevenue = summary.TotalRevenue,
-                Movements = summary.Movements.Select(m => new CierreMovementData
+                Date = DateTime.Today,
+                TotalEntries = _totalEntradas,
+                TotalExits = _totalSalidasCobradas,
+                TotalWashes = _totalLavados,
+                TotalMonthly = _totalMensualidades,
+                TotalParkingRevenue = _totalParqueo,
+                TotalWashRevenue = _totalLavado,
+                TotalMonthlyRevenue = _totalMensualidad,
+                TotalRevenue = _totalIngresos,
+                Movements = _movimientos.Select(m => new CierreMovementData
                 {
                     Time = m.Time,
                     Type = m.Type,
-                    LicensePlate = m.LicensePlate,
-                    CustomerName = m.CustomerName,
-                    FormattedDuration = m.FormattedDuration,
-                    Amount = m.Amount
+                    LicensePlate = m.Placa,
+                    CustomerName = m.Cliente,
+                    FormattedDuration = m.Duracion,
+                    Amount = m.Valor
                 }).ToList()
             };
 
@@ -221,5 +357,15 @@
         {
             Snackbar.Add($"Error al imprimir: {ex.Message}", Severity.Error);
         }
+    }
+
+    public class ArqueoMovimiento
+    {
+        public DateTime Time { get; set; }
+        public string Type { get; set; } = "";
+        public string Placa { get; set; } = "";
+        public string Cliente { get; set; } = "";
+        public string Duracion { get; set; } = "";
+        public int Valor { get; set; }
     }
 }

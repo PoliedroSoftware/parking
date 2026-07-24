@@ -76,20 +76,6 @@
                              Adornment="Adornment.End"
                              AdornmentIcon="@Icons.Material.Filled.Search"
                              OnKeyUp="OnPlateKeyUp" />
-            <div class="vehicle-selector">
-                <MudText Typo="Typo.caption" Class="selector-label">Tipo de vehiculo</MudText>
-                <MudStack Row Spacing="1" Class="vehicle-chip-row">
-                    @foreach (var vt in _vehicleTypes)
-                    {
-                        <MudChip T="string" Size="Size.Small"
-                                 Variant="@(_vehicleType == vt ? Variant.Filled : Variant.Outlined)"
-                                 Color="@(_vehicleType == vt ? Color.Primary : Color.Default)"
-                                 Style="cursor:pointer;" OnClick="@(() => { _vehicleType = vt; StateHasChanged(); })">
-                            @vt.GetDescription()
-                        </MudChip>
-                    }
-                </MudStack>
-            </div>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="process-button"
                        OnClick="ProcessPlate" StartIcon="@Icons.Material.Filled.PlayArrow"
                        Disabled="@(string.IsNullOrWhiteSpace(_licensePlate))">
@@ -123,6 +109,7 @@
                 <MudTable Items="@_activeViewModels" Hover="true" Dense="true" FixedHeader="true" Height="280px" Class="parking-table">
                     <HeaderContent>
                         <MudTh>Placa</MudTh>
+                        <MudTh>Tipo</MudTh>
                         <MudTh>Entrada</MudTh>
                         <MudTh>Tiempo Transcurrido</MudTh>
                         <MudTh Style="text-align:right;">A Pagar</MudTh>
@@ -131,6 +118,9 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd><strong class="plate-cell">@context.LicensePlate</strong></MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@context.VehicleType</MudChip>
+                        </MudTd>
                         <MudTd>@FormatTime(context.EntryTime)</MudTd>
                         <MudTd>@FormatDuration(DateTime.Now - context.EntryTime)</MudTd>
                         <MudTd Class="amount-cell">$ @context.EstimatedAmount.ToString("N0")</MudTd>
@@ -171,6 +161,7 @@
                         <MudTh>Salida</MudTh>
                         <MudTh>Estado</MudTh>
                         <MudTh>Placa</MudTh>
+                        <MudTh>Tipo</MudTh>
                         <MudTh>Cliente</MudTh>
                         <MudTh>Duracion</MudTh>
                         <MudTh Style="text-align:right;">Descuento</MudTh>
@@ -186,6 +177,9 @@
                             </MudChip>
                         </MudTd>
                         <MudTd><strong class="plate-cell small">@context.LicensePlate</strong></MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">@(string.IsNullOrEmpty(context.VehicleType) ? "-" : context.VehicleType)</MudChip>
+                        </MudTd>
                         <MudTd>@(string.IsNullOrEmpty(context.CustomerName) ? "Consumidor Final" : context.CustomerName)</MudTd>
                         <MudTd>@context.FormattedDuration</MudTd>
                         <MudTd Class="amount-cell">
@@ -391,27 +385,6 @@
         font-size: 18px !important;
     }
 
-    .vehicle-selector {
-        background: #f6f8fb;
-        border: 1px solid #e0e6ef;
-        border-radius: 12px;
-        padding: 16px;
-        width: 100%;
-    }
-
-    .selector-label {
-        color: #657083;
-        display: block;
-        font-weight: 700 !important;
-        margin-bottom: 8px;
-        text-align: center;
-    }
-
-    .vehicle-chip-row {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
     .process-button {
         border-radius: 12px;
         font-size: 18px !important;
@@ -511,12 +484,8 @@
     public string? Title { get; private set; }
     private string _licensePlate = string.Empty;
     private VehicleTypes _vehicleType = VehicleTypes.PrivateCar;
-    private static readonly VehicleTypes[] _vehicleTypes = new[]
-    {
-        VehicleTypes.MotorCycle, VehicleTypes.PrivateCar, VehicleTypes.LightGoods,
-        VehicleTypes.HeavyGoods, VehicleTypes.Coaches, VehicleTypes.Containers,
-        VehicleTypes.LightBuses
-    };
+    private string _vehicleTypeName = "Carro";
+    private bool _processing;
     private string? _lastMessage;
     private Severity _lastSeverity = Severity.Info;
     private List<MovementRecord> _movements = new();
@@ -620,7 +589,7 @@
 
     private async Task OnPlateKeyUp(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_licensePlate))
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_licensePlate) && !_processing)
         {
             await ProcessPlate();
         }
@@ -651,9 +620,12 @@
 
     private async Task ProcessPlate()
     {
+        if (_processing) return;
+
         var plate = NormalizePlate(_licensePlate);
         if (string.IsNullOrEmpty(plate)) return;
 
+        _processing = true;
         await ClearPlateInputAsync();
         await InvokeAsync(StateHasChanged);
 
@@ -666,6 +638,21 @@
             }
             else
             {
+                var dialog = await DialogService.ShowAsync<VehicleTypeDialog>("",
+                    options: new DialogOptions
+                    {
+                        CloseButton = false,
+                        MaxWidth = MaxWidth.ExtraLarge,
+                        FullWidth = true,
+                        NoHeader = true
+                    });
+                var result = await dialog.Result;
+                if (result.Canceled || result.Data is not string vehicleTypeName)
+                {
+                    await FocusPlateInputAsync();
+                    return;
+                }
+                _vehicleTypeName = vehicleTypeName;
                 await DoEntry(plate);
             }
         }
@@ -677,6 +664,10 @@
             await ClearPlateInputAsync();
             await InvokeAsync(StateHasChanged);
             await FocusPlateInputAsync();
+        }
+        finally
+        {
+            _processing = false;
         }
     }
 
@@ -701,8 +692,18 @@
         {
             LicensePlate = plate,
             EntryTime = entryTime,
-            VehicleType = _vehicleType.GetDescription(),
+            VehicleType = _vehicleTypeName,
             TicketNumber = ticketNo
+        });
+
+        MovementTracker.AddMovement(new MovementRecord
+        {
+            Time = entryTime,
+            Type = "Entrada",
+            LicensePlate = plate,
+            CustomerName = "",
+            Amount = 0,
+            Status = ActiveParkingStatus
         });
 
         var ticketData = new TicketData
@@ -754,6 +755,22 @@
         record.Status = CompletedParkingStatus;
         record.CustomerName = customer;
         await db.SaveChangesAsync(CancellationToken.None);
+
+        var updated = MovementTracker.UpdateExit(plate, customer, amount, formattedDuration);
+        if (updated is null)
+        {
+            MovementTracker.AddMovement(new MovementRecord
+            {
+                Time = exitTime,
+                Type = "Entrada",
+                LicensePlate = plate,
+                CustomerName = customer == "Consumidor Final" ? "" : customer,
+                Amount = amount,
+                Status = CompletedParkingStatus,
+                ExitTime = exitTime,
+                FormattedDuration = formattedDuration
+            });
+        }
 
         var exitTicketData = new TicketData
         {
@@ -915,7 +932,8 @@
             DiscountAmount = duration.HasValue ? Math.Max(0, CalculateAmount(duration.Value) - (int)record.Amount) : 0,
             Status = record.Status,
             ExitTime = record.ExitTime,
-            FormattedDuration = duration.HasValue ? FormatDuration(duration) : string.Empty
+            FormattedDuration = duration.HasValue ? FormatDuration(duration) : string.Empty,
+            VehicleType = ParseVehicleType(record.Notes)
         };
     }
 

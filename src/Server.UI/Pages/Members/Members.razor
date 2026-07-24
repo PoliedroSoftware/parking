@@ -354,8 +354,8 @@
                 MemberId = dto.Id,
                 LicensePlate = dto.LicensePlate,
                 CardId = dto.CardId,
-                StartDate = dto.StartDate ?? DateTime.Today,
-                ExpiryDate = dto.StartDate?.AddMonths(1) ?? DateTime.Today.AddMonths(1),
+                StartDate = DateTime.Today,
+                ExpiryDate = DateTime.Today.AddMonths(1),
                 RentalFee = payResult.TotalAmount,
                 AmountDue = payResult.TotalAmount,
                 AmountPaid = payResult.TotalAmount,
@@ -366,6 +366,15 @@
             var sendResult = await Mediator.Send(cmd);
             if (sendResult.Succeeded)
             {
+                MovementTracker.AddMovement(new MovementRecord
+                {
+                    Time = DateTime.Now,
+                    Type = "Mensualidad",
+                    LicensePlate = dto.LicensePlate ?? "",
+                    CustomerName = dto.Name ?? "",
+                    Amount = payResult.TotalAmount
+                });
+
                 Snackbar.Add("Pago registrado exitosamente", Severity.Success);
                 await _membersGrid.ReloadServerData();
 

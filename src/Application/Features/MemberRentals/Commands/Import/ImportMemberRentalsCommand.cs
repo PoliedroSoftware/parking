@@ -21,7 +21,7 @@ namespace CleanArchitecture.Blazor.Application.Features.MemberRentals.Commands.I
         public string FileName { get; set; }
         public byte[] Data { get; set; }
         public string CacheKey => MemberRentalCacheKey.GetAllCacheKey;
-        public IEnumerable<string>? Tags => MemberRentalCacheKey.Tags;
+        public IEnumerable<string>? Tags => new[] { "memberrental", "member" };
         public ImportMemberRentalsCommand(string fileName,byte[] data)
         {
            FileName = fileName;

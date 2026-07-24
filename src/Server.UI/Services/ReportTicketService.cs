@@ -140,8 +140,8 @@ public sealed class ReportTicketService(CompanyInformationService companyInforma
                 var cliente = string.IsNullOrWhiteSpace(m.CustomerName) ? "CF" : m.CustomerName;
                 var label = m.Type switch
                 {
-                    "Lavado" => "LAV",
-                    "Mensualidad" => "MEN",
+                    "LAVADO" => "LA",
+                    "MENSUAL" => "ME",
                     _ => "PQ"
                 };
                 sb.AppendLine($"[ROW]:{FormatTime(m.Time)} {label} {m.LicensePlate}|{(m.Amount > 0 ? $"$ {m.Amount:N0}" : "-")}");
@@ -177,7 +177,7 @@ public sealed class ReportTicketService(CompanyInformationService companyInforma
             foreach (var m in data.Movements)
             {
                 var cliente = string.IsNullOrWhiteSpace(m.CustomerName) ? "CF" : m.CustomerName;
-                var label = m.Type switch { "Lavado" => "LAV", "Mensualidad" => "MEN", _ => "PQ" };
+                var label = m.Type switch { "LAVADO" => "LA", "MENSUAL" => "ME", _ => "PQ" };
                 AppendHtmlRow(sb, $"{FormatTime(m.Time)} {label} {m.LicensePlate}",
                     m.Amount > 0 ? Money(m.Amount) : "-");
             }
@@ -258,19 +258,28 @@ public sealed class ReportTicketService(CompanyInformationService companyInforma
 
         if (data.Days.Count > 0)
         {
-            sb.AppendLine("[CENTER-SMALL]:INGRESOS POR DIA");
+            sb.AppendLine("[DIVIDER]");
+            sb.AppendLine("[CENTER]:DETALLE DIARIO");
             sb.AppendLine("[DASHED]");
-            sb.AppendLine($"[ROW]:DIA P/L/M|TOTAL");
             foreach (var d in data.Days)
             {
-                var left = $"{d.Day} {d.Parking}/{d.Wash}/{d.Monthly}";
-                sb.AppendLine($"[ROW]:{left}|$ {d.Total:N0}");
+                sb.AppendLine($"[CENTER]:{d.Day}");
+                if (d.Parking > 0)
+                    sb.AppendLine($"[ROW]:Parqueo|$ {d.Parking:N0}");
+                if (d.Wash > 0)
+                    sb.AppendLine($"[ROW]:Lavado|$ {d.Wash:N0}");
+                if (d.Monthly > 0)
+                    sb.AppendLine($"[ROW]:Mensualidad|$ {d.Monthly:N0}");
+                sb.AppendLine($"[ROW-BOLD]:TOTAL DIA|$ {d.Total:N0}");
+                sb.AppendLine("[DASHED]");
             }
 
-            sb.AppendLine("[DASHED]");
-            var totalLeft =
-                $"TOTAL {data.Days.Sum(d => d.Parking)}/{data.Days.Sum(d => d.Wash)}/{data.Days.Sum(d => d.Monthly)}";
-            sb.AppendLine($"[ROW-BOLD]:{totalLeft}|$ {data.Days.Sum(d => d.Total):N0}");
+            sb.AppendLine("[DOUBLE]");
+            sb.AppendLine($"[ROW-BOLD]:TOTAL Parqueo|$ {data.Days.Sum(d => d.Parking):N0}");
+            sb.AppendLine($"[ROW-BOLD]:TOTAL Lavado|$ {data.Days.Sum(d => d.Wash):N0}");
+            sb.AppendLine($"[ROW-BOLD]:TOTAL Mensualidad|$ {data.Days.Sum(d => d.Monthly):N0}");
+            sb.AppendLine($"[HUGE]:$ {data.Days.Sum(d => d.Total):N0}");
+            sb.AppendLine("[DOUBLE]");
         }
 
         if (data.Expenses.Count > 0)
@@ -308,18 +317,40 @@ public sealed class ReportTicketService(CompanyInformationService companyInforma
 
         if (data.Days.Count > 0)
         {
-            sb.AppendLine("<div class='plate-label'>INGRESOS POR DIA</div>");
+            sb.AppendLine("<div class='line' style='border-top:2px solid #000;'></div>");
+            sb.AppendLine("<div class='plate-label'>DETALLE DIARIO</div>");
             sb.AppendLine("<div class='line'></div>");
+
+            sb.AppendLine("<table style='width:100%;border-collapse:collapse;'>");
+            sb.AppendLine("<tr style='font-size:8px;font-weight:900;text-transform:uppercase;'>");
+            sb.AppendLine("<td style='padding:2px 4px;'>Dia</td>");
+            sb.AppendLine("<td style='padding:2px 4px;text-align:right;'>Parqueo</td>");
+            sb.AppendLine("<td style='padding:2px 4px;text-align:right;'>Lavado</td>");
+            sb.AppendLine("<td style='padding:2px 4px;text-align:right;'>Mens.</td>");
+            sb.AppendLine("<td style='padding:2px 4px;text-align:right;'>Total</td>");
+            sb.AppendLine("</tr>");
+
             foreach (var d in data.Days)
             {
-                var left = $"{d.Day} {d.Parking}/{d.Wash}/{d.Monthly}";
-                AppendHtmlRow(sb, left, Money(d.Total));
+                sb.AppendLine("<tr style='border-top:1px dotted #ccc;'>");
+                sb.AppendLine($"<td style='padding:2px 4px;font-weight:900;'>{Html(d.Day)}</td>");
+                sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(d.Parking)}</td>");
+                sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(d.Wash)}</td>");
+                sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(d.Monthly)}</td>");
+                sb.AppendLine($"<td style='padding:2px 4px;text-align:right;font-weight:900;'>{Money(d.Total)}</td>");
+                sb.AppendLine("</tr>");
             }
 
+            sb.AppendLine("<tr style='border-top:2px solid #000;font-weight:900;'>");
+            sb.AppendLine("<td style='padding:2px 4px;'>TOTAL</td>");
+            sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(data.Days.Sum(d => d.Parking))}</td>");
+            sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(data.Days.Sum(d => d.Wash))}</td>");
+            sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(data.Days.Sum(d => d.Monthly))}</td>");
+            sb.AppendLine($"<td style='padding:2px 4px;text-align:right;'>{Money(data.Days.Sum(d => d.Total))}</td>");
+            sb.AppendLine("</tr>");
+            sb.AppendLine("</table>");
+
             AppendHtmlLine(sb);
-            var totalLeft =
-                $"TOTAL {data.Days.Sum(d => d.Parking)}/{data.Days.Sum(d => d.Wash)}/{data.Days.Sum(d => d.Monthly)}";
-            AppendHtmlRowBold(sb, totalLeft, Money(data.Days.Sum(d => d.Total)));
         }
 
         if (data.Expenses.Count > 0)

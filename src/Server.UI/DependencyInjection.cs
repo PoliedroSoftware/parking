@@ -207,6 +207,7 @@ public static class DependencyInjection
         });
         app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
         app.MapHub<ServerHub>(ISignalRHub.Url);
+        app.MapHub<PrintHub>("/hubs/print");
 
         //QuestPDF License configuration
         Settings.License = LicenseType.Community;

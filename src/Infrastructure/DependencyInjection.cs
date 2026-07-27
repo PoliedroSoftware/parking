@@ -175,6 +175,11 @@ public static class DependencyInjection
         // Configure SecurityAnalysisService with options
         services.Configure<WebServiceClientOptions>(configuration.GetSection("MaxMind"));
         services.AddHttpClient<WebServiceClient>();
+        services.AddHttpClient<RemotePrintService>(client =>
+        {
+            client.BaseAddress = new Uri(configuration["AppConfigurationSettings:PrintHubUrl"] ?? "http://localhost:5220");
+        });
+        services.AddScoped<IRemotePrintService, RemotePrintService>();
 
         // Configure SecurityAnalysisService with options
         services.Configure<SecurityAnalysisOptions>(configuration.GetSection(SecurityAnalysisOptions.SectionName));

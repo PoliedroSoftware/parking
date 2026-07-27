@@ -621,11 +621,15 @@
     private async Task ProcessPlate()
     {
         if (_processing) return;
+        _processing = true;
 
         var plate = NormalizePlate(_licensePlate);
-        if (string.IsNullOrEmpty(plate)) return;
+        if (string.IsNullOrEmpty(plate))
+        {
+            _processing = false;
+            return;
+        }
 
-        _processing = true;
         await ClearPlateInputAsync();
         await InvokeAsync(StateHasChanged);
 

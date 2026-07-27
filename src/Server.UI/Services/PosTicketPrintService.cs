@@ -1,4 +1,6 @@
 using CleanArchitecture.Blazor.Application.Common.Interfaces;
+using CleanArchitecture.Blazor.Server.UI.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.JSInterop;
 
 namespace CleanArchitecture.Blazor.Server.UI.Services;
@@ -23,7 +25,8 @@ public sealed class PosTicketPrintService(
     TicketService ticketService,
     IPrinterService printerService,
     IJSRuntime jsRuntime,
-    CompanyInformationService companyInformationService)
+    CompanyInformationService companyInformationService,
+    IHubContext<PrintHub> printHubContext)
 {
     public async Task<PosTicketPrintResult> PrintAsync(TicketData ticketData, CancellationToken cancellationToken = default)
     {
@@ -31,34 +34,34 @@ public sealed class PosTicketPrintService(
             return PosTicketPrintResult.Failed("No se recibio informacion del ticket.");
 
         await companyInformationService.ApplyAsync(ticketData, cancellationToken);
+        var content = ticketService.GenerateTicketText(ticketData);
 
         if (string.IsNullOrWhiteSpace(printerService.PrinterName))
         {
+            if (await TryRemotePrintAsync(content))
+                return PosTicketPrintResult.Direct("Ticket enviado a impresora remota via PrintHub.");
+
             await OpenBrowserPreviewAsync(ticketData);
-            return PosTicketPrintResult.Preview(
-                "No hay impresora POS configurada. Se abrio la vista previa de impresion.");
+            return PosTicketPrintResult.Preview("Se abrio la vista previa.");
         }
 
         try
         {
-            await printerService.PrintTicketAsync(ticketService.GenerateTicketText(ticketData), cancellationToken);
+            await printerService.PrintTicketAsync(content, cancellationToken);
             return PosTicketPrintResult.Direct("Ticket enviado directo a la impresora POS.");
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            throw;
-        }
-        catch (Exception ex)
-        {
+            if (await TryRemotePrintAsync(content))
+                return PosTicketPrintResult.Direct("Impresion directa fallo. Ticket enviado a impresora remota.");
+
             var cleanupMessage = await TryCleanupQueueAsync(cancellationToken);
-            return PosTicketPrintResult.Failed(
-                $"No se pudo imprimir directo en POS: {ex.Message}{cleanupMessage}");
+            return PosTicketPrintResult.Failed($"No se pudo imprimir: {ex.Message}{cleanupMessage}");
         }
     }
 
     public async Task<PosTicketPrintResult> PrintReportAsync(
-        string taggedContent,
-        string htmlContent,
+        string taggedContent, string htmlContent,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(taggedContent))
@@ -66,9 +69,11 @@ public sealed class PosTicketPrintService(
 
         if (string.IsNullOrWhiteSpace(printerService.PrinterName))
         {
+            if (await TryRemotePrintAsync(taggedContent))
+                return PosTicketPrintResult.Direct("Reporte enviado a impresora remota via PrintHub.");
+
             await OpenReportBrowserPreviewAsync(htmlContent);
-            return PosTicketPrintResult.Preview(
-                "No hay impresora POS configurada. Se abrio la vista previa de impresion.");
+            return PosTicketPrintResult.Preview("Se abrio la vista previa.");
         }
 
         try
@@ -76,16 +81,30 @@ public sealed class PosTicketPrintService(
             await printerService.PrintTicketAsync(taggedContent, cancellationToken);
             return PosTicketPrintResult.Direct("Reporte enviado directo a la impresora POS.");
         }
-        catch (OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            throw;
-        }
-        catch (Exception ex)
-        {
+            if (await TryRemotePrintAsync(taggedContent))
+                return PosTicketPrintResult.Direct("Impresion directa fallo. Reporte enviado a impresora remota.");
+
             var cleanupMessage = await TryCleanupQueueAsync(cancellationToken);
-            return PosTicketPrintResult.Failed(
-                $"No se pudo imprimir directo en POS: {ex.Message}{cleanupMessage}");
+            return PosTicketPrintResult.Failed($"No se pudo imprimir: {ex.Message}{cleanupMessage}");
         }
+    }
+
+    private async Task<bool> TryRemotePrintAsync(string content)
+    {
+        try
+        {
+            if (!PrintHub.HasPrinters) return false;
+            await printHubContext.Clients.All.SendAsync("PrintJob", new
+            {
+                PrinterName = "POS-80",
+                Content = content,
+                JobId = Guid.NewGuid().ToString("N")[..8]
+            });
+            return true;
+        }
+        catch { return false; }
     }
 
     private async Task OpenBrowserPreviewAsync(TicketData ticketData)
@@ -107,9 +126,6 @@ public sealed class PosTicketPrintService(
                 ? $" Se limpiaron {repairedJobs} trabajo(s) bloqueado(s) de la cola."
                 : string.Empty;
         }
-        catch
-        {
-            return " No se pudo limpiar la cola automaticamente.";
-        }
+        catch { return " No se pudo limpiar la cola automaticamente."; }
     }
 }

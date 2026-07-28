@@ -87,7 +87,7 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
             return false;
         }
 
-        if (!refererUri.Authority.Equals(host, StringComparison.OrdinalIgnoreCase))
+        if (!refererUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogError("Request from unauthorized origin. Referer: {Referer}, Expected host: {Host}", 
                 referer, host);

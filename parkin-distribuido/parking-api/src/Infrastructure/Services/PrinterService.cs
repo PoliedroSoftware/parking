@@ -246,6 +246,12 @@ public class PrinterService : IPrinterService
                 continue;
             }
 
+            if (line.StartsWith("[QR]:", StringComparison.Ordinal))
+            {
+                ticket.QrCode(line[5..]);
+                continue;
+            }
+
             if (TryWriteTaggedLine(ticket, line, "[HUGE]:", value =>
                     ticket.Center().Bold(true).Size(0x11).Wrapped(value, DoubleWidthColumns)))
                 continue;
@@ -1073,6 +1079,24 @@ public class PrinterService : IPrinterService
         public EscPosTicket Feed(byte lines)
         {
             Write(0x1B, 0x64, lines);
+            return this;
+        }
+
+        public EscPosTicket QrCode(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return this;
+
+            var data = Encoding.UTF8.GetBytes(value.Trim());
+            var storeLength = data.Length + 3;
+            Center();
+            Write(0x1D, 0x28, 0x6B, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00);
+            Write(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, 0x04);
+            Write(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x31);
+            Write(0x1D, 0x28, 0x6B, (byte)(storeLength & 0xFF), (byte)(storeLength >> 8), 0x31, 0x50, 0x30);
+            _buffer.Write(data, 0, data.Length);
+            Write(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30);
+            LineFeed();
             return this;
         }
 

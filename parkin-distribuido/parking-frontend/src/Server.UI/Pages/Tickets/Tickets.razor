@@ -13,6 +13,7 @@
 @inject PosTicketPrintService PosTicketPrintService
 @inject TicketPdfService TicketPdfService
 @inject ParkingSessionService ParkingService
+@inject ParkingQrTokenService ParkingQrTokenService
 @inject ISnackbar Snackbar
 @inject IApplicationDbContextFactory DbFactory
 @inject BlazorDownloadFileService BlazorDownloadFileService
@@ -681,7 +682,7 @@
         var ticketNo = TicketService.GenerateTicketNumber();
 
         await using var db = await DbFactory.CreateAsync();
-        db.ParkingRecords.Add(new ParkingRecord
+        var parkingRecord = new ParkingRecord
         {
             LicensePlate = plate,
             EntryTime = entryTime,
@@ -689,8 +690,12 @@
             Status = ActiveParkingStatus,
             Amount = 0,
             Notes = _vehicleTypeName,
-        });
+        };
+        db.ParkingRecords.Add(parkingRecord);
         await db.SaveChangesAsync(CancellationToken.None);
+
+        var parkingQrToken = ParkingQrTokenService.Create(parkingRecord.Id);
+        var parkingQrCode = await GenerateParkingQrCodeAsync(parkingQrToken);
 
         ParkingService.RegisterEntry(new ParkingSession
         {
@@ -717,7 +722,9 @@
             DateTime = entryTime,
             TicketNumber = ticketNo,
             OperatorName = "Operador",
-            VehicleType = _vehicleTypeName
+            VehicleType = _vehicleTypeName,
+            ParkingQrToken = parkingQrToken,
+            ParkingQrCodeDataUrl = parkingQrCode
         };
 
         await PrintPosTicket(ticketData);
@@ -1042,6 +1049,18 @@
     {
         var result = await PosTicketPrintService.PrintAsync(ticketData);
         ShowPrintResult(result);
+    }
+
+    private async Task<string?> GenerateParkingQrCodeAsync(string token)
+    {
+        try
+        {
+            return await (new GenerateQrCode(JS)).Generate(token);
+        }
+        catch (JSException)
+        {
+            return null;
+        }
     }
 
     private void ShowPrintResult(PosTicketPrintResult result)

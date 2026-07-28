@@ -32,6 +32,8 @@ public class TicketData
     public string? WashServiceType { get; set; }
     public string? CustomerName { get; set; }
     public string? Notes { get; set; }
+    public string? ParkingQrToken { get; set; }
+    public string? ParkingQrCodeDataUrl { get; set; }
     public int? QueueNumber { get; set; }
     public decimal? BasePrice { get; set; }
     public decimal? AdditionalsTotal { get; set; }
@@ -154,6 +156,11 @@ public class TicketService
             sb.AppendLine("[DASHED]");
             sb.AppendLine("[CENTER-SMALL]:Conserve este ticket");
             sb.AppendLine("[CENTER-SMALL]:Presentelo para su salida");
+            if (!string.IsNullOrWhiteSpace(data.ParkingQrToken))
+            {
+                sb.AppendLine($"[QR]:{data.ParkingQrToken}");
+                sb.AppendLine("[CENTER-SMALL]:Escanee el QR para registrar la salida");
+            }
         }
 
         // EXIT
@@ -358,6 +365,8 @@ public class TicketService
             "font-size: 22px;",
             "line-height: 1.05;",
             "font-weight: 900;");
+        AppendStyle(sb, ".qr-box", "margin: 6px 0;", "text-align: center;");
+        AppendStyle(sb, ".qr-code", "display: block;", "width: 26mm;", "height: 26mm;", "margin: 3px auto;");
         AppendStyle(sb, ".payment-status",
             "margin: 5px 0;",
             "padding: 2px 0;",
@@ -430,6 +439,13 @@ public class TicketService
         if (data.Type == TicketType.Entry)
         {
             sb.AppendLine("<div class='notice'>Conserve este ticket y presentelo al salir.</div>");
+            if (!string.IsNullOrWhiteSpace(data.ParkingQrCodeDataUrl))
+            {
+                sb.AppendLine("<div class='qr-box'>");
+                sb.AppendLine($"<img class='qr-code' src='{Html(data.ParkingQrCodeDataUrl)}' alt='QR para registrar la salida'>");
+                sb.AppendLine("<div class='small'>Escanee este QR para registrar la salida</div>");
+                sb.AppendLine("</div>");
+            }
         }
 
         if (data.Type == TicketType.Exit || data.Type == TicketType.Payment)

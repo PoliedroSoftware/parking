@@ -15,7 +15,7 @@ export function generateQRCode(url) {
 
     // Generate QR code (using a hypothetical QRCode library)
     // You'll need to include a QR code library in your project
-    const qrcode = new QRCode(container, {
+    new QRCode(container, {
         text: url,
         width: 128,
         height: 128,

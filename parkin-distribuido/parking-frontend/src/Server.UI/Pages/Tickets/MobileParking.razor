@@ -1,0 +1,311 @@
+@page "/pages/parking-mobile"
+
+@using CleanArchitecture.Blazor.Domain.Entities
+
+@inject IApplicationDbContextFactory DbFactory
+@inject TicketService TicketService
+@inject PosTicketPrintService PosTicketPrintService
+@inject ParkingSessionService ParkingService
+@inject ParkingQrTokenService ParkingQrTokenService
+@inject ISnackbar Snackbar
+
+@attribute [Authorize]
+
+<PageTitle>Parqueo móvil</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-3 pa-sm-6">
+    <MudPaper Elevation="1" Class="pa-4 pa-sm-6 mt-4">
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h5" Align="Align.Center">Parqueo</MudText>
+
+            <MudTextField @bind-Value="_licensePlate"
+                          Label="Placa"
+                          Placeholder="ABC123"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Immediate="true"
+                          AutoFocus="true"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.DirectionsCar"
+                          OnKeyUp="HandleKeyUp"
+                          Disabled="@_processing" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       FullWidth="true"
+                       OnClick="ProcessPlate"
+                       Disabled="@(_processing || string.IsNullOrWhiteSpace(_licensePlate))">
+                @(_processing ? "PROCESANDO..." : "PROCESAR")
+            </MudButton>
+
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Size="Size.Large"
+                       FullWidth="true"
+                       OnClick="ToggleScanner"
+                       Disabled="@_processing">
+                @(_scanning ? "CERRAR CÁMARA" : "ESCANEAR QR")
+            </MudButton>
+
+            @if (_scanning)
+            {
+                <MudPaper Outlined="true" Class="pa-2">
+                    <video id="parking-qr-video" autoplay playsinline style="width:100%;max-height:260px;object-fit:cover;"></video>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Apunta la cámara al QR del ticket de entrada.</MudText>
+                </MudPaper>
+            }
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@implements IAsyncDisposable
+
+@code {
+    private const string ActiveStatus = "Activo";
+    private const string CompletedStatus = "Completado";
+    private const int ParkingHourlyRate = 3500;
+    private string _licensePlate = string.Empty;
+    private bool _processing;
+    private bool _scanning;
+    private IJSObjectReference? _scannerModule;
+    private DotNetObjectReference<MobileParking>? _dotNetReference;
+
+    private async Task HandleKeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+            await ProcessPlate();
+    }
+
+    private async Task ProcessPlate()
+    {
+        if (_processing)
+            return;
+
+        var plate = NormalizePlate(_licensePlate);
+        if (string.IsNullOrWhiteSpace(plate))
+            return;
+
+        _processing = true;
+        _licensePlate = string.Empty;
+
+        try
+        {
+            await using var db = await DbFactory.CreateAsync();
+            var record = await db.ParkingRecords
+                .Where(item => item.Status == ActiveStatus &&
+                    item.LicensePlate.Replace("-", string.Empty).Replace(" ", string.Empty).ToUpper() == plate)
+                .OrderByDescending(item => item.EntryTime)
+                .FirstOrDefaultAsync();
+
+            if (record is null)
+                await RegisterEntryAsync(db, plate);
+            else
+                await RegisterExitAsync(db, record);
+        }
+        catch (Exception exception)
+        {
+            Snackbar.Add($"No se pudo procesar {plate}: {exception.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task ToggleScanner()
+    {
+        if (_scanning)
+        {
+            await StopScannerAsync();
+            return;
+        }
+
+        try
+        {
+            _scannerModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/parkingQrScanner.js");
+            _dotNetReference = DotNetObjectReference.Create(this);
+            _scanning = true;
+            await InvokeAsync(StateHasChanged);
+            await _scannerModule.InvokeVoidAsync("startParkingQrScanner", "parking-qr-video", _dotNetReference);
+        }
+        catch (Exception exception)
+        {
+            await StopScannerAsync();
+            Snackbar.Add($"No se pudo activar la cámara: {exception.Message}", Severity.Warning);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnParkingQrDetected(string token)
+    {
+        await StopScannerAsync();
+        await ProcessQrToken(token);
+    }
+
+    private async Task ProcessQrToken(string token)
+    {
+        if (_processing)
+            return;
+
+        if (!ParkingQrTokenService.TryGetParkingRecordId(token, out var recordId))
+        {
+            Snackbar.Add("El QR no es válido para este parqueadero.", Severity.Warning);
+            return;
+        }
+
+        _processing = true;
+        try
+        {
+            await using var db = await DbFactory.CreateAsync();
+            var record = await db.ParkingRecords
+                .Where(item => item.Id == recordId && item.Status == ActiveStatus)
+                .FirstOrDefaultAsync();
+
+            if (record is null)
+            {
+                Snackbar.Add("El parqueo ya fue cerrado o no existe.", Severity.Warning);
+                return;
+            }
+
+            await RegisterExitAsync(db, record);
+        }
+        catch (Exception exception)
+        {
+            Snackbar.Add($"No se pudo procesar el QR: {exception.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task RegisterEntryAsync(IApplicationDbContext db, string plate)
+    {
+        var entryTime = DateTime.Now;
+        var ticketNumber = TicketService.GenerateTicketNumber();
+
+        var parkingRecord = new ParkingRecord
+        {
+            LicensePlate = plate,
+            EntryTime = entryTime,
+            TicketNumber = ticketNumber,
+            Status = ActiveStatus,
+            Amount = 0,
+            Notes = "Carro"
+        };
+        db.ParkingRecords.Add(parkingRecord);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var parkingQrToken = ParkingQrTokenService.Create(parkingRecord.Id);
+        var parkingQrCode = await GenerateParkingQrCodeAsync(parkingQrToken);
+
+        ParkingService.RegisterEntry(new ParkingSession
+        {
+            LicensePlate = plate,
+            EntryTime = entryTime,
+            VehicleType = "Carro",
+            TicketNumber = ticketNumber
+        });
+
+        await PrintAsync(new TicketData
+        {
+            Type = TicketType.Entry,
+            LicensePlate = plate,
+            DateTime = entryTime,
+            TicketNumber = ticketNumber,
+            OperatorName = "Operador",
+            VehicleType = "Carro",
+            ParkingQrToken = parkingQrToken,
+            ParkingQrCodeDataUrl = parkingQrCode
+        });
+
+        Snackbar.Add($"Entrada registrada: {plate}", Severity.Success);
+    }
+
+    private async Task RegisterExitAsync(IApplicationDbContext db, ParkingRecord record)
+    {
+        var exitTime = DateTime.Now;
+        var duration = exitTime - record.EntryTime;
+        var amount = CalculateAmount(duration);
+
+        record.ExitTime = exitTime;
+        record.Amount = amount;
+        record.Status = CompletedStatus;
+        record.CustomerName = "Consumidor Final";
+        await db.SaveChangesAsync(CancellationToken.None);
+        ParkingService.Checkout(record.LicensePlate);
+
+        await PrintAsync(new TicketData
+        {
+            Type = TicketType.Exit,
+            LicensePlate = record.LicensePlate,
+            DateTime = exitTime,
+            EntryTime = record.EntryTime,
+            TicketNumber = record.TicketNumber,
+            Amount = amount,
+            GrossAmount = amount,
+            HourlyRate = ParkingHourlyRate,
+            Duration = duration,
+            OperatorName = "Operador",
+            VehicleType = record.Notes
+        });
+
+        Snackbar.Add($"Salida registrada: {record.LicensePlate} - $ {amount:N0}", Severity.Success);
+    }
+
+    private async Task PrintAsync(TicketData ticketData)
+    {
+        var result = await PosTicketPrintService.PrintAsync(ticketData);
+        if (!result.PrintedDirectly && !result.PreviewOpened)
+            Snackbar.Add(result.Message, Severity.Warning);
+    }
+
+    private async Task<string?> GenerateParkingQrCodeAsync(string token)
+    {
+        try
+        {
+            return await (new GenerateQrCode(JS)).Generate(token);
+        }
+        catch (JSException)
+        {
+            return null;
+        }
+    }
+
+    private async Task StopScannerAsync()
+    {
+        if (_scannerModule is not null)
+        {
+            try
+            {
+                await _scannerModule.InvokeVoidAsync("stopParkingQrScanner");
+            }
+            catch (JSException) { }
+        }
+
+        _scanning = false;
+        _dotNetReference?.Dispose();
+        _dotNetReference = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopScannerAsync();
+        if (_scannerModule is not null)
+            await _scannerModule.DisposeAsync();
+    }
+
+    private static int CalculateAmount(TimeSpan duration)
+    {
+        var hours = Math.Ceiling(duration.TotalHours);
+        return Math.Max(2000, (int)(hours * ParkingHourlyRate));
+    }
+
+    private static string NormalizePlate(string? plate)
+    {
+        return string.IsNullOrWhiteSpace(plate)
+            ? string.Empty
+            : plate.Trim().Replace("-", string.Empty).Replace(" ", string.Empty).ToUpperInvariant();
+    }
+}

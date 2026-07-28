@@ -71,6 +71,13 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
     /// <returns>True if the origin is valid, false otherwise.</returns>
     private static bool ValidateRequestOrigin(HttpContext context, ILogger logger)
     {
+        if (string.Equals(Environment.GetEnvironmentVariable("DISABLE_ORIGIN_VALIDATION"), "true",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning("Request origin validation is disabled by DISABLE_ORIGIN_VALIDATION.");
+            return true;
+        }
+
         var referer = context.Request.Headers.Referer.ToString();
         var host = context.Request.Host.ToString();
 

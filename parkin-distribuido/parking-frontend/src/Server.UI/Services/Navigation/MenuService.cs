@@ -22,6 +22,7 @@ public class MenuService : IMenuService
                     MenuItems = new List<MenuSectionSubItemModel>
                     {
                         new() { Title = "Parqueo", Href = "/pages/tickets", PageStatus = PageStatus.Completed },
+                        new() { Title = "Parqueo móvil", Href = "/pages/parking-mobile", PageStatus = PageStatus.Completed },
                         new() { Title = "Tarifas Parqueo", Href = "/tables/parking-rates", PageStatus = PageStatus.Completed },
                     }
                 },

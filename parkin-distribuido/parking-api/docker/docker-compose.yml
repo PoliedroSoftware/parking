@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: poliedro-postgres
+    environment:
+      POSTGRES_DB: aceparking
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1091658551
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  monolith:
+    build:
+      context: .
+      dockerfile: Dockerfile.monolith
+    container_name: poliedro-monolith
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - DatabaseSettings__DBProvider=postgresql
+      - DatabaseSettings__ConnectionString=Host=postgres;Port=5432;Database=aceparking;Username=postgres;Password=1091658551;
+      - AppConfigurationSettings__AppName=PoliedroParking
+      - AppConfigurationSettings__Company=Poliedro
+      - AppConfigurationSettings__PrinterEnabled=false
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: poliedro-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - 5080:80
+    depends_on:
+      - monolith
+    restart: unless-stopped
+
+volumes:
+  pgdata:

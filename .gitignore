@@ -383,3 +383,11 @@ dev-debug.log
 # Task files
 # tasks.json
 # tasks/ 
+
+# Local migration backups
+.migration-backups/
+
+# Playwright local tooling
+.npm-cache/
+.playwright-browsers/
+playwright-artifacts/

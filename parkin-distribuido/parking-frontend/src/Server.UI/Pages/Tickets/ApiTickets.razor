@@ -1,0 +1,179 @@
+@page "/pages/tickets-api"
+
+@using CleanArchitecture.Blazor.Server.UI.Services.Decoupled
+
+@inject ParkingApiClient Api
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Parking API v1</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Parking API v1</MudText>
+
+    <MudCard Class="mb-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-3">Autenticación API</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_username" Label="Usuario" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_password" Label="Contraseña" InputType="InputType.Password" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4" Class="d-flex align-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoginAsync" Disabled="_busy">
+                        Iniciar sesión API
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Class="mb-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h6" Class="mb-3">Entrada y salida</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_plate" Label="Placa" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_vehicleType" Label="Tipo de vehículo" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4" Class="d-flex align-center gap-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="CreateEntryAsync" Disabled="!CanOperate || _busy">
+                        Entrada
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="ProcessExitAsync" Disabled="!CanOperate || _busy">
+                        Salida
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+    </MudCard>
+
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+        <MudText Typo="Typo.h6">Estado actual</MudText>
+        <MudButton Variant="Variant.Outlined" OnClick="RefreshAsync" Disabled="!CanOperate || _busy">Actualizar</MudButton>
+    </MudStack>
+
+    @if (_active is not null)
+    {
+        <MudTable Items="_active" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Placa</MudTh>
+                <MudTh>Tipo</MudTh>
+                <MudTh>Entrada</MudTh>
+                <MudTh>Estimado</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Plate</MudTd>
+                <MudTd>@context.VehicleType</MudTd>
+                <MudTd>@context.EntryTime.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                <MudTd>$ @context.EstimatedAmount.ToString("N0")</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+
+    @if (_lastTicket is not null)
+    {
+        <MudAlert Severity="Severity.Success" Class="mt-4" Dense="true">
+            @_lastTicket
+        </MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string _plate = string.Empty;
+    private string _vehicleType = "Carro";
+    private string? _lastTicket;
+    private List<ApiActiveParking>? _active;
+    private bool _busy;
+    private bool _authenticated;
+
+    private bool CanOperate => _authenticated;
+
+    private async Task LoginAsync()
+    {
+        await RunAsync(async () =>
+        {
+            var result = await Api.LoginAsync(_username, _password);
+            _authenticated = result is not null;
+            if (!_authenticated)
+            {
+                Snackbar.Add("No fue posible autenticar contra el API", Severity.Error);
+                return;
+            }
+
+            Snackbar.Add($"Sesión API iniciada para {result!.DisplayName}", Severity.Success);
+            await RefreshAsync();
+        });
+    }
+
+    private async Task CreateEntryAsync()
+    {
+        await RunAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(_plate))
+                return;
+
+            var result = await Api.CreateEntryAsync(_plate.Trim().ToUpperInvariant(), _vehicleType);
+            if (result is null)
+            {
+                Snackbar.Add("El API rechazó la entrada", Severity.Error);
+                return;
+            }
+
+            _lastTicket = $"Entrada registrada: {result.TicketNumber}";
+            _plate = string.Empty;
+            await RefreshAsync();
+        });
+    }
+
+    private async Task ProcessExitAsync()
+    {
+        await RunAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(_plate))
+                return;
+
+            var result = await Api.ProcessExitAsync(_plate.Trim().ToUpperInvariant());
+            if (result is null)
+            {
+                Snackbar.Add("El API no encontró un parqueo activo", Severity.Error);
+                return;
+            }
+
+            _lastTicket = $"Salida registrada: $ {result.Amount:N0} ({result.Duration})";
+            _plate = string.Empty;
+            await RefreshAsync();
+        });
+    }
+
+    private async Task RefreshAsync()
+    {
+        _active = await Api.GetActiveAsync();
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        if (_busy)
+            return;
+
+        _busy = true;
+        try
+        {
+            await action();
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("No se pudo conectar con el API", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

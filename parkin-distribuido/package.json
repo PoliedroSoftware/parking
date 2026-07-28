@@ -1,0 +1,11 @@
+{
+  "name": "parking-distribuido",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test:playwright": "node scripts/crud-validation.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.0"
+  }
+}

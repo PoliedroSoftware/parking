@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Parking.Maui.Views.LoginPage"
+             Title="Poliedro Parking">
+    <VerticalStackLayout Spacing="16" Padding="24" VerticalOptions="Center">
+        <Label Text="POLIEDRO PARKING" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" />
+        <Entry Placeholder="Usuario" x:Name="UsernameEntry" FontSize="18" />
+        <Entry Placeholder="Contrasena" IsPassword="True" x:Name="PasswordEntry" FontSize="18" ReturnType="Done"
+               Completed="OnLoginClicked" />
+        <Button Text="INGRESAR" Clicked="OnLoginClicked" BackgroundColor="#1976d2" TextColor="White"
+                FontSize="18" HeightRequest="50" CornerRadius="8" />
+        <Label x:Name="ErrorLabel" TextColor="Red" IsVisible="False" />
+    </VerticalStackLayout>
+</ContentPage>

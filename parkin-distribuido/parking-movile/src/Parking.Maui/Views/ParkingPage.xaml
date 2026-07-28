@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Parking.Maui.Views.ParkingPage"
+             Title="Parqueo">
+    <VerticalStackLayout Padding="16" Spacing="12">
+        <Label Text="Entrada / Salida" FontSize="20" FontAttributes="Bold" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <Entry Placeholder="ABC123" x:Name="PlateEntry" FontSize="24" FontAttributes="Bold"
+                   Completed="OnProcessClicked" />
+            <Button Grid.Column="1" Text="PROCESAR" Clicked="OnProcessClicked"
+                    BackgroundColor="#1976d2" TextColor="White" WidthRequest="120" />
+        </Grid>
+        <Label x:Name="MessageLabel" FontSize="14" />
+        <Label Text="Parqueos Activos" FontSize="18" FontAttributes="Bold" Margin="0,12,0,0" />
+        <CollectionView x:Name="ActiveList">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="8" Margin="0,4" CornerRadius="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <VerticalStackLayout>
+                                <Label Text="{Binding Plate}" FontSize="16" FontAttributes="Bold" />
+                                <Label Text="{Binding VehicleType, StringFormat='{0}'}" FontSize="12" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding EstimatedAmount, StringFormat='$ {0:N0}'}"
+                                   FontSize="16" VerticalOptions="Center" Margin="0,0,8,0" />
+                            <Button Grid.Column="2" Text="SALIDA" BackgroundColor="#4caf50" TextColor="White"
+                                    CommandParameter="{Binding .}" Clicked="OnExitClicked" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

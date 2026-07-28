@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Parking.Maui/Parking.Maui.csproj" />
+    <Project Path="src/Parking.Shared/Parking.Shared.csproj" />
+  </Folder>
+</Solution>

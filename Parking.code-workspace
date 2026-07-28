@@ -1,0 +1,9 @@
+{
+  "folders": [
+    { "name": "Monolito producción", "path": "parking-monolito" },
+    { "name": "Plataforma distribuida", "path": "parkin-distribuido" }
+  ],
+  "settings": {
+    "dotnet.defaultSolution": "parkin-distribuido/parking-api/ParkingApi.slnx"
+  }
+}

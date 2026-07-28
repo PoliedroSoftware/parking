@@ -1,0 +1,29 @@
+{
+  "folders": [
+    { "name": "API", "path": "parking-api" },
+    { "name": "Frontend", "path": "parking-frontend" },
+    { "name": "Móvil", "path": "parking-movile" }
+  ],
+  "settings": {
+    "dotnet.defaultSolution": "parking-api/ParkingApi.slnx"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "API: levantar",
+        "type": "shell",
+        "command": "dotnet run --project parking-api/src/Parking.Api --urls http://localhost:5221",
+        "problemMatcher": "$msCompile",
+        "isBackground": true
+      },
+      {
+        "label": "Frontend: levantar",
+        "type": "shell",
+        "command": "dotnet run --project parking-frontend/src/Server.UI --urls http://localhost:5057",
+        "problemMatcher": "$msCompile",
+        "isBackground": true
+      }
+    ]
+  }
+}

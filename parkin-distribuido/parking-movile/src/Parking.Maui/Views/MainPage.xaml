@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<TabbedPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            xmlns:views="clr-namespace:Parking.Maui.Views"
+            x:Class="Parking.Maui.Views.MainPage"
+            Title="Poliedro Parking">
+    <TabbedPage.Children>
+        <views:ParkingPage Title="Parqueo" IconImageSource="parking.png" />
+        <views:CarWashesPage Title="Lavados" IconImageSource="carwash.png" />
+        <views:MembersPage Title="Mensualidades" IconImageSource="members.png" />
+        <views:ReportsPage Title="Reportes" IconImageSource="reports.png" />
+    </TabbedPage.Children>
+</TabbedPage>

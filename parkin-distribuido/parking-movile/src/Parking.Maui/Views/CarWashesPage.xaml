@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Parking.Maui.Views.CarWashesPage" Title="Lavados">
+    <VerticalStackLayout Padding="16" Spacing="12">
+        <Label Text="Lavados" FontSize="20" FontAttributes="Bold" />
+        <Button Text="Actualizar" Clicked="OnRefresh" BackgroundColor="#1976d2" TextColor="White" />
+        <CollectionView x:Name="ItemsList">
+            <CollectionView.ItemTemplate><DataTemplate><Frame Padding="8" Margin="0,4" CornerRadius="8"><Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout><Label Text="{Binding LicensePlate}" FontSize="16" FontAttributes="Bold" />
+                <Label Text="{Binding WashServiceType}" FontSize="12" /><Label Text="{Binding Status}" FontSize="12" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center"><Label Text="{Binding Price, StringFormat='$ {0:N0}'}" FontSize="16" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                <Button Text="COBRAR" BackgroundColor="#4caf50" TextColor="White" IsVisible="{Binding IsPaid, Converter={StaticResource InvertBool}}" CommandParameter="{Binding .}" Clicked="OnPay" /></VerticalStackLayout>
+            </Grid></Frame></DataTemplate></CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

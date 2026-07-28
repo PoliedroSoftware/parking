@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace CleanArchitecture.Blazor.Domain.Enums;
+
+public enum PermitTypes
+{
+    [DisplayEn("None")]
+    [DisplayTc("未知")]
+    None = 0,
+
+    [DisplayEn("Octopus")]
+    [DisplayTc("八達通卡")]
+    OctopusCard = 1,
+
+    [DisplayEn("Smartcard")]
+    [DisplayTc("智能卡")]
+    Smartcard = 2,
+
+    [DisplayEn("PlateNo")]
+    [DisplayTc("車牌號碼")]
+    LicensePlate = 4,
+
+    [DisplayEn("Ticket")]
+    [DisplayTc("磁卡")]
+    MagneticTicket = 8,
+
+    [DisplayEn("QRCode")]
+    [DisplayTc("QRCode")]
+    QRCode = 1 << 4,
+}

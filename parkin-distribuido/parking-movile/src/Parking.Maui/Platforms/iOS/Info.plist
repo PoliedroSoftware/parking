@@ -9,6 +9,12 @@
 		<integer>1</integer>
 		<integer>2</integer>
 	</array>
+	<!-- Required only for the local HTTP development endpoint; production must use HTTPS. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

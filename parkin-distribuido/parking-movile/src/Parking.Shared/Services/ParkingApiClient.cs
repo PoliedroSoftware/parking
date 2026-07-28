@@ -78,7 +78,8 @@ public class ParkingApiClient
     // Members
     public async Task<PaginatedResult<MemberItem>?> GetMembersAsync(int page = 1, string? search = null)
     {
-        return await _http.GetFromJsonAsync<PaginatedResult<MemberItem>>($"{ApiPrefix}/members?page={page}&pageSize=20&search={search}");
+        var encodedSearch = Uri.EscapeDataString(search ?? string.Empty);
+        return await _http.GetFromJsonAsync<PaginatedResult<MemberItem>>($"{ApiPrefix}/members?page={page}&pageSize=20&search={encodedSearch}");
     }
 
     public async Task<List<RentalItem>?> GetMemberRentalsAsync(int memberId)
@@ -99,7 +100,9 @@ public class ParkingApiClient
     {
         var url = $"{ApiPrefix}/members/{memberId}/print";
         if (rentalId.HasValue) url += $"?rentalId={rentalId.Value}";
-        return await _http.GetFromJsonAsync<TicketResult>(url);
+        using var response = await _http.PostAsync(url, content: null);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<TicketResult>();
     }
 
     // Vehicle Types

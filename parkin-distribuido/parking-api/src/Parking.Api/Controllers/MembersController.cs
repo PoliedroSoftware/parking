@@ -83,7 +83,7 @@ public class MembersController(IApplicationDbContextFactory dbFactory) : Control
     }
 
     [HttpPost("{id}/print")]
-    public async Task<ActionResult> PrintReceipt(int memberId, [FromQuery] int? rentalId = null)
+    public async Task<ActionResult> PrintReceipt(int id, [FromQuery] int? rentalId = null)
     {
         await using var db = await dbFactory.CreateAsync();
         MemberRental? rental;
@@ -91,15 +91,15 @@ public class MembersController(IApplicationDbContextFactory dbFactory) : Control
             rental = await db.MemberRentals.AsNoTracking().FirstOrDefaultAsync(r => r.Id == rentalId.Value);
         else
             rental = await db.MemberRentals.AsNoTracking()
-                .Where(r => r.MemberId == memberId)
+                .Where(r => r.MemberId == id)
                 .OrderByDescending(r => r.PaymentTime)
                 .FirstOrDefaultAsync();
 
         if (rental is null) return NotFound(new { error = "No hay pagos registrados" });
 
-        var member = await db.Members.AsNoTracking().FirstOrDefaultAsync(m => m.Id == memberId);
+        var member = await db.Members.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id);
         var vehicles = await db.MemberVehicles.AsNoTracking()
-            .Where(v => v.MemberId == memberId && v.Vehicle != null)
+            .Where(v => v.MemberId == id && v.Vehicle != null)
             .Select(v => new VehicleInfo(v.Vehicle!.Name, v.Vehicle.VehicleTypeId))
             .ToListAsync();
 

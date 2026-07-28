@@ -23,7 +23,21 @@ public partial class ParkingPage : ContentPage
         await LoadData();
     }
 
-    private async Task DoEntry(string plate) { var vt = (await _api.GetActiveVehicleTypesAsync())?.FirstOrDefault()?.Name ?? "Carro"; var r = await _api.CreateEntryAsync(plate, vt); if (r != null) MessageLabel.Text = $"ENTRADA: {plate}"; }
-    private async Task DoExit(ActiveParking p) { var r = await _api.ProcessExitAsync(p.Plate); if (r != null) MessageLabel.Text = $"SALIDA: {p.Plate} - $ {r.Amount:N0}"; }
+    private async Task DoEntry(string plate)
+    {
+        var api = _api;
+        if (api is null) return;
+        var vt = (await api.GetActiveVehicleTypesAsync())?.FirstOrDefault()?.Name ?? "Carro";
+        var result = await api.CreateEntryAsync(plate, vt);
+        if (result != null) MessageLabel.Text = $"ENTRADA: {plate}";
+    }
+
+    private async Task DoExit(ActiveParking p)
+    {
+        var api = _api;
+        if (api is null) return;
+        var result = await api.ProcessExitAsync(p.Plate);
+        if (result != null) MessageLabel.Text = $"SALIDA: {p.Plate} - $ {result.Amount:N0}";
+    }
     private async void OnExitClicked(object? sender, EventArgs e) { if (sender is Button b && b.CommandParameter is ActiveParking p) { await DoExit(p); await LoadData(); } }
 }

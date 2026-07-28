@@ -73,14 +73,27 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
     {
         var referer = context.Request.Headers.Referer.ToString();
         var host = context.Request.Host.ToString();
-        var scheme = context.Request.Scheme;
-        var expectedOrigin = $"{scheme}://{host}";
 
-        if (string.IsNullOrEmpty(referer) || !referer.StartsWith(expectedOrigin, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(referer))
         {
-            logger.LogError("Request from unauthorized origin. ");
+            logger.LogError("Request from unauthorized origin (no referer). Agent: {UserAgent}", 
+                context.Request.Headers.UserAgent.ToString());
             return false;
         }
+
+        if (!Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
+        {
+            logger.LogError("Request from unauthorized origin (invalid referer format).");
+            return false;
+        }
+
+        if (!refererUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogError("Request from unauthorized origin. Referer: {Referer}, Expected host: {Host}", 
+                referer, host);
+            return false;
+        }
+
         return true;
     }
 

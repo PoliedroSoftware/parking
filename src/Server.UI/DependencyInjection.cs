@@ -14,6 +14,7 @@ using CleanArchitecture.Blazor.Server.UI.Services.Notifications;
 using CleanArchitecture.Blazor.Server.UI.Services.UserPreferences;
 using Hangfire;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.FileProviders;
@@ -150,6 +151,16 @@ public static class DependencyInjection
     /// <returns>The configured web application.</returns>
     public static WebApplication ConfigureServer(this WebApplication app, IConfiguration config)
     {
+        // Cloudflare Tunnel / reverse proxy support
+        var forwardedHeadersOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+            RequireHeaderSymmetry = false
+        };
+        forwardedHeadersOptions.KnownProxies.Clear();
+        app.UseForwardedHeaders(forwardedHeadersOptions);
+        app.UseForwardedHeaders();
+
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -157,20 +168,23 @@ public static class DependencyInjection
         }
         else
         {
-            // Unified exception handling: rely on AddExceptionHandler<GlobalExceptionHandler>() + ProblemDetails.
-            // Removed the conventional "/Error" endpoint handler to avoid duplication/conflict.
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
 
-        // Single global exception handler registration (no path) to activate IExceptionHandler + ProblemDetails pipeline.
         app.UseExceptionHandler();
-        app.UseStatusCodePagesWithRedirects("/404");
+        app.Use(async (context, next) =>
+        {
+            await next();
+            if (context.Response.StatusCode == 404)
+            {
+                context.Response.Redirect("/404");
+            }
+        });
         app.MapHealthChecks("/health");
+
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseAntiforgery();
-        app.UseHttpsRedirection();
         app.MapStaticAssets();
 
 
@@ -214,10 +228,9 @@ public static class DependencyInjection
 
         // Add additional endpoints required by the Identity /Account Razor components.
         app.MapAdditionalIdentityEndpoints();
-        app.UseForwardedHeaders();
         app.UseWebSockets(new WebSocketOptions()
-        { // We obviously need this
-            KeepAliveInterval = TimeSpan.FromSeconds(30), // Just in case
+        {
+            KeepAliveInterval = TimeSpan.FromSeconds(30),
         });
 
         return app;

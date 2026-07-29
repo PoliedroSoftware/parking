@@ -5,10 +5,6 @@
     "ghcr.io/devcontainers/features/java:1": {
       "version": "17"
     },
-    "ghcr.io/devcontainers-contrib/features/android-sdk:2": {
-      "platforms": "35",
-      "buildTools": "35.0.0"
-    },
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
     }

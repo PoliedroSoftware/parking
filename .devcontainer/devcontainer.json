@@ -8,6 +8,9 @@
     "ghcr.io/devcontainers/features/android-sdk:2": {
       "platforms": "35",
       "buildTools": "35.0.0"
+    },
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
     }
   },
   "postCreateCommand": "dotnet workload install maui-android --skip-manifest-update && dotnet restore parkin-distribuido/parking-movile/ParkingMaui.slnx",

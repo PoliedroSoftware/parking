@@ -94,7 +94,11 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
             return false;
         }
 
-        if (!refererUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase))
+        // Request.Host includes the port when the application is exposed on a
+        // non-default port (for example, the distributed test frontend on 5057).
+        // Compare the complete authority so valid same-origin requests are not
+        // rejected merely because Uri.Host omits the port.
+        if (!refererUri.Authority.Equals(host, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogError("Request from unauthorized origin. Referer: {Referer}, Expected host: {Host}", 
                 referer, host);

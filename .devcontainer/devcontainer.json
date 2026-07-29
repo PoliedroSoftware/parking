@@ -1,6 +1,6 @@
 {
   "name": "Poliedro Parking Mobile",
-  "image": "mcr.microsoft.com/dotnet/sdk:10.0-bookworm-slim",
+  "image": "mcr.microsoft.com/dotnet/sdk:10.0",
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "17"

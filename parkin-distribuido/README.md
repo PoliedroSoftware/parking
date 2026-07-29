@@ -13,12 +13,24 @@ Workspace independiente para trabajar el API, frontend y aplicación móvil sin 
 Desde esta carpeta:
 
 ```powershell
-$env:UseInMemoryDatabase = 'true'
+$env:UseInMemoryDatabase = 'false'
+$env:DatabaseSettings__DBProvider = 'postgresql'
+$env:DatabaseSettings__ConnectionString = 'Host=localhost;Port=5432;Database=parking_distributed;Username=parking;Password=change-me;'
 dotnet run --project .\parking-api\src\Parking.Api --urls http://localhost:5221
 
 $env:ParkingApi__BaseUrl = 'http://localhost:5221'
 dotnet run --project .\parking-frontend\src\Server.UI --urls http://localhost:5057
 ```
+
+## Prueba desplegada aislada
+
+El servidor de prueba `192.168.0.137` mantiene el distribuido separado del monolito:
+
+- API: `http://192.168.0.137:5221`.
+- Frontend: `http://192.168.0.137:5057`.
+- PostgreSQL: base `parking_distributed`, dentro del compose distribuido; no usa la base de produccion.
+
+El flujo de parqueo soporta entrada, activos, salida por placa y scanner QR en la pantalla principal. El piloto `/pages/tickets-api` verifica el mismo ciclo mediante `/api/v1/parking/entry`, `/active` y `/exit`.
 
 La documentación del API está en `http://localhost:5221/swagger` y el piloto web en `http://localhost:5057/pages/tickets-api`.
 

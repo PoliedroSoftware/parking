@@ -19,6 +19,7 @@
 @inject BlazorDownloadFileService BlazorDownloadFileService
 @attribute [Authorize]
 @implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>@Title</PageTitle>
 
@@ -79,10 +80,24 @@
                              OnKeyUp="OnPlateKeyUp" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="process-button"
                        OnClick="ProcessPlate" StartIcon="@Icons.Material.Filled.PlayArrow"
-                       Disabled="@(string.IsNullOrWhiteSpace(_licensePlate))">
+                       Disabled="@(_processing || string.IsNullOrWhiteSpace(_licensePlate))">
                 @L["PROCESAR"]
             </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Large"
+                       Class="process-button" OnClick="ToggleScanner" Disabled="@_processing"
+                       StartIcon="@Icons.Material.Filled.QrCodeScanner">
+                @(_scanning ? "CERRAR CÁMARA" : "ESCANEAR QR")
+            </MudButton>
         </div>
+        @if (_scanning)
+        {
+            <MudPaper Outlined="true" Class="pa-2 mt-3">
+                <video id="parking-qr-video" autoplay playsinline style="width:100%;max-height:280px;object-fit:cover;"></video>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Apunta la cámara al QR del ticket de entrada para registrar la salida.
+                </MudText>
+            </MudPaper>
+        }
     </MudPaper>
 
     @* FEEDBACK *@
@@ -487,6 +502,9 @@
     private VehicleTypes _vehicleType = VehicleTypes.PrivateCar;
     private string _vehicleTypeName = "Carro";
     private bool _processing;
+    private bool _scanning;
+    private IJSObjectReference? _scannerModule;
+    private DotNetObjectReference<Tickets>? _dotNetReference;
     private string? _lastMessage;
     private Severity _lastSeverity = Severity.Info;
     private List<MovementRecord> _movements = new();
@@ -524,6 +542,31 @@
     {
         _disposed = true;
         _refreshTimer?.Dispose();
+    }
+
+    private async Task StopScannerAsync()
+    {
+        if (_scannerModule is not null)
+        {
+            try
+            {
+                await _scannerModule.InvokeVoidAsync("stopParkingQrScanner");
+            }
+            catch (JSException) { }
+        }
+
+        _scanning = false;
+        _dotNetReference?.Dispose();
+        _dotNetReference = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopScannerAsync();
+        if (_scannerModule is not null)
+            await _scannerModule.DisposeAsync();
+
+        Dispose();
     }
 
     private async Task LoadParkingStateSafeAsync(bool showSnackbar = false)
@@ -676,6 +719,92 @@
         }
     }
 
+    private async Task ToggleScanner()
+    {
+        if (_scanning)
+        {
+            await StopScannerAsync();
+            return;
+        }
+
+        try
+        {
+            _scannerModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/parkingQrScanner.js");
+            _dotNetReference = DotNetObjectReference.Create(this);
+            _scanning = true;
+            await InvokeAsync(StateHasChanged);
+            await _scannerModule.InvokeVoidAsync("startParkingQrScanner", "parking-qr-video", _dotNetReference);
+        }
+        catch (Exception exception)
+        {
+            await StopScannerAsync();
+            Snackbar.Add($"No se pudo activar la cámara: {exception.Message}", Severity.Warning);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnParkingQrDetected(string token)
+    {
+        await StopScannerAsync();
+        await ProcessQrToken(token);
+    }
+
+    private async Task ProcessQrToken(string token)
+    {
+        if (_processing)
+            return;
+
+        var decodedValue = NormalizeQrValue(token);
+        if (!ParkingQrTokenService.TryGetParkingRecordId(decodedValue, out var recordId))
+        {
+            var plate = NormalizePlate(decodedValue);
+            var activeRecord = await GetActiveParkingRecordAsync(plate);
+            if (activeRecord is not null)
+            {
+                _processing = true;
+                try
+                {
+                    await DoCheckout(activeRecord.LicensePlate, "");
+                }
+                finally
+                {
+                    _processing = false;
+                }
+
+                return;
+            }
+
+            Snackbar.Add("El QR fue leído, pero no corresponde a un parqueo activo.", Severity.Warning);
+            return;
+        }
+
+        _processing = true;
+        try
+        {
+            await using var db = await DbFactory.CreateAsync();
+            var record = await db.ParkingRecords
+                .AsNoTracking()
+                .Where(item => item.Id == recordId && item.Status == ActiveParkingStatus)
+                .FirstOrDefaultAsync();
+
+            if (record is null)
+            {
+                Snackbar.Add("El parqueo ya fue cerrado o no existe.", Severity.Warning);
+                return;
+            }
+
+            await DoCheckout(record.LicensePlate, "");
+        }
+        catch (Exception exception)
+        {
+            Snackbar.Add($"No se pudo procesar el QR: {exception.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
     private async Task DoEntry(string plate)
     {
         var entryTime = DateTime.Now;
@@ -694,7 +823,9 @@
         db.ParkingRecords.Add(parkingRecord);
         await db.SaveChangesAsync(CancellationToken.None);
 
-        var parkingQrToken = ParkingQrTokenService.Create(parkingRecord.Id);
+        // The QR payload is the plate so it remains readable after server/container changes.
+        // ProcessQrToken also keeps support for previously issued protected tokens.
+        var parkingQrToken = plate;
         var parkingQrCode = await GenerateParkingQrCodeAsync(parkingQrToken);
 
         ParkingService.RegisterEntry(new ParkingSession
@@ -836,6 +967,22 @@
         return string.IsNullOrWhiteSpace(plate)
             ? string.Empty
             : plate.Trim().Replace("-", string.Empty).Replace(" ", string.Empty).ToUpperInvariant();
+    }
+
+    private static string NormalizeQrValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var normalized = value.Trim();
+        if (normalized.StartsWith("[QR]:", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[5..].Trim();
+
+        var plateMarker = normalized.IndexOf("PLACA:", StringComparison.OrdinalIgnoreCase);
+        if (plateMarker >= 0)
+            normalized = normalized[(plateMarker + "PLACA:".Length)..].Trim();
+
+        return normalized;
     }
 
     private async Task ClearPlateAndReloadAsync()

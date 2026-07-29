@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poliedro-v2';
+const CACHE_NAME = 'poliedro-v5';
 const STATIC_ASSETS = [
   '/',
   '_framework/blazor.web.js',

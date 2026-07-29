@@ -255,3 +255,43 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
+.pwa-install-banner {
+    align-items: center;
+    background: #1976d2;
+    border-radius: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    box-shadow: 0 8px 24px rgba(25, 118, 210, 0.28);
+    color: #fff;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    left: 16px;
+    padding: 12px 16px;
+    position: fixed;
+    right: 16px;
+    z-index: 1400;
+}
+
+.pwa-install-banner div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pwa-install-banner span {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.pwa-install-banner button {
+    background: #fff;
+    border: 0;
+    border-radius: 10px;
+    color: #145da0;
+    cursor: pointer;
+    font-weight: 700;
+    min-height: 44px;
+    padding: 0 16px;
+    white-space: nowrap;
+}
+

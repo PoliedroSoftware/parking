@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poliedro-v5';
+const CACHE_NAME = 'poliedro-v6';
 const STATIC_ASSETS = [
   '/',
   '_framework/blazor.web.js',
@@ -7,7 +7,8 @@ const STATIC_ASSETS = [
   'css/app.css',
   'manifest.json',
   'icon-192.png',
-  'logo_poliedro.png'
+  'logo_poliedro.png',
+  'js/pwaInstall.js'
 ];
 
 self.addEventListener('install', event => {

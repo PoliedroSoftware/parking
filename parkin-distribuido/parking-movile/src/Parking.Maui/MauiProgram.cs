@@ -12,9 +12,8 @@ public static class MauiProgram
 
         builder.Services.AddSingleton(sp =>
         {
-            var defaultApiUrl = DeviceInfo.Platform == DevicePlatform.Android
-                ? "http://10.0.2.2:5220"
-                : "http://localhost:5220";
+            // Distributed API default; Preferences can override this for local development.
+            var defaultApiUrl = "http://192.168.0.137:5221";
             var apiUrl = Preferences.Default.Get("parking_api_url", defaultApiUrl).TrimEnd('/');
             var http = new HttpClient { BaseAddress = new Uri(apiUrl) };
             return http;
